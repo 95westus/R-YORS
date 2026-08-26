@@ -55,7 +55,7 @@ Assert-Equal $contractHash $lock.artifacts.publicContractSha256 'locked public-c
 Assert-Equal $manifest.artifacts.topSector.size 4096 'top-sector size in manifest'
 Assert-Equal $manifest.artifacts.topSector.cpuStart 'F000' 'top-sector start'
 Assert-Equal $manifest.artifacts.topSector.cpuEnd 'FFFF' 'top-sector end'
-foreach ($name in @('residentStart','residentEnd','unusedMargin','directoryStart','directoryEnd','configurationStart','configurationEnd','vectorsStart','vectorsEnd')) {
+foreach ($name in @('residentStart','residentEnd','unusedMargin','directoryStart','directoryEnd','configurationStart','configurationEnd','workSectorAddress','workSector','workSectorPacked','topBackupSectorAddress','topBackupSector','topBackupSectorPacked','reservedConfigurationStart','reservedConfigurationEnd','vectorsStart','vectorsEnd')) {
     Assert-Equal $manifest.layout.$name $lock.layout.$name "layout.$name"
 }
 foreach ($name in @('ramVersion','himonApLinkStart','himonApLinkEnd','bankJumpSig0','bankJumpSig1','bankLastJump','bankJumpSignature','bankCount','bankNone','bankSelectService','selectorEntry','selectorEnd','recordService','recordVersion','recordCapabilities','residentVersion','residentCapabilities')) {
@@ -70,8 +70,13 @@ if ($top[0x0C] -ne 0x53 -or $top[0x0D] -ne 0x52 -or
         $top[0x0F] -ne [int]$manifest.abi.recordCapabilities) {
     Fail 'top-sector record-service face does not match the manifest'
 }
-for ($offset = 0x0FB0; $offset -le 0x0FF9; $offset++) {
-    if ($top[$offset] -ne 0xFF) { Fail ('fresh top-sector metadata byte +${0:X3} is not erased' -f $offset) }
+for ($offset = 0x0FB0; $offset -le 0x0FEF; $offset++) {
+    if ($top[$offset] -ne 0xFF) { Fail ('fresh top-sector directory byte +${0:X3} is not erased' -f $offset) }
+}
+if ($top[0x0FF0] -ne 0x1E) { Fail ('WORK locator is ${0:X2}; expected B1:E $1E' -f $top[0x0FF0]) }
+if ($top[0x0FF1] -ne 0x1F) { Fail ('top-backup locator is ${0:X2}; expected B1:F $1F' -f $top[0x0FF1]) }
+for ($offset = 0x0FF2; $offset -le 0x0FF9; $offset++) {
+    if ($top[$offset] -ne 0xFF) { Fail ('reserved configuration byte +${0:X3} is not erased' -f $offset) }
 }
 if ($top[0x0FFC] -ne 0x00 -or $top[0x0FFD] -ne 0xF0) {
     Fail ('RESET vector is ${0:X2}{1:X2}; expected $F000' -f $top[0x0FFD], $top[0x0FFC])

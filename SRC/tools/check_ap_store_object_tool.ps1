@@ -69,6 +69,7 @@ if($mapSymbols.ContainsKey('APSW_FLASH_ERASE')-or$mapSymbols.ContainsKey('APSW_M
 if(-not$mapSymbols.ContainsKey('APSW_FLASH_WRITE_BYTE')){Fail 'object image lacks append byte-program path'}
 
 $source=[IO.File]::ReadAllText((Resolve-Path $SourcePath))
+foreach($needle in @('APSO_VALIDATE_LOCATION:','EOR             #STR8_CONFIG_WORK_DEFAULT','CMP             #$02')){if(-not$source.Contains($needle)){Fail "protected-role policy lacks $needle"}}
 function Routine([string]$First,[string]$Next){$a=$source.IndexOf($First);$b=$source.IndexOf($Next,$a+1);if($a-lt0-or$b-le$a){Fail "source routine boundary $First/$Next"};$source.Substring($a,$b-$a)}
 $prepareSource=Routine 'APSO_INSTALL_PREPARE_BODY:' 'APSO_INSTALL_EXECUTE_BODY:'
 if($prepareSource.IndexOf('JSR             APSO_VALIDATE_SOURCE')-gt$prepareSource.IndexOf('JSR             APSO_STAGE_AND_INSPECT')-or$prepareSource.Contains('APSO_PROGRAM_RECORD')){Fail 'PREPARE is not parse-first/read-only'}

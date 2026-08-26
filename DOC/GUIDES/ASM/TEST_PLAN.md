@@ -15147,6 +15147,10 @@ Host status: accepted. Board status: accepted on B1:9/B1:B on 2026-08-21.
 The guarded mutation procedure is maintained in
 `AP_STORE_V1_CHAIN_TOOL_BOARD_TEST.md`.
 
+The measurements in this dated acceptance record are frozen pre-WORK values.
+The 2026-08-25 WORK-sector section below records the current regenerated
+sizes and policy.
+
 Slice 5 retains the frozen `AS1`/`AR` bytes and complete AP v2 stored unit.
 There are no next-sector pointers. The request names one bank and an explicit
 mask of allowed sectors `$8-$F`; allocation visits the mask in sector order,
@@ -15206,9 +15210,13 @@ matched the post-chain table. This closes Slice 5 board acceptance.
 
 ## 2026-08-21 AP Store V1 Delete And Exhaustion Slice
 
-Host status: accepted candidate. Board status: pending on the accepted
-B1:9/B1:B Slice 5 media. The maintained procedure is
+Host and board status: accepted 2026-08-25 on the accepted B1:9/B1:B Slice 5
+media. The maintained procedure is
 [`AP_STORE_V1_SLICE6_BOARD_TEST.md`](AP_STORE_V1_SLICE6_BOARD_TEST.md).
+
+The measurements in this dated candidate record are frozen pre-WORK values.
+The 2026-08-25 WORK-sector section below records the current regenerated
+sizes and policy.
 
 Slice 6 adds no resident code, RAM allocation, ASM ABI value, or on-media
 format. Tombstones use the frozen `AR` type `$02` and occupy exactly 21 bytes:
@@ -15246,12 +15254,16 @@ The board candidate first resolves object `$0002` generation `$0001` through
 APNEW, then expects APPLAN counters LIVE `$102A`, STALE `$0000`, FREE `$0F6A`,
 BLOCKED `$0000`. Deterministic selection is B1:B offset `$0096`, CRC `$60E7`.
 The exact record is
-`41 52 01 02 00 FF 02 00 01 00 00 00 00 00 C5 9D 1C 81 AB 45 A5`.
+`41 52 01 02 00 FF 02 00 01 00 00 00 00 00 C5 9D 1C 81 56 62 A5`;
+the header CRC is `$6256`, stored low byte first.
 After commit, exact lookup must return `$E1` and newest lookup `$DB`; cold
-repetition proves persistence. This zero-payload tombstone is CRC-neutral
-against its erased 21-byte tail, so the maintained card requires the complete
-post-delete CRC table to remain identical and uses catalog results—not a
-fabricated CRC delta—as the publication proof.
+repetition proves persistence. Board mutation changed only B1:B from `$60E7`
+to `$37A8` (stored `A8 37`); all other 31 sector CRCs stayed exact. A read-only
+stage of B1:B showed the exact tombstone at offset `$0096`. After `HCOLD` and
+`RAM ZERO OK`, exact lookup again returned `$E1`, newest LIST/VALIDATE returned
+`$DB/$DB`, `APS` retained B1:9/B1:B ACTIVE generation 1 and B1:E WORK, and the
+complete CRC table matched the warm post-delete table byte for byte. This
+closes Slice 6 board acceptance.
 
 ## 2026-08-21 ASM-F2 VT102 Fixup-Budget Observation
 
@@ -15265,10 +15277,116 @@ is an assembly-time limit: repeated references count separately even when they
 name the same helper or string. It is not the 64-row AP relocation limit.
 
 The later fixed-load, table-driven byte-stream shape reached `END` at
-`PC=$39CC` and printed `ASM OK` in three captured attempts. This accepts the
-restructuring as a way to stay inside the forward-fixup table for a program
-that will run only at its original address. Each attempt then showed `SEAL>`
-followed by `BRK 23 PC=2890`; the transcript does not contain `SEAL OK
-FLAGS=$01` or a normal program return. Therefore it proves source assembly,
-not AP packaging or execution acceptance. The exit/entry sequence must be
-corrected and rerun before either terminal exerciser is called board-proven.
+`PC=$39CC` and printed `ASM OK` in three captured attempts. Each attempt then
+showed `SEAL>` followed by `BRK 23 PC=2890`. The `$3000-$39CB` output had
+overwritten part of the live `$2000`-based ASM-F2 runtime; the low crash PC is
+an assembler-image failure, not a terminal-emulation result.
+
+The corrected maintained sources are `vt102-exerciser-7000.a` and
+`vt525-exerciser-7000.a`. Each runs alone in the transient tray, uses fixed
+resident console ABI addresses, and contains no AP metadata or packaging
+directives. `make -C SRC asm-terminal-check` validates the fixed origins,
+range, physical line limit, forward-branch budget, stream tokens, and final
+zero terminator. Current host results are:
+
+```text
+VT102  $7000-$79CD  end PC $79CE  11 forward branches  max line 63
+VT525  $7000-$79B2  end PC $79B3  11 forward branches  max line 63
+```
+
+Both sources stay below `$7C00`, terminate their scripts with `$00`, and avoid
+the live ASM image. Their fourth local stream token supplies a bounded settle
+delay after RIS/soft reset so the terminal does not discard the next sequence.
+Board status remains pending: require clean `ASM OK`, type `.` at `SEAL>`, run
+`G 7000`, complete the interactive pages, and observe a normal HIMON return
+before calling either terminal exerciser board-proven.
+
+## 2026-08-26 AP Store V1 Slice 7 Operator Hardening
+
+Host and board status: accepted 2026-08-26.
+
+Bank 3 publishes two packed role locators: `$FFF0=$1E` selects B1:E as WORK,
+and `$FFF1=$1F` selects B1:F as the protected backup of Bank 3:F. Bytes
+`$FFF2-$FFF9` remain erased and available for later configuration, including a
+larger-directory locator. Normal and directory-refresh top updaters preserve
+or clear the live directory as appropriate, but both install the candidate
+configuration instead of restoring stale configuration bytes.
+
+Bank Maintenance maps the configured sectors as `W` and `B`; automatic D3
+journal-compaction scratch selection and erase ranges skip both. Resident
+`APS` is frozen as **AP Status** and reports compact rows such as:
+
+```text
+APS 18 + G=0002
+APS 19 + G=0001
+APS 1E = WORK
+APS 1F = BKUP B3F
+APS OK
+```
+
+The complete state vocabulary is `HDR ERASED`, `UNMANAGED`, `?`, `+`, `-`,
+`!`, `-!`, `= WORK`, and `= BKUP B3F`; generation appears only for managed
+states. Transient `APSTORE` uses the same state vocabulary. CLAIM, CONVERT,
+FORMAT, single-sector object operations, arbitrary-chain operations, and
+Slice 6 catalog/delete requests reject either configured role. The Slice 5/6
+`$0A` mask remains valid because it selects only B1:9 and B1:B. HIMON command
+`Q` is removed to reclaim resident space.
+
+Board acceptance installed the exact Bank-3 `8-E` candidate, then used the
+guarded top updater. One first-confirmation attempt aborted safely before any
+active update; the repeated exact confirmation produced `BACKUP VERIFIED`,
+reported old-sector sum `$01E0`, rewrote and verified B3:F, and reset into
+warm HIMON `00.0826(0017)`. Bank-3 `$FFF0-$FFF9` read exactly
+`1E 1F FF FF FF FF FF FF FF FF`. `APS` printed all 24 rows in the frozen
+grammar, including B1:E `= WORK`, B1:F `= BKUP B3F`, the three accepted active
+headers, and `APS OK`. Entering removed command `Q` returned `HSH_NF!`.
+
+The regenerated host measurements are:
+
+```text
+HIMON resident       $C000-$EFE3  12260 bytes  28 bytes before STR8
+APSTORE BODY         $7000-$7758   1881 bytes  22 mutation locations
+APOBJ BODY           $7000-$79FF   2560 bytes  exact $7A00 ceiling
+Slice 5 installer    $7000-$7944   2373 bytes
+Slice 5 reader       $7000-$7869   2154 bytes
+APNEW BODY           $7000-$79C3   2500 bytes
+APPLAN BODY          $7000-$7980   2433 bytes
+APDEL BODY           $7000-$774E   1871 bytes
+STR8-N top BIN SHA   199B00E62AD00C1262DB779B114AE43F0CFC8DB90147FB5461BB1EB296193A75
+STR8 public SHA      A10B4B02446F8DF5D508589AD5AE63B78B4CB2CF9CF451A746C613804A71B77D
+Bank-3 8-E S19 SHA   878DD3A055D8C2D473F601B22F13582BD6109E40C32CAA5C6FD5F63C55797FD5
+```
+
+`make all`, every AP Store check through Slice 7, STR8-N `make all`, the
+Bank-Maintenance/menu `.asm`/`.a` build, and the composed 32K R-YORS S19 all
+pass. Existing hardware transcripts remain intact; the accepted Slice 6
+transcript is appended to the hardware log and closes the near-term WORK map
+and exclusion queue entries.
+
+The existing transient tools remain separate fixed `$7000` executables. They
+share source primitives but have overlapping entry tables and staging RAM, so
+combining them is a later memory-layout/version change rather than part of V1
+hardening. The primary sector status/CLAIM/CONVERT/FORMAT tool retains its
+readable host source at `SRC/PROOFS/ap-store-v1-sector-tool.asm`; the linked
+S19 generates `DOC/GUIDES/ASM/SAMPLES/ap-store-v1-sector-tool-7000.a` as an
+ASM-F2-native image carrier. `ap-store-sector-tool-check` compares every one
+of its 1881 emitted bytes and the `$7000` entry against the host S19.
+Historical board transcripts retain the older verbose APS/APSTORE spellings
+as evidence from the binaries actually tested.
+The maintained Slice 6 procedure now freezes HIMON/ASM-F2 `00.0825(2135)`,
+Bank-3 `8-E` payload SHA-256
+`491AF17E56E049C2F0A5FB8D0962756A8C6BF6F069D01E5FA10DFE616125E38F`,
+the top updater and all eight CRC/request/AP/diagnostic transports in
+[`AP_STORE_V1_SLICE6_BOARD_TEST.md`](AP_STORE_V1_SLICE6_BOARD_TEST.md).
+
+The first board attempt reached read-only PLAN with the exact expected media,
+rows, target, counters, and `$A0`, then exposed a planner/executor handoff
+defect: the prepared generation was `00 00` and APDEL failed closed with `$D0`
+before selector boot or flash programming. The revised planner restores the
+resolved exact generation before snapshotting, clears successful diagnostic
+fields, and passes the Slice 6 host/AP-v2 gates at `$7000-$7971` (2418 bytes).
+The revised image then passed the complete board gate. Confirmed APDEL returned
+`$AC`, immediate replay returned `$D7`, exact lookup returned `$E1`, and newest
+LIST/VALIDATE returned `$DB/$DB` both warm and after `HCOLD`. A read-only B1:B
+stage exposed the exact tombstone at offset `$0096`; only B1:B changed CRC,
+from `$60E7` to `$37A8`, and the cold table exactly matched the warm table.

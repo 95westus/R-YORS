@@ -42,6 +42,7 @@
                         XREF            ASM_DB_COUNTING
                         XREF            ASM_RJOIN_INIT_IO
                         XREF            ASM_RJ_READ_CSTRING
+                        XREF            ASM_RJ_READ_CSTRING_UPPER
                         XREF            ASM_RJ_WRITE_HBSTRING
                         XREF            ASM_RJ_WRITE_HEX_BYTE
                         XREF            ASM_RJ_WRITE_HEX_WORD_AX
@@ -155,7 +156,13 @@ ASMF_PROMPT_PRINT:
 
                         LDX             #<ASMF_LINE_BUF
                         LDY             #>ASMF_LINE_BUF
+                        LDA             ASMF_POST_FLAG
+                        BNE             ASMF_READ_UPPER
                         JSR             ASM_RJ_READ_CSTRING
+                        BRA             ASMF_READ_RETURN
+ASMF_READ_UPPER:
+                        JSR             ASM_RJ_READ_CSTRING_UPPER
+ASMF_READ_RETURN:
                         BCS             ASMF_READ_OK
 
                         STA             ASMF_RESULT
@@ -640,6 +647,8 @@ ASMF_MATCH_ARG_CMD_SKIP:
                         RTS
 
 ASMF_MATCH_CMD:
+; Seal-shell input has already been folded and echoed uppercase; keep command
+; matching byte-exact so the command table remains the sole accepted set.
                         STX             ASMF_CMD_PTR_LO
                         STY             ASMF_CMD_PTR_HI
                         JSR             ASMF_SKIP_COMMAND_HEAD
@@ -766,31 +775,6 @@ ASMF_IS_END_TAIL:
                         JMP             ASMF_MATCH_LOOSE_TAIL
 
                         DATA
-ASMF_STATUS_NAME_LO:
-                        DB              <MSG_STATUS_OK
-                        DB              <MSG_STATUS_BAD_MNEM
-                        DB              <MSG_STATUS_BAD_DIR
-                        DB              <MSG_STATUS_BAD_OPER
-                        DB              <MSG_STATUS_BAD_MODE
-                        DB              <MSG_STATUS_BAD_WIDTH
-                        DB              <MSG_STATUS_BAD_RANGE
-                        DB              <MSG_STATUS_BAD_LINE
-                        DB              <MSG_STATUS_BAD_SYM
-                        DB              <MSG_STATUS_BAD_FIX
-                        DB              <MSG_STATUS_LOCAL_NYI
-                        DB              <MSG_STATUS_RJOIN
-                        DB              <MSG_STATUS_UNKNOWN
-ASMF_TEXT:              DB              "ASM V",('1'+$80)
-ASMF_CMD_SEAL:          DB              "SEAL",0
-ASMF_CMD_PACKAGE:       DB              "PACKAGE",0
-ASMF_CMD_LOAD:          DB              "LOAD",0
-ASMF_CMD_INSTALL:       DB              "INSTALL",0
-                        IF              ASM_PACKAGE_CHECK_ENABLED
-ASMF_CMD_CHECK:         DB              "CHECK",0
-                        ENDIF
-ASMF_CMD_NEW:           DB              "NEW",0
-ASMF_CMD_END:           DB              "END",0
-ASMF_CMD_DOTP:          DB              ".P",0
                         INCLUDE         "asm-version.inc"
 MSG_PROMPT:             DB              "ASM>",('$'+$80)
 MSG_PROMPT_TAIL:        DB              ":",(' '+$80)
@@ -832,8 +816,35 @@ MSG_STATUS_LOCAL_NYI:   DB              " NY",('I'+$80)
 MSG_STATUS_RJOIN:       DB              " R",('J'+$80)
 MSG_STATUS_UNKNOWN:     DB              " ",('?'+$80)
 MSG_BYE:                DB              "ASM BY",('E'+$80)
-
 ASMF_CMD_RELOCATE:      DB              "RELOCATE",0
+
+; Keep command/identity literals after the compact-message range so MSG_TITLE
+; remains on the preceding page without alignment padding.
+ASMF_STATUS_NAME_LO:
+                        DB              <MSG_STATUS_OK
+                        DB              <MSG_STATUS_BAD_MNEM
+                        DB              <MSG_STATUS_BAD_DIR
+                        DB              <MSG_STATUS_BAD_OPER
+                        DB              <MSG_STATUS_BAD_MODE
+                        DB              <MSG_STATUS_BAD_WIDTH
+                        DB              <MSG_STATUS_BAD_RANGE
+                        DB              <MSG_STATUS_BAD_LINE
+                        DB              <MSG_STATUS_BAD_SYM
+                        DB              <MSG_STATUS_BAD_FIX
+                        DB              <MSG_STATUS_LOCAL_NYI
+                        DB              <MSG_STATUS_RJOIN
+                        DB              <MSG_STATUS_UNKNOWN
+ASMF_TEXT:              DB              "ASM V",('1'+$80)
+ASMF_CMD_INSTALL:       DB              "INSTALL",0
+                        IF              ASM_PACKAGE_CHECK_ENABLED
+ASMF_CMD_CHECK:         DB              "CHECK",0
+                        ENDIF
+ASMF_CMD_NEW:           DB              "NEW",0
+ASMF_CMD_END:           DB              "END",0
+ASMF_CMD_DOTP:          DB              ".P",0
+ASMF_CMD_SEAL:          DB              "SEAL",0
+ASMF_CMD_PACKAGE:       DB              "PACKAGE",0
+ASMF_CMD_LOAD:          DB              "LOAD",0
                         UDATA
 ASMF_RESULT:            DB              $00
 ASMF_PC_LO:             DB              $00

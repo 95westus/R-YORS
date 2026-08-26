@@ -49,7 +49,14 @@ default payload, currently HIMON.
 
 ## Current Capability Snapshot
 
-- STR8-N `1.21` installs dense S19 ranges transactionally, runs recovery tools
+- The current host-built storage policy reserves Bank 1 sector E as an
+  application-neutral WORK/TWS sector and Bank 1 sector F as the protected
+  Bank-3:F backup. Bank 3 publishes `$FFF0=$1E` and `$FFF1=$1F`; bank/AP maps
+  show `W`/`= WORK` and `B`/`= BKUP B3F`, and all mutation paths reject both
+  roles. `$FFF2-$FFF9` remain erased for later directory/configuration use.
+  The complete Slice 7 display/update path is board-accepted on 2026-08-26.
+
+- STR8-N `1.22` installs dense S19 ranges transactionally, runs recovery tools
   from RAM, maintains bank-directory journals, updates its protected top
   sector through a verified backup, and launches enrolled Banks 0-3.
 - HIMON/ASM-F2 `00.0814(1524)` is the board-accepted line and provides RAM

@@ -184,6 +184,8 @@ HIM_APS_CLASS_ACTIVE     EQU             $04
 HIM_APS_CLASS_RETIRED    EQU             $05
 HIM_APS_CLASS_BAD        EQU             $06
 HIM_APS_CLASS_RETIRED_BAD EQU            $07
+HIM_APS_CLASS_WORK       EQU             $08
+HIM_APS_CLASS_TOP_BACKUP EQU             $09
 
 HIM_P40_CODE0            EQU             $E6
 HIM_P40_CODE1            EQU             $E7
@@ -794,9 +796,8 @@ CMD_USAGE_AP:
                         JMP             SYS_WRITE_CRLF
 
 ; ----------------------------------------------------------------------------
-; APS -- provisional AP Store V1 read-only sector-header inventory.
-; Scans exactly Banks 0-2, sectors $8-$F. The command spelling remains
-; provisional until the operator-hardening slice.
+; APS -- AP Store V1 read-only sector-header inventory/status.
+; Scans exactly Banks 0-2, sectors $8-$F.
 ; ----------------------------------------------------------------------------
 CMD_APS_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$45,$CE,$A6,$64,CMD_HASH_KIND_EXEC ; APS $64A6CE45 EXEC
@@ -867,13 +868,15 @@ HIM_APS_PRINT_ROW:
                         TAX
                         LDA             MSG_APS_CLASS_LO,X
                         PHA
-                        LDY             MSG_APS_CLASS_HI,X
+                        LDY             #>MSG_APS_HEADER_FF
                         PLA
                         TAX
                         JSR             HIM_WRITE_HBSTRING
                         LDA             HIM_APS_CLASS
                         CMP             #HIM_APS_CLASS_STAGED
                         BCC             ?EOL
+                        CMP             #HIM_APS_CLASS_WORK
+                        BCS             ?EOL
                         LDX             #<MSG_APS_GEN
                         LDY             #>MSG_APS_GEN
                         JSR             HIM_WRITE_HBSTRING
@@ -903,6 +906,16 @@ HIM_APS_PACK_LOCATION:
 ; erased; CLAIM must still inspect all 4096 bytes before treating a sector as
 ; empty.
 HIM_APS_CLASSIFY_HEADER:
+                        LDA             HIM_APS_LOCATION
+                        CMP             STR8_CONFIG_WORK_SECTOR
+                        BNE             ?TOP_BACKUP
+                        LDA             #HIM_APS_CLASS_WORK
+                        RTS
+?TOP_BACKUP:           CMP             STR8_CONFIG_TOP_BACKUP_SECTOR
+                        BNE             ?MEDIA
+                        LDA             #HIM_APS_CLASS_TOP_BACKUP
+                        RTS
+?MEDIA:
                         LDX             #APS_SECTOR_HEADER_BYTES-1
 ?ALL_FF:               LDA             HIM_APS_HEADER_BASE,X
                         CMP             #$FF
@@ -1082,14 +1095,6 @@ CMD_USAGE_L:
                         LDY             #>MSG_USAGE_L
                         JSR             HIM_WRITE_HBSTRING
                         JMP             SYS_WRITE_CRLF
-
-CMD_Q_FNV:
-                        DB              'F','N',CMD_FNV_SIG2,$FC,$0F,$0C,$D4,CMD_HASH_KIND_EXEC ; Q $D40C0FFC EXEC
-CMD_Q:
-                        ; 2026-05-07T20:51-05:00        WLP2        Q now quiesces with WAI, then re-enters HIMON.
-                        SEI
-                        WAI
-                        JMP             MON_REENTER
 
                         INCLUDE         "HIMON/himon-debug.inc"
                         INCLUDE         "HIMON/himon-disasm.inc"
@@ -4940,7 +4945,7 @@ MSG_D_IO_PIA:            DB              "PI",('A'+$80)
 MSG_D_IO_FTDI:           DB              "FTDI "
 MSG_D_IO_VIA:            DB              "VI",('A'+$80)
 MSG_D_IO_SKIP:           DB              " IO SKI",('P'+$80)
-MSG_HELP:                DB              "#? D M R X G AP APS L B N Q STR",('8'+$80)
+MSG_HELP:                DB              "#? D M R X G AP APS L B N STR",('8'+$80)
 MSG_USAGE_D:             DB              "D [a [b]",(']'+$80)
 MSG_USAGE_M:             DB              "M start [end|+cnt",(']'+$80)
 MSG_M_PROTECT:           DB              "M PROT=",('$'+$80)
@@ -4949,26 +4954,25 @@ MSG_USAGE_X:             DB              "X reg",('s'+$80)
 MSG_USAGE_G:             DB              "G ",('a'+$80)
 MSG_USAGE_AP:            DB              "AP [Bn] pkg ds",('t'+$80)
 MSG_USAGE_APS:           DB              "AP",('S'+$80)
-MSG_APS_PREFIX:          DB              "APS B/S",('='+$80)
-MSG_APS_IOERR:           DB              "APS IOERR B/S",('='+$80)
+MSG_APS_PREFIX:          DB              "APS",(' '+$80)
+MSG_APS_IOERR:           DB              "APS IOERR",(' '+$80)
 MSG_APS_GEN:             DB              " G",('='+$80)
 MSG_APS_OK:              DB              "APS O",('K'+$80)
-MSG_APS_HEADER_FF:       DB              "HEADER-F",('F'+$80)
-MSG_APS_OPAQUE:          DB              "OPAQU",('E'+$80)
+MSG_APS_HEADER_FF:       DB              "HDR ERASE",('D'+$80)
+MSG_APS_OPAQUE:          DB              "UNMANAGE",('D'+$80)
 MSG_APS_CORRUPT:         DB              "CORRUP",('T'+$80)
-MSG_APS_STAGED:          DB              "STAGE",('D'+$80)
-MSG_APS_ACTIVE:          DB              "ACTIV",('E'+$80)
-MSG_APS_RETIRED:         DB              "RETIRE",('D'+$80)
-MSG_APS_BAD:             DB              "BA",('D'+$80)
-MSG_APS_RETIRED_BAD:     DB              "RETIRED+BA",('D'+$80)
+MSG_APS_STAGED:          DB              ('?'+$80)
+MSG_APS_ACTIVE:          DB              ('+'+$80)
+MSG_APS_RETIRED:         DB              ('-'+$80)
+MSG_APS_BAD:             DB              ('!'+$80)
+MSG_APS_RETIRED_BAD:     DB              "-",('!'+$80)
+MSG_APS_WORK:            DB              "= WOR",('K'+$80)
+MSG_APS_TOP_BACKUP:      DB              "= BKUP B3",('F'+$80)
 MSG_APS_CLASS_LO:        DB              <MSG_APS_HEADER_FF,<MSG_APS_OPAQUE
                         DB              <MSG_APS_CORRUPT,<MSG_APS_STAGED
                         DB              <MSG_APS_ACTIVE,<MSG_APS_RETIRED
                         DB              <MSG_APS_BAD,<MSG_APS_RETIRED_BAD
-MSG_APS_CLASS_HI:        DB              >MSG_APS_HEADER_FF,>MSG_APS_OPAQUE
-                        DB              >MSG_APS_CORRUPT,>MSG_APS_STAGED
-                        DB              >MSG_APS_ACTIVE,>MSG_APS_RETIRED
-                        DB              >MSG_APS_BAD,>MSG_APS_RETIRED_BAD
+                        DB              <MSG_APS_WORK,<MSG_APS_TOP_BACKUP
 MSG_USAGE_L:             DB              ('L'+$80)
 MSG_NOCTX:               DB              "NOCT",('X'+$80)
 MSG_RESUME:              DB              "RESUME",(' '+$80)

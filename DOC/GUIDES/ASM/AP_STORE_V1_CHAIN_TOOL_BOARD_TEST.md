@@ -6,7 +6,10 @@ This card qualifies Slice 5 by storing one exact `$1000`-byte AP v2 envelope
 as a two-chunk object in nonadjacent managed sectors B1:9 and B1:B. B1:9
 retains its accepted Slice 4 object and contributes its remaining append tail;
 B1:B is CLAIMed first and supplies the final extent. B1:A is not selected or
-written. The user-approved writable range is B1:8-E; B1:F remains excluded.
+written. This is retained 2026-08-21 evidence from the earlier B1:8-E policy.
+Current candidates reserve B1:E as WORK and allow AP mutation only in B1:8-D;
+the exact `$0A` B1:9/B1:B mask used here remains valid. Current B1:F is the
+protected Bank-3:F backup and remains excluded.
 
 Do not run the mutation half unless the initial `APS` and CRC checks agree
 with the expected media. If B1:B is already anything other than `HEADER-FF`

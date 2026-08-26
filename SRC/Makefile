@@ -35,6 +35,7 @@ LOCAL_PROVENANCE := tools/write_local_provenance.ps1
 ASMTEST_CHECK := tools/check_asmtest_3000.ps1
 ASM_OPCODE_AUDIT := tools/check_asm_opcode_coverage.ps1
 ASM_DC_CHECK := tools/check_asm_dc_contract.ps1
+ASM_TERMINAL_CHECK := tools/check_terminal_exercisers.ps1
 ASM_ABI_CHECK := tools/check_asm_abi_v1.ps1
 ASM_ABI_INC := $(ASM_DIR)/asm-abi-v1.inc
 AP_STORE_V1_CHECK := tools/check_ap_store_v1.ps1
@@ -190,6 +191,9 @@ AP_STORE_SECTOR_TOOL_S19 := $(S19_DIR)/ap-store-v1-sector-tool-7000.s19
 AP_STORE_SECTOR_TOOL_LINKFLAGS := -g -s -t -c7000 -hm19 -j -o
 AP_STORE_SECTOR_TOOL_AP_GEN := tools/build_ap_fixed_package.ps1
 AP_STORE_SECTOR_TOOL_AP_BIN := $(BIN_DIR)/ap-store-v1-sector-tool-7000.ap.bin
+AP_STORE_SECTOR_TOOL_A := ../DOC/GUIDES/ASM/SAMPLES/ap-store-v1-sector-tool-7000.a
+AP_STORE_SECTOR_TOOL_A_GEN := tools/write_ap_store_sector_tool_a.ps1
+AP_STORE_SECTOR_TOOL_A_CHECK := tools/check_ap_store_sector_tool_a.ps1
 AP_STORE_OBJECT_TOOL_SRC := $(AP_STORE_SECTOR_TOOL_SRC)
 AP_STORE_OBJECT_TOOL_OBJ := $(OBJ_DIR)/$(PROOFS_DIR)/ap-store-v1-object-tool.obj
 AP_STORE_OBJECT_TOOL_S19 := $(S19_DIR)/ap-store-v1-object-tool-7000.s19
@@ -570,8 +574,8 @@ asm-session-report: $(ROM_LIB) $(ASM_SESSION_REPORT_S19) $(ASM_SESSION_REPORT_AP
 	@echo "Built $(ASM_SESSION_REPORT_S19) and $(ASM_SESSION_REPORT_AP_BIN)."
 	@$(MAKE) artifacts
 
-ap-store-sector-tool: $(AP_STORE_SECTOR_TOOL_S19) $(AP_STORE_SECTOR_TOOL_AP_BIN)
-	@echo "Built $(AP_STORE_SECTOR_TOOL_S19) and $(AP_STORE_SECTOR_TOOL_AP_BIN)."
+ap-store-sector-tool: $(AP_STORE_SECTOR_TOOL_S19) $(AP_STORE_SECTOR_TOOL_AP_BIN) $(AP_STORE_SECTOR_TOOL_A)
+	@echo "Built $(AP_STORE_SECTOR_TOOL_S19), $(AP_STORE_SECTOR_TOOL_AP_BIN), and $(AP_STORE_SECTOR_TOOL_A)."
 	@$(MAKE) artifacts
 
 ap-store-sector-tool-ap-bin: $(AP_STORE_SECTOR_TOOL_AP_BIN)
@@ -635,11 +639,14 @@ board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(
 release-files: board-s19-check life rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
-asm-test: asm-abi-check ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
+asm-test: asm-abi-check ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report asm-ap-v2-check
 	@echo "ASM v1 smoke checks passed."
 
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_ABI_CHECK) -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)"
+
+asm-terminal-check: $(ASM_TERMINAL_CHECK) ../DOC/GUIDES/ASM/SAMPLES/vt102-exerciser-7000.a ../DOC/GUIDES/ASM/SAMPLES/vt525-exerciser-7000.a
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_TERMINAL_CHECK)
 
 ap-store-v1-check: $(AP_STORE_V1_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_V1_CHECK) -WorkerContractPath "$(AP_STORE_SECTOR_TOOL_INC)"
@@ -647,8 +654,9 @@ ap-store-v1-check: $(AP_STORE_V1_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOO
 ap-store-inventory-check: $(HIMON_ROM_S19) $(AP_STORE_INVENTORY_CHECK) $(AP_STORE_V1_INC) $(STR8N_IMPORTED_CONTRACT)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_INVENTORY_CHECK) -HimonSourcePath "$(HIMON_SRC)" -HimonS19Path "$(HIMON_ROM_S19)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -PublicContractPath "$(STR8N_IMPORTED_CONTRACT)"
 
-ap-store-sector-tool-check: $(AP_STORE_SECTOR_TOOL_S19) $(AP_STORE_SECTOR_TOOL_AP_BIN) $(AP_STORE_SECTOR_TOOL_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(STR8N_IMPORTED_CONTRACT)
+ap-store-sector-tool-check: $(AP_STORE_SECTOR_TOOL_S19) $(AP_STORE_SECTOR_TOOL_AP_BIN) $(AP_STORE_SECTOR_TOOL_A) $(AP_STORE_SECTOR_TOOL_CHECK) $(AP_STORE_SECTOR_TOOL_A_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(ASM_ABI_INC) $(STR8N_IMPORTED_CONTRACT)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SECTOR_TOOL_CHECK) -SourcePath "$(AP_STORE_SECTOR_TOOL_SRC)" -S19Path "$(AP_STORE_SECTOR_TOOL_S19)" -MapPath "$(S19_DIR)/ap-store-v1-sector-tool-7000.map" -PackagePath "$(AP_STORE_SECTOR_TOOL_AP_BIN)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SECTOR_TOOL_A_CHECK) -S19Path "$(AP_STORE_SECTOR_TOOL_S19)" -SourcePath "$(AP_STORE_SECTOR_TOOL_A)"
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_V2_PACKAGE_CHECK) -PackagePath "$(AP_STORE_SECTOR_TOOL_AP_BIN)"
 
 ap-store-object-tool-check: $(AP_STORE_OBJECT_TOOL_S19) $(AP_STORE_OBJECT_TOOL_AP_BIN) $(AP_STORE_OBJECT_TOOL_PACKAGE_S19) $(AP_STORE_OBJECT_TOOL_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC) $(AP_STORE_MARKER_AP_BIN) $(AP_STORE_MARKER_PACKAGE_S19)
@@ -1001,6 +1009,9 @@ $(AP_STORE_SECTOR_TOOL_S19): $(AP_STORE_SECTOR_TOOL_OBJ)
 $(AP_STORE_SECTOR_TOOL_AP_BIN): $(AP_STORE_SECTOR_TOOL_S19) $(AP_STORE_SECTOR_TOOL_AP_GEN)
 	@echo [ps] build $(AP_STORE_SECTOR_TOOL_AP_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SECTOR_TOOL_AP_GEN) -S19Path "$(AP_STORE_SECTOR_TOOL_S19)" -MapPath "$(S19_DIR)/ap-store-v1-sector-tool-7000.map" -PackagePath "$(AP_STORE_SECTOR_TOOL_AP_BIN)" -BaseAddress 28672 -EntrySymbol "APSW_INVENTORY" -ExportName "APSTORE"
+
+$(AP_STORE_SECTOR_TOOL_A): $(AP_STORE_SECTOR_TOOL_S19) $(AP_STORE_SECTOR_TOOL_A_GEN)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_SECTOR_TOOL_A_GEN) -S19Path "$(AP_STORE_SECTOR_TOOL_S19)" -OutPath "$(AP_STORE_SECTOR_TOOL_A)"
 
 $(AP_STORE_OBJECT_TOOL_S19): $(AP_STORE_OBJECT_TOOL_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))

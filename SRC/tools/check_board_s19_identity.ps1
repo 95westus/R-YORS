@@ -60,8 +60,8 @@ function Assert-Canonical([object]$Canonical, [object]$Target, [string]$Role) {
 
 $asm = Read-S19 (Join-Path $S19Dir 'asm-v1-flash-8000.s19')
 $himon = Read-S19 (Join-Path $S19Dir 'himon-rom-c000.s19')
-if ($asm.Memory.Count -ne 0x3AFE) { Fail ('canonical ASM byte count is ${0:X4}, expected $3AFE' -f $asm.Memory.Count) }
-if ($himon.Memory.Count -ne 0x2DD3) { Fail ('canonical HIMON byte count is ${0:X4}, expected $2DD3' -f $himon.Memory.Count) }
+if ($asm.Memory.Count -ne 0x3C8A) { Fail ('canonical ASM byte count is ${0:X4}, expected $3C8A' -f $asm.Memory.Count) }
+if ($himon.Memory.Count -ne 0x2FE4) { Fail ('canonical HIMON byte count is ${0:X4}, expected $2FE4' -f $himon.Memory.Count) }
 
 $himonTargets = @(
     'himon-c000.s19',

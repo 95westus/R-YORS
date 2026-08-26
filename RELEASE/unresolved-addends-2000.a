@@ -1,0 +1,13 @@
+; Unresolved symbol-plus-addend board acceptance source.
+; Inspect the emitted bytes, then SEAL/PACKAGE/LOAD at $3000.
+ORG $2000
+IMPORT UTL_HEX_NIBBLE_TO_ASCII
+MAIN LDA TABLE+1
+     DW TABLE+2
+     LDA #<TABLE+1
+     LDX #>TABLE+1
+     BNE TARGET-2
+     DW UTL_HEX_NIBBLE_TO_ASCII+1
+TARGET NOP
+TABLE DB $11,$22,$33
+END

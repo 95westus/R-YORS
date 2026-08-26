@@ -1,0 +1,497 @@
+; VT525-EXERCISER-7000.A
+; FIXED-LOAD, INTERACTIVE VT525/VT500 EMULATION EXERCISER.
+; ASM NEW, PASTE THIS FILE, TYPE . AT SEAL>, THEN G 7000.
+; NO ENTRY, IMPORT, EXPORT, PACKAGE, INSTALL, LOAD, OR AP.
+; $7000-$79B2 AVOIDS THE LIVE $2000-BASED ASM-F2 IMAGE.
+;
+; $FF IN THE SCRIPT PAUSES. $FE DRAINS TERMINAL REPLIES.
+; $FD ECHOES KEY BYTES IN HEX UNTIL CTRL-C.
+; $FC WAITS FOR A TERMINAL RESET TO SETTLE.
+; COVERS THE HOST-SAFE DISPLAY, MODE, REPORT, AND KEY SURFACE.
+; PORT/PRINTER SETUP, TERMINAL ID, AND UDKS ARE NOT CHANGED.
+
+        ORG $7000
+
+ABI     EQU $F006
+CHARIN  EQU $F013
+CHAROUT EQU $F019
+READY   EQU $F03E
+PTRLO   EQU $82
+PTRHI   EQU $83
+RUN     EQU $7030
+DRAIN   EQU $7090
+HEX     EQU $70D0
+WAIT    EQU $70F0
+SCRIPT  EQU $7200
+
+START   JSR ABI
+        BCC BADABI
+        CMP #$01
+        BNE BADABI
+        TXA
+        AND #$1C
+        CMP #$1C
+        BNE BADABI
+        LDA #<SCRIPT
+        STA PTRLO
+        LDA #>SCRIPT
+        STA PTRHI
+        JSR RUN
+        LDA #$00
+        SEC
+        RTS
+BADABI  LDA #$01
+        CLC
+        RTS
+
+; STREAM SCRIPT BYTES. THREE HIGH TOKENS ARE LOCAL COMMANDS.
+        ORG $7030
+RUNLOOP LDY #$00
+        LDA (PTRLO),Y
+        BEQ RUNEND
+        INC PTRLO
+        BNE RUNBYTE
+        INC PTRHI
+RUNBYTE CMP #$FF
+        BEQ RUNMORE
+        CMP #$FE
+        BEQ RUNREPORT
+        CMP #$FD
+        BEQ RUNKEY
+        CMP #$FC
+        BEQ RUNWAIT
+        JSR CHAROUT
+        BRA RUNLOOP
+RUNMORE JSR CHARIN
+        BRA RUNLOOP
+RUNREPORT JSR DRAIN
+        BRA RUNLOOP
+RUNKEY  JSR CHARIN
+        CMP #$03
+        BEQ RUNLOOP
+        JSR HEX
+        LDA #' '
+        JSR CHAROUT
+        BRA RUNKEY
+RUNWAIT JSR WAIT
+        BRA RUNLOOP
+RUNEND  RTS
+
+; READ A BOUNDED REPLY BURST AND PRINT EACH BYTE IN HEX.
+        ORG $7090
+DSTART  LDY #$40
+DWAIT   LDX #$00
+DPOLL   JSR READY
+        BCS DGOT
+        DEX
+        BNE DPOLL
+        DEY
+        BNE DWAIT
+        LDA #$0D
+        JSR CHAROUT
+        LDA #$0A
+        JSR CHAROUT
+        RTS
+DGOT    JSR CHARIN
+        JSR HEX
+        LDA #' '
+        JSR CHAROUT
+        LDY #$08
+        BRA DWAIT
+
+; PRINT A AS TWO HEX DIGITS.
+        ORG $70D0
+HSTART  PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        JSR $70DB
+        PLA
+        AND #$0F
+HNIB    CMP #$0A
+        BCC HDIG
+        CLC
+        ADC #$37
+        JMP CHAROUT
+HDIG    CLC
+        ADC #'0'
+        JMP CHAROUT
+
+; BOUNDED SETTLE DELAY AFTER RIS OR SOFT RESET.
+        ORG $70F0
+WSTART  LDY #$00
+WOUTER  LDX #$00
+WINNER  DEX
+        BNE WINNER
+        DEY
+        BNE WOUTER
+        RTS
+
+; THE SCRIPT IS RAW TERMINAL DATA, NOT AN AP BODY.
+        ORG $7200
+        DB $1B
+        DC 'c'
+        DB $FC
+        DB $1B
+        DC '[65;1"p'
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[HVT525 / VT500-SERIES EXERCISER'
+        DB $0D,$0A
+        DC 'Visual, report, macro, color, and keyboard checks.'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; 7-BIT AND 8-BIT C1 CONTROLS, SOFT RESET, PAGE WIDTH.
+        DB $1B
+        DC ' F'
+        DB $1B
+        DC '[!p'
+        DB $FC
+        DB $1B
+        DC '[132$|'
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[H7-BIT C1, SOFT RESET, 132 COLUMNS'
+        DB $0D,$0A,$1B
+        DC ' G'
+        DB $9B
+        DC '3;1H8-BIT CSI WORKED'
+        DB $1B
+        DC ' F'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF,$1B
+        DC '[80$|'
+
+; ANSI SGR COLOR, DECAC DEFAULT COLOR, AND ATTRIBUTES.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[H'
+        DB $1B
+        DC '[1;7;0,|'
+        DC 'DECAC NORMAL TEXT COLOR ASSIGNED.'
+        DB $0D,$0A,$1B
+        DC '[1;3;4;5;7mBOLD ITALIC UNDERLINE BLINK REVERSE'
+        DB $1B
+        DC '[0m'
+        DB $0D,$0A,$1B
+        DC '[30;47m BLACK/WHITE '
+        DB $1B
+        DC '[31;46m RED/CYAN '
+        DB $1B
+        DC '[92;44m BRIGHT GREEN/BLUE '
+        DB $1B
+        DC '[0m'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; NRC, DEC GRAPHICS, 94/96 SETS, GL/GR, SS2, AND SS3.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[H'
+        DB $1B
+        DC '(AUK NRC: # SHOULD BE A POUND SIGN.'
+        DB $0D,$0A,$1B
+        DC '(B'
+        DB $1B
+        DC ')0'
+        DB $0E
+        DC 'lqqqqqqqqqqqqqqqqqqqqk'
+        DB $0D,$0A
+        DC 'x DEC SPECIAL GRAPHICS x'
+        DB $0D,$0A
+        DC 'mqqqqqqqqqqqqqqqqqqqqj'
+        DB $0F,$0D,$0A,$1B
+        DC '-A'
+        DB $1B
+        DC '~ISO LATIN-1 IN GR: '
+        DB $A3,$A9,$AE,$B0
+        DB $0D,$0A,$1B
+        DC '*0'
+        DB $1B
+        DC 'Nq SS2 ONE DEC GRAPHIC'
+        DB $0D,$0A,$1B
+        DC '+B'
+        DB $1B
+        DC 'OZ SS3 ONE ASCII CHARACTER'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; TOP/BOTTOM PLUS LEFT/RIGHT MARGINS AND ORIGIN MODE.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[?69h'
+        DB $1B
+        DC '[10;70s'
+        DB $1B
+        DC '[4;20r'
+        DB $1B
+        DC '[?6h'
+        DB $1B
+        DC '[HLEFT/RIGHT 10-70, TOP/BOTTOM 4-20, ORIGIN ON'
+        DB $0D,$0A
+        DC 'MARGIN-BOUNDED SCROLL REGION'
+        DB $0D,$0A
+        DC '01'
+        DB $0D,$0A
+        DC '02'
+        DB $0D,$0A
+        DC '03'
+        DB $0D,$0A
+        DC '04'
+        DB $0D,$0A
+        DC '05'
+        DB $0D,$0A
+        DC '06'
+        DB $0D,$0A
+        DC '07'
+        DB $0D,$0A
+        DC '08'
+        DB $0D,$0A
+        DC '09'
+        DB $0D,$0A
+        DC '10'
+        DB $0D,$0A
+        DC '11'
+        DB $0D,$0A
+        DC '12'
+        DB $0D,$0A
+        DC '13'
+        DB $0D,$0A
+        DC '14'
+        DB $0D,$0A
+        DC '15'
+        DB $0D,$0A
+        DC '16'
+        DB $0D,$0A
+        DC '17'
+        DB $0D,$0A
+        DC '18'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF,$1B
+        DC '[?6l'
+        DB $1B
+        DC '[?69l'
+        DB $1B
+        DC '[r'
+
+; RECTANGLE FILL/COPY/ERASE AND ATTRIBUTE OPERATIONS.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[HRECTANGLE OPS: FILL, COPY, ATTR, REVERSE, ERASE'
+        DB $1B
+        DC '[42;5;10;10;40$x'
+        DB $1B
+        DC '[5;10;10;40;1;13;20;1$v'
+        DB $1B
+        DC '[2*x'
+        DB $1B
+        DC '[13;20;18;50;4$r'
+        DB $1B
+        DC '[13;20;18;50;7$t'
+        DB $1B
+        DC '[7;20;9;30$z'
+        DB $1B
+        DC '[15;25;16;35${'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; CHARACTER, LINE, COLUMN, AND HORIZONTAL EDITING.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[H0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        DB $0D,$0A
+        DC '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        DB $0D,$0A
+        DC '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        DB $0D,$0A
+        DC '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        DB $0D,$0A
+        DC '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        DB $1B
+        DC '[2;10H'
+        DB $1B
+        DC '[3@+++'
+        DB $1B
+        DC '[3;10H'
+        DB $1B
+        DC '[2P'
+        DB $1B
+        DC '[4;10H'
+        DB $1B
+        DC '[4X'
+        DB $1B
+        DC '[5;1H'
+        DB $1B
+        DC '[2LINSERTED LINES'
+        DB $1B
+        DC '[9;1H'
+        DB $1B
+        DC '[2M'
+        DB $1B
+        DC '[3;12H'
+        DB $1B
+        DB '[','2',$27,'}'
+        DB $1B
+        DB '[','2',$27,'~'
+        DB $1B
+        DC '[3 @'
+        DB $1B
+        DC '[2 A'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; PROTECTED TEXT, SELECTIVE ERASE, AND STATUS LINE.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[H'
+        DB $1B
+        DC '[1"qPROTECTED '
+        DB $1B
+        DC '[0"qERASABLE'
+        DB $1B
+        DC '[?2J'
+        DB $1B
+        DC '[3;1HSELECTIVE ERASE SHOULD LEAVE PROTECTED TEXT.'
+        DB $0D,$0A,$1B
+        DC '[2$~'
+        DB $1B
+        DC '[1$}'
+        DC 'HOST-WRITABLE STATUS LINE'
+        DB $1B
+        DC '[0$}'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF,$1B
+        DC '[0$~'
+
+; CURSOR STYLE/VISIBILITY, SAVE/RESTORE, AND TABS.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[H'
+        DB $1B
+        DC '[5 qBLINKING BAR CURSOR'
+        DB $1B
+        DC '7'
+        DB $1B
+        DC '[10;40HMOVED'
+        DB $1B
+        DC '8 RESTORED'
+        DB $0D,$0A,$1B
+        DC '[?25lCURSOR HIDDEN'
+        DB $1B
+        DC '[?25h'
+        DB $1B
+        DC '[1 q BLOCK CURSOR'
+        DB $1B
+        DC '[3g'
+        DB $1B
+        DC 'H'
+        DB $09
+        DC 'HT '
+        DB $1B
+        DC '[2I CHT '
+        DB $1B
+        DC '[Z CBT'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; LEVEL-4 MACRO DEFINITION AND INVOCATION.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[HDEFINE MACRO 1, THEN INVOKE IT: '
+        DB $1B
+        DC 'P1;1;0!zMACRO WORKED'
+        DB $1B
+        DC '\'
+        DB $1B
+        DC '[1*z'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; DEVICE, MODE, EXTENT, STATE, SETTING, AND CHECKSUM REPORTS.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[HREPORT REPLIES IN HEX:'
+        DB $0D,$0A,$1B
+        DC '[c'
+        DB $1B
+        DC '[>c'
+        DB $1B
+        DC '[=c'
+        DB $1B
+        DC '[5n'
+        DB $1B
+        DC '[6n'
+        DB $1B
+        DC '[?7$p'
+        DB $1B
+        DC '[4$p'
+        DB $1B
+        DC '["v'
+        DB $1B
+        DC '[7;1;1;1;5;20*y'
+        DB $1B
+        DC '[1$w'
+        DB $1B
+        DC '[&u'
+        DB $1B
+        DC '[1$u'
+        DB $1B
+        DC 'P$qm'
+        DB $1B
+        DC '\'
+        DB $FE
+        DC '--MORE--'
+        DB $FF
+
+; BELL, LEDS, APPLICATION KEYS, AND RAW KEYBOARD BYTES.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[H'
+        DB $07,$1B
+        DC '[1;2;3;4q'
+        DB $1B
+        DC '[?1h'
+        DB $1B
+        DC '='
+        DC 'BELL, LEDS 1-4, APPLICATION CURSOR/KEYPAD ACTIVE.'
+        DB $0D,$0A
+        DC 'TRY CURSORS, EDIT KEYS, F1-F20, PF1-PF4, KEYPAD.'
+        DB $0D,$0A
+        DC 'CTRL-C ENDS. KEY HEX: '
+        DB $FD,$1B
+        DC '>'
+        DB $1B
+        DC '[?1l'
+        DB $1B
+        DC '[0q'
+        DB $1B
+        DC 'c'
+        DB $FC
+        DC 'VT525 EXERCISER COMPLETE.'
+        DB $0D,$0A,$00
+
+        END

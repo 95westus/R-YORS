@@ -55,9 +55,29 @@ function Publish-File {
 }
 
 $rArtifacts = @(
+    "SRC/BUILD/bin/ap-store-v1-chain-install-tool-7000.ap.bin",
+    "SRC/BUILD/bin/ap-store-v1-chain-reader-tool-7000.ap.bin",
+    "SRC/BUILD/bin/ap-store-v1-object-tool-7000.ap.bin",
+    "SRC/BUILD/bin/ap-store-v1-sector-tool-7000.ap.bin",
+    "SRC/BUILD/bin/ap-store-v1-slice6-catalog-tool-7000.ap.bin",
+    "SRC/BUILD/bin/ap-store-v1-slice6-delete-tool-7000.ap.bin",
+    "SRC/BUILD/bin/ap-store-v1-slice6-plan-tool-7000.ap.bin",
     "SRC/BUILD/bin/himon-rom-c000.bin",
     "SRC/BUILD/bin/life-2000-load.bin",
     "SRC/BUILD/s19/asm-v1-flash-8000.s19",
+    "SRC/BUILD/s19/ap-store-v1-chain-install-tool-7000.s19",
+    "SRC/BUILD/s19/ap-store-v1-chain-install-tool-package-4000.s19",
+    "SRC/BUILD/s19/ap-store-v1-chain-reader-tool-7000.s19",
+    "SRC/BUILD/s19/ap-store-v1-chain-reader-tool-package-4000.s19",
+    "SRC/BUILD/s19/ap-store-v1-object-tool-7000.s19",
+    "SRC/BUILD/s19/ap-store-v1-object-tool-package-3000.s19",
+    "SRC/BUILD/s19/ap-store-v1-sector-tool-7000.s19",
+    "SRC/BUILD/s19/ap-store-v1-slice6-catalog-tool-7000.s19",
+    "SRC/BUILD/s19/ap-store-v1-slice6-catalog-tool-package-4000.s19",
+    "SRC/BUILD/s19/ap-store-v1-slice6-delete-tool-7000.s19",
+    "SRC/BUILD/s19/ap-store-v1-slice6-delete-tool-package-4000.s19",
+    "SRC/BUILD/s19/ap-store-v1-slice6-plan-tool-7000.s19",
+    "SRC/BUILD/s19/ap-store-v1-slice6-plan-tool-package-4000.s19",
     "SRC/BUILD/s19/fnv1a-hbstr-6000.s19",
     "SRC/BUILD/s19/himon-apv2-bank3-c-e.s19",
     "SRC/BUILD/s19/himon-c000.s19",
@@ -73,11 +93,19 @@ foreach ($relative in $rArtifacts) {
     Publish-File -Source (Join-Path $repo $relative)
 }
 
+Publish-File -Source (Join-Path $repo "SRC/PROOFS/ap-store-v1-sector-tool.asm")
+
 $str8Artifacts = @(
     "BUILD/str8n-manifest.json",
     "BUILD/v1.22/bin/str8n-v1.22-bank3-f000-ffff.bin",
+    "BUILD/v1.22/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19",
+    "BUILD/v1.22/s19/str8n-v1.22-bank-maint-2000.s19",
+    "BUILD/v1.22/s19/str8n-v1.22-bank-maint-menu-2000.s19",
+    "BUILD/v1.22/s19/str8n-v1.22-console-abi-test-2000.s19",
+    "BUILD/v1.22/s19/str8n-v1.22-directory-refresh-2000.s19",
     "BUILD/v1.22/s19/str8n-v1.22-f000.s19",
-    "BUILD/v1.22/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
+    "BUILD/v1.22/s19/str8n-v1.22-top-update-2000.s19",
+    "BUILD/v1.22/s19/str8n-v1.22-worker-0200.s19"
 )
 foreach ($relative in $str8Artifacts) {
     Publish-File -Source (Join-Path $str8n $relative)

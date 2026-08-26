@@ -58,5 +58,7 @@ if($plan.Contains('APSC_FLASH_WRITE_BYTE')-or$plan.Contains('APSC_PROGRAM_ROW'))
 $exec=$source.Substring($source.IndexOf('APSC_INSTALL_EXECUTE_BODY:'))
 foreach($needle in @('STZ             APSC_CONFIRM','JSR             APSC_PARSE_SOURCE','JSR             APSC_SCAN_SECTOR','JSR             APSC_PROGRAM_ROW')){if(-not$exec.Contains($needle)){Fail "EXECUTE lacks $needle"}}
 foreach($needle in @('JSR             APSC_SORT_ROWS','JSR             APSC_VALIDATE_CHAIN','JSR             APSC_RECONSTRUCT','JSR             APSC_PARSE_BUFFER')){if(-not$reader.Contains($needle)){Fail "reader lacks $needle"}}
+foreach($needle in @('APSC_VALIDATE_WORK_MASK:','LDA             STR8_CONFIG_WORK_SECTOR','LDA             STR8_CONFIG_TOP_BACKUP_SECTOR','AND             APSC_SECTOR_MASK')){if(-not$source.Contains($needle)){Fail "protected-role policy lacks $needle"}}
+if(($request[26]-band 0x40)-ne0){Fail 'chain request mask includes B1:E WORK'}
 Write-Host ('AP Store Slice 5 tools passed: installer=${0:X4}-${1:X4} ({2}) reader=${0:X4}-${3:X4} ({4}) marker={5}' -f 0x7000,($ii.End-1),($ii.End-0x7000),($ri.End-1),($ri.End-0x7000),$marker.Bytes.Length)
-Write-Host 'AP Store Slice 5 policy: read-only PLAN; source/request/CRC recheck; header-payload-commit; bank-wide sorted reconstruction; AP-v2 validate before load'
+Write-Host 'AP Store Slice 5 policy: B1:E WORK and B1:F B3:F backup excluded; read-only PLAN; source/request/CRC recheck; header-payload-commit; bank-wide sorted reconstruction; AP-v2 validate before load'

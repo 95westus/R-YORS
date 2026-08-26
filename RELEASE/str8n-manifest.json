@@ -1,20 +1,20 @@
 ﻿{
     "schema":  3,
     "project":  "STR8-N",
-    "version":  "1.21",
+    "version":  "1.22",
     "repository":  "https://github.com/95westus/STR8-N.git",
-    "commit":  "74980695770ee64fa16dada84ddc0706d3ffceda",
+    "commit":  "698b774409b699879a828130fbea1859b6557d82",
     "dirty":  false,
     "artifacts":  {
                       "topSector":  {
-                                        "file":  "BUILD/v1.21/bin/str8n-v1.21-bank3-f000-ffff.bin",
+                                        "file":  "BUILD/v1.22/bin/str8n-v1.22-bank3-f000-ffff.bin",
                                         "size":  4096,
                                         "cpuStart":  "F000",
                                         "cpuEnd":  "FFFF",
-                                        "sha256":  "9EAA5808344A1232544B4BAE1CB75E8140AECA0E0D122E6694498C74B83BBB75"
+                                        "sha256":  "199B00E62AD00C1262DB779B114AE43F0CFC8DB90147FB5461BB1EB296193A75"
                                     },
                       "workerS19":  {
-                                        "file":  "BUILD/v1.21/s19/str8n-v1.21-worker-0200.s19",
+                                        "file":  "BUILD/v1.22/s19/str8n-v1.22-worker-0200.s19",
                                         "size":  596,
                                         "runStart":  "0200",
                                         "runEnd":  "0453",
@@ -22,54 +22,63 @@
                                         "sha256":  "04F46E258924F07510FB113EDB00C788EBA129EAB98B25C284D6AB15C306E69C"
                                     },
                       "bankMaintenanceS19":  {
-                                                 "file":  "BUILD/v1.21/s19/str8n-v1.21-bank-maint-2000.s19",
+                                                 "file":  "BUILD/v1.22/s19/str8n-v1.22-bank-maint-2000.s19",
                                                  "ramStart":  "2000",
                                                  "ramEnd":  "362A",
                                                  "entry":  "2000",
                                                  "privateWorkerStore":  "3400",
-                                                 "sha256":  "7B5502EDB7A874A1BB9D6B485D35056731ECB2A5452F0EEE34012421903DFE06"
+                                                 "sha256":  "46DEE696C741E5613EE2D57B4897B754A9B6E49BEA681F66967645EDDB2D12FF"
                                              },
                       "consoleAbiTestS19":  {
-                                                "file":  "BUILD/v1.21/s19/str8n-v1.21-console-abi-test-2000.s19",
+                                                "file":  "BUILD/v1.22/s19/str8n-v1.22-console-abi-test-2000.s19",
                                                 "ramStart":  "2000",
                                                 "ramEnd":  "2371",
                                                 "entry":  "2000",
-                                                "sha256":  "28548F60F12D9E7CA1E63DE8A8E1058CF2428FA728573462CB36136951A1BC97"
+                                                "sha256":  "5040D73AE29453C352CA02AEF2B4D94DA5BEF8B4F0E8D25DD65DC18C504C2E17"
                                             },
                       "topUpdateS19":  {
-                                           "file":  "BUILD/v1.21/s19/str8n-v1.21-top-update-2000.s19",
+                                           "file":  "BUILD/v1.22/s19/str8n-v1.22-top-update-2000.s19",
                                            "ramStart":  "2000",
                                            "ramEnd":  "4FFF",
                                            "candidateStart":  "4000",
                                            "candidateEnd":  "4FFF",
                                            "entry":  "2000",
                                            "backup":  "Bank 1 CPU F000-FFFF / physical 0F000-0FFFF",
-                                           "sha256":  "2370875F945D7E818A1EBCF3583E9DA98D844329711FCF328FF934CEBBFA697F"
+                                           "sha256":  "540DE9BDD9C24D58E78418A3BD69EAD52F5D29D1EB9BFD85598FC420C86BEB0D"
                                        },
                       "directoryRefreshS19":  {
-                                                  "file":  "BUILD/v1.21/s19/str8n-v1.21-directory-refresh-2000.s19",
+                                                  "file":  "BUILD/v1.22/s19/str8n-v1.22-directory-refresh-2000.s19",
                                                   "ramStart":  "2000",
                                                   "ramEnd":  "4FFF",
                                                   "candidateStart":  "4000",
                                                   "candidateEnd":  "4FFF",
                                                   "entry":  "2000",
                                                   "backup":  "Bank 1 CPU F000-FFFF / physical 0F000-0FFFF",
-                                                  "clears":  "Bank 3 CPU FFB0-FFF9 / physical 1FFB0-1FFF9",
-                                                  "sha256":  "15FB69B7B3B19B7ACD88C2C87373CE43EC20EC87AB66ABD72173322DB7022E58"
+                                                  "clears":  "Bank 3 CPU FFB0-FFEF / physical 1FFB0-1FFEF",
+                                                  "installs":  "Bank 3 CPU FFF0=1E (B1:E WORK); FFF1=1F (B1:F protected B3:F backup); FFF2-FFF9 erased",
+                                                  "sha256":  "84988F7BF46C9047C7BF81C8456C7C16201BD2CA0FDC54E8ED1BC1791F73E603"
                                               },
                       "publicContract":  {
-                                             "file":  "BUILD/v1.21/include/str8n-public.inc",
-                                             "sha256":  "7778B3A33AF21E9E81160BD51341F52FA81F211292C2425A9280D59F25F45174"
+                                             "file":  "BUILD/v1.22/include/str8n-public.inc",
+                                             "sha256":  "A10B4B02446F8DF5D508589AD5AE63B78B4CB2CF9CF451A746C613804A71B77D"
                                          }
                   },
     "layout":  {
                    "residentStart":  "F000",
-                   "residentEnd":  "FD59",
-                   "unusedMargin":  2,
+                   "residentEnd":  "FD54",
+                   "unusedMargin":  7,
                    "directoryStart":  "FFB0",
                    "directoryEnd":  "FFEF",
                    "configurationStart":  "FFF0",
                    "configurationEnd":  "FFF9",
+                   "workSectorAddress":  "FFF0",
+                   "workSector":  "B1:E",
+                   "workSectorPacked":  "1E",
+                   "topBackupSectorAddress":  "FFF1",
+                   "topBackupSector":  "B1:F",
+                   "topBackupSectorPacked":  "1F",
+                   "reservedConfigurationStart":  "FFF2",
+                   "reservedConfigurationEnd":  "FFF9",
                    "vectorsStart":  "FFFA",
                    "vectorsEnd":  "FFFF"
                },

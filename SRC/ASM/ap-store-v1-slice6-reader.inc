@@ -392,11 +392,17 @@ APSD_REPORT_FAIL:       RTS
 APSD_DELETE_PLAN_BODY:
                         LDA             APSC_OBJECT_GEN_LO
                         ORA             APSC_OBJECT_GEN_HI
-                        BEQ             APSD_BAD_PLAN_REQUEST
+                        BNE             APSD_PLAN_REQUEST_VALID
+                        JMP             APSD_BAD_PLAN_REQUEST
+APSD_PLAN_REQUEST_VALID:
                         JSR             APSD_VALIDATE_BODY
                         BCS             APSD_PLAN_VALID
                         JMP             APSD_RETURN_ERROR
 APSD_PLAN_VALID:
+                        LDA             APSD_RESOLVED_GEN_LO
+                        STA             APSC_OBJECT_GEN_LO
+                        LDA             APSD_RESOLVED_GEN_HI
+                        STA             APSC_OBJECT_GEN_HI
                         JSR             APSD_SAVE_PREP
                         LDA             #APSD_MODE_INSPECT
                         STA             APSD_MODE
@@ -442,6 +448,8 @@ APSD_PLAN_FOUND:
                         STA             APSD_TARGET_CRC_LO
                         LDA             APSW_CRC_HI
                         STA             APSD_TARGET_CRC_HI
+                        STZ             APSC_FAIL_PHASE
+                        STZ             APSC_FAIL_SECTOR
                         LDA             #APSC_STATUS_PREPARED
                         STA             APSC_STATUS
                         LDA             #APSC_STATUS_PREPARED

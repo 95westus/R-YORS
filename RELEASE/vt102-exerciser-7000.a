@@ -1,0 +1,456 @@
+; VT102-EXERCISER-7000.A
+; FIXED-LOAD, INTERACTIVE VT102 EMULATION EXERCISER.
+; ASM NEW, PASTE THIS FILE, TYPE . AT SEAL>, THEN G 7000.
+; NO ENTRY, IMPORT, EXPORT, PACKAGE, INSTALL, LOAD, OR AP.
+; $7000-$79CD AVOIDS THE LIVE $2000-BASED ASM-F2 IMAGE.
+;
+; $FF IN THE SCRIPT PAUSES. $FE DRAINS TERMINAL REPLIES.
+; $FD ECHOES KEY BYTES IN HEX UNTIL CTRL-C.
+; $FC WAITS FOR A TERMINAL RESET TO SETTLE.
+; COVERS THE HOST-SAFE DISPLAY, MODE, REPORT, AND KEY SURFACE.
+; PRINTER OUTPUT AND PERSISTENT TERMINAL SETUP ARE NOT CHANGED.
+
+        ORG $7000
+
+ABI     EQU $F006
+CHARIN  EQU $F013
+CHAROUT EQU $F019
+READY   EQU $F03E
+PTRLO   EQU $80
+PTRHI   EQU $81
+RUN     EQU $7030
+DRAIN   EQU $7090
+HEX     EQU $70D0
+WAIT    EQU $70F0
+SCRIPT  EQU $7200
+
+START   JSR ABI
+        BCC BADABI
+        CMP #$01
+        BNE BADABI
+        TXA
+        AND #$1C
+        CMP #$1C
+        BNE BADABI
+        LDA #<SCRIPT
+        STA PTRLO
+        LDA #>SCRIPT
+        STA PTRHI
+        JSR RUN
+        LDA #$00
+        SEC
+        RTS
+BADABI  LDA #$01
+        CLC
+        RTS
+
+; STREAM SCRIPT BYTES. THREE HIGH TOKENS ARE LOCAL COMMANDS.
+        ORG $7030
+RUNLOOP LDY #$00
+        LDA (PTRLO),Y
+        BEQ RUNEND
+        INC PTRLO
+        BNE RUNBYTE
+        INC PTRHI
+RUNBYTE CMP #$FF
+        BEQ RUNMORE
+        CMP #$FE
+        BEQ RUNREPORT
+        CMP #$FD
+        BEQ RUNKEY
+        CMP #$FC
+        BEQ RUNWAIT
+        JSR CHAROUT
+        BRA RUNLOOP
+RUNMORE JSR CHARIN
+        BRA RUNLOOP
+RUNREPORT JSR DRAIN
+        BRA RUNLOOP
+RUNKEY  JSR CHARIN
+        CMP #$03
+        BEQ RUNLOOP
+        JSR HEX
+        LDA #' '
+        JSR CHAROUT
+        BRA RUNKEY
+RUNWAIT JSR WAIT
+        BRA RUNLOOP
+RUNEND  RTS
+
+; READ A BOUNDED REPLY BURST AND PRINT EACH BYTE IN HEX.
+        ORG $7090
+DSTART  LDY #$40
+DWAIT   LDX #$00
+DPOLL   JSR READY
+        BCS DGOT
+        DEX
+        BNE DPOLL
+        DEY
+        BNE DWAIT
+        LDA #$0D
+        JSR CHAROUT
+        LDA #$0A
+        JSR CHAROUT
+        RTS
+DGOT    JSR CHARIN
+        JSR HEX
+        LDA #' '
+        JSR CHAROUT
+        LDY #$08
+        BRA DWAIT
+
+; PRINT A AS TWO HEX DIGITS.
+        ORG $70D0
+HSTART  PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        JSR $70DB
+        PLA
+        AND #$0F
+HNIB    CMP #$0A
+        BCC HDIG
+        CLC
+        ADC #$37
+        JMP CHAROUT
+HDIG    CLC
+        ADC #'0'
+        JMP CHAROUT
+
+; BOUNDED SETTLE DELAY AFTER RIS OR SOFT RESET.
+        ORG $70F0
+WSTART  LDY #$00
+WOUTER  LDX #$00
+WINNER  DEX
+        BNE WINNER
+        DEY
+        BNE WOUTER
+        RTS
+
+; THE SCRIPT IS RAW TERMINAL DATA, NOT AN AP BODY.
+        ORG $7200
+        DB $1B
+        DC 'c'
+        DB $FC
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[H'
+        DC 'VT102 EXERCISER - PRESS A KEY AT EACH --MORE--'
+        DB $0D,$0A
+        DC 'Visual checks, reports, and keyboard tests follow.'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; DECALN, 132/80 COLUMNS, REVERSE SCREEN, CURSOR DISPLAY.
+        DB $1B
+        DC '#8'
+        DB $FF,$1B
+        DC '[?3h'
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[H132-COLUMN MODE - THE DISPLAY SHOULD BE WIDE.'
+        DB $0D,$0A
+        DB $1B
+        DC '[?5hREVERSE SCREEN COLORS'
+        DB $1B
+        DC '[?5l'
+        DB $0D,$0A
+        DB $1B
+        DC '[?25lCURSOR HIDDEN FOR THIS PAGE'
+        DB $1B
+        DC '[?25h'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF,$1B
+        DC '[?3l'
+
+; SGR AND VT100 LINE ATTRIBUTES.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[HSGR: '
+        DB $1B
+        DC '[1mBOLD '
+        DB $1B
+        DC '[4mUNDERLINE '
+        DB $1B
+        DC '[5mBLINK '
+        DB $1B
+        DC '[7mREVERSE'
+        DB $1B
+        DC '[0m'
+        DB $0D,$0A,$1B
+        DC '#6DOUBLE WIDTH'
+        DB $0D,$0A,$1B
+        DC '#3DOUBLE HEIGHT'
+        DB $0D,$0A,$1B
+        DC '#4DOUBLE HEIGHT'
+        DB $0D,$0A,$1B
+        DC '#5SINGLE WIDTH'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; G0/G1 US, UK, AND DEC SPECIAL GRAPHICS.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[H'
+        DB $1B
+        DC ')0'
+        DB $0E
+        DC 'lqqqqqqqqqqqqqqqqqqqqk'
+        DB $0D,$0A
+        DC 'x DEC SPECIAL GRAPHICS x'
+        DB $0D,$0A
+        DC 'mqqqqqqqqqqqqqqqqqqqqj'
+        DB $0F,$0D,$0A,$1B
+        DC '(AUK G0: # SHOULD BE A POUND SIGN.'
+        DB $0D,$0A,$1B
+        DC '(BUS ASCII RESTORED.'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; CURSOR ADDRESSING, MOVEMENT, SAVE/RESTORE, AND TABS.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[5;10HAT ROW 5 COL 10'
+        DB $1B
+        DC '7'
+        DB $1B
+        DC '[10;30HMOVED TO ROW 10 COL 30'
+        DB $1B
+        DC '8 <- RESTORED'
+        DB $1B
+        DC '[2A'
+        DB $1B
+        DC '[8CUP 2, RIGHT 8'
+        DB $1B
+        DC '[2B'
+        DB $1B
+        DC '[4D DOWN 2, LEFT 4'
+        DB $1B
+        DC '[12;20fHVP ROW 12 COL 20'
+        DB $1B
+        DC '[3g'
+        DB $1B
+        DC '[14;1H'
+        DB $1B
+        DC 'HSET TAB AT COL 1'
+        DB $09
+        DC 'HT'
+        DB $1B
+        DC '[2I CHT TWO TABS'
+        DB $1B
+        DC '[Z CBT ONE TAB'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; MARGINS, ORIGIN, SMOOTH/JUMP SCROLL, IND, NEL, AND RI.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[4;20r'
+        DB $1B
+        DC '[?6h'
+        DB $1B
+        DC '[?4h'
+        DB $1B
+        DC '[HSCROLL REGION ROWS 4 THROUGH 20'
+        DB $0D,$0A
+        DC '01 SCROLL TEST'
+        DB $0D,$0A
+        DC '02 SCROLL TEST'
+        DB $0D,$0A
+        DC '03 SCROLL TEST'
+        DB $0D,$0A
+        DC '04 SCROLL TEST'
+        DB $0D,$0A
+        DC '05 SCROLL TEST'
+        DB $0D,$0A
+        DC '06 SCROLL TEST'
+        DB $0D,$0A
+        DC '07 SCROLL TEST'
+        DB $0D,$0A
+        DC '08 SCROLL TEST'
+        DB $0D,$0A
+        DC '09 SCROLL TEST'
+        DB $0D,$0A
+        DC '10 SCROLL TEST'
+        DB $0D,$0A
+        DC '11 SCROLL TEST'
+        DB $0D,$0A
+        DC '12 SCROLL TEST'
+        DB $0D,$0A
+        DC '13 SCROLL TEST'
+        DB $0D,$0A
+        DC '14 SCROLL TEST'
+        DB $0D,$0A
+        DC '15 SCROLL TEST'
+        DB $0D,$0A
+        DC '16 SCROLL TEST'
+        DB $0D,$0A
+        DC '17 SCROLL TEST'
+        DB $0D,$0A
+        DC '18 SCROLL TEST'
+        DB $1B
+        DC 'MREVERSE INDEX'
+        DB $1B
+        DC 'DINDEX'
+        DB $1B
+        DC 'ENEW LINE'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF,$1B
+        DC '[?4l'
+        DB $1B
+        DC '[?6l'
+        DB $1B
+        DC '[r'
+
+; VT102 EDITING AND ERASE FUNCTIONS, INCLUDING IRM.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[HLINE 1 ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        DB $0D,$0A
+        DC 'LINE 2 ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        DB $0D,$0A
+        DC 'LINE 3 ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        DB $0D,$0A
+        DC 'LINE 4 ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        DB $0D,$0A
+        DC 'LINE 5 ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        DB $1B
+        DC '[2;8H'
+        DB $1B
+        DC '[3@+++'
+        DB $1B
+        DC '[3;8H'
+        DB $1B
+        DC '[3P'
+        DB $1B
+        DC '[4;1H'
+        DB $1B
+        DC '[2LINSERTED TWO LINES'
+        DB $1B
+        DC '[8;1H'
+        DB $1B
+        DC '[2M'
+        DB $1B
+        DC '[6;10H'
+        DB $1B
+        DC '[5X'
+        DB $1B
+        DC '[7;10H'
+        DB $1B
+        DC '[4hINSERT MODE'
+        DB $1B
+        DC '[4l'
+        DB $1B
+        DC '[8;10H'
+        DB $1B
+        DC '[1K'
+        DB $1B
+        DC '[9;10H'
+        DB $1B
+        DC '[K'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; WRAP, NEWLINE, AUTOREPEAT, AND INTERLACE MODE TOGGLES.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[HMODE TOGGLES SENT AND RESTORED:'
+        DB $0D,$0A,$1B
+        DC '[?7l NO AUTOWRAP '
+        DB $1B
+        DC '[?7h AUTOWRAP'
+        DB $0D,$0A,$1B
+        DC '[20h NEWLINE MODE '
+        DB $1B
+        DC '[20l LINEFEED MODE'
+        DB $0D,$0A,$1B
+        DC '[?8l NO AUTOREPEAT '
+        DB $1B
+        DC '[?8h AUTOREPEAT'
+        DB $0D,$0A,$1B
+        DC '[?9h INTERLACE '
+        DB $1B
+        DC '[?9l NONINTERLACE'
+        DB $0D,$0A
+        DC '--MORE--'
+        DB $FF
+
+; ENQ, DECID, DA, DSR, CPR, THEN VT52 MODE AND IDENTIFY.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[HANSWERBACK/DECID/DA/DSR/CPR REPLY HEX:'
+        DB $0D,$0A,$05,$1B
+        DC 'Z'
+        DB $1B
+        DC '[c'
+        DB $1B
+        DC '[5n'
+        DB $1B
+        DC '[6n'
+        DB $FE
+        DC '--MORE--'
+        DB $FF,$1B
+        DC '[?2l'
+        DB $1B
+        DC 'H'
+        DB $1B
+        DC 'JVT52 MODE: HOME, ERASE, CURSOR MOTION, IDENTIFY'
+        DB $1B
+        DC 'A'
+        DB $1B
+        DC 'B'
+        DB $1B
+        DC 'C'
+        DB $1B
+        DC 'D'
+        DB $1B
+        DC 'Z'
+        DB $FE,$1B
+        DC '<'
+
+; APPLICATION CURSOR/KEYPAD, LEDS, AND KEYBOARD BYTE TEST.
+        DB $1B
+        DC '[2J'
+        DB $1B
+        DC '[H'
+        DB $1B
+        DC '[1;2;3;4q'
+        DB $1B
+        DC '[?1h'
+        DB $1B
+        DC '='
+        DC 'LEDS 1-4, APPLICATION CURSORS AND KEYPAD ACTIVE.'
+        DB $0D,$0A
+        DC 'TRY CURSORS, PF1-PF4, KEYPAD. CTRL-C ENDS.'
+        DB $0D,$0A
+        DC 'KEY HEX: '
+        DB $FD,$1B
+        DC '>'
+        DB $1B
+        DC '[?1l'
+        DB $1B
+        DC '[0q'
+        DB $1B
+        DC 'c'
+        DB $FC
+        DC 'VT102 EXERCISER COMPLETE.'
+        DB $0D,$0A,$00
+
+        END

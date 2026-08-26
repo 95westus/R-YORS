@@ -1,10 +1,8 @@
 # AP Storage Across Banks 0-2
 
-Status: implementation in progress. Slices 1-5 are host- and board-accepted:
-format/inventory, managed-sector mutation, single-sector object operations,
-and arbitrary-sector same-bank chaining. Slice 6 delete and exhaustion now has
-a host-accepted three-image candidate and awaits board proof; compaction
-remains explicitly deferred.
+Status: V1 implementation complete. Slices 1-7 are host- and board-accepted.
+Compaction and transient-tool consolidation are explicitly deferred to the
+next major pass.
 
 This plan introduces managed AP storage in selected 4K sectors of Banks 0-2
 without treating any whole bank as an AP volume. A bank may remain bootable or
@@ -14,6 +12,11 @@ otherwise opaque in every sector not explicitly registered as AP storage.
 
 - Management is sector-based. Any eligible sector in Bank 0, 1, or 2 may be
   managed; managed sectors need not be adjacent.
+- Bank 3 `$FFF0` publishes one application WORK sector and `$FFF1` publishes
+  the protected Bank-3:F backup, both as packed bank/sector bytes. The current
+  values `$1E/$1F` reserve B1:E/B1:F; AP inventory labels them `= WORK` and
+  `= BKUP B3F`, and every mutation path rejects both. `$FF` means no assignment.
+  `$FFF2-$FFF9` remain erased and unassigned.
 - Bank 3 owns the discovery logic and reconstructs its volatile catalog by
   scanning self-identifying managed-sector headers in Banks 0-2. No persistent
   Bank-3 catalog or Bank-3 flash allocation is required.
@@ -394,7 +397,7 @@ host fault matrix and board proof.
    nonadjacent-chain/tombstone fixtures are frozen. Expand the fault matrix as
    the read-only firmware parser is introduced.
 2. **Read-only inventory.** Add a Bank-3-resident discovery routine that uses
-   the RAM bank worker to read the 24 candidate sector headers in Banks 0-2
+   the RAM bank worker to read the 24 sector headers in Banks 0-2
    (three banks times sectors `$8-$F`). It does not scan Bank 3. Prove that
    arbitrary opaque Banks 0-2 remain unchanged.
 3. **Single-sector claim and format.** Implement the separate destructive
@@ -411,15 +414,36 @@ host fault matrix and board proof.
 7. **Operator hardening.** Freeze command syntax, confirmations, diagnostics,
    cancellation behavior, and recovery instructions.
 
+Slice 7 freezes `APS` as **AP Status**. Its compact row grammar is
+`APS ll state [G=gggg]`, where `ll` is the packed bank/sector byte, managed
+states are `?`, `+`, `-`, `!`, and `-!`, and fixed roles are `= WORK` and
+`= BKUP B3F`. Erased and outside-policy media read `HDR ERASED` and
+`UNMANAGED`. `Q` is removed from HIMON to reclaim resident space. The existing
+transient tools remain separate fixed `$7000` executables because their entry
+tables overlap and some operations reuse the same staging RAM; combining them
+is a later layout/version change, not V1 hardening.
+
+## Next Major Pass: Consolidated AP Tooling
+
+The next major AP Store pass will replace the set of overlapping fixed
+`$7000` transit images with one coherent operator surface. Before code moves,
+freeze a memory/layout design covering the persistent menu/dispatcher,
+shareable read-only and mutation cores, overlays and staging ownership, tool
+selection/loading, return-to-menu behavior, and recovery after interruption.
+The V1 media format and compact APS state vocabulary remain the compatibility
+baseline. Compaction, larger-directory use of `$FFF2-$FFF9`, and stronger
+hardening must be scoped explicitly rather than folded into consolidation by
+accident.
+
 Slices 1 and 2 are host-accepted as of 2026-08-20, and Slice 2 is board-
 accepted. Slice 3 CLAIM/FORMAT is board-accepted as of 2026-08-21; explicit
 occupied-sector CONVERT remains a separate destructive proof. HIMON's
-provisional `APS` command copies one 16-byte header at a time
+`APS` command copies one 16-byte header at a time
 through a 48-byte RAM reader at `$0300`, classifies it after restoring Bank 3,
 and streams all 24 rows. It uses 20 bytes at `$7C00-$7C13`, no 4K staging, and
 never writes the bank window. The linked HIMON candidate measures CODE 10819,
 DATA 1430, resident 12249 bytes, ending at `$EFD9` with 39 bytes before STR8.
-The `APS` spelling is deliberately not frozen until Slice 7.
+Slice 7 freezes the `APS` spelling and compact output grammar above.
 
 Board acceptance captured all 24 rows and identical four-bank CRC tables
 immediately before and after `APS`; both CRC runs returned `$AC` with zero
@@ -435,8 +459,9 @@ at BODY offset zero with no relocations or imports. Resident `AP` remains the
 bootstrap and now admits only `$7000-$7BFF` in addition to its general
 `$2000-$4FFF` BODY window. HIMON therefore measures CODE 10844, DATA 1430,
 resident 12274 bytes, ending at `$EFF2` with 14 bytes before STR8; resident
-`APS` and `Q` remain pending the later size pass. The host oracle passes all 24
-inventory rows, all 24 mutation locations, and 50 commit-last interruption
+`APS` was retained and `Q` was removed in the Slice 7 size pass. The current
+host oracle passes all 24 inventory rows (including both fixed roles), all 22 eligible mutation
+locations, and 50 commit-last interruption
 points. On HIMON/ASM-F2 `00.0821(0132)`, sacrificial B1:8 advanced from erased
 to persistent ACTIVE generation 1 through CLAIM, then to persistent ACTIVE
 generation 2 through managed-empty FORMAT. Complete before/after CRC tables
@@ -455,13 +480,23 @@ after `HCOLD`, and only B1:9/B1:B changed in the complete CRC table. Their
 final CRCs are `$65C3/$60E7`. Occupied-sector
 CONVERT remains separately deferred.
 
+Slice 6 delete/exhaustion is host- and board-accepted on that same chain.
+Read-only PLAN selected B1:B+$0096 and the exact generation-1 object; confirmed
+APDEL appended one commit-last 21-byte tombstone, returned `$AC`, and rejected
+immediate replay with `$D7`. Exact lookup returned `ALREADY DELETED` `$E1`,
+while newest LIST/VALIDATE returned `NOT FOUND` `$DB/$DB`. The tombstone header
+CRC is `$6256`, stored `56 62`. Only B1:B changed in the complete CRC table,
+from `$60E7` to `$37A8`, and the full table plus catalog results repeated after
+`HCOLD`/`RAM ZERO OK`.
+
 Each slice must measure STR8/HIMON/ASM resident CODE, DATA, UDATA, worker size,
 catalog capacity, and maximum RAM staging. A slice does not advance if it moves
 an ASM ABI v1 address or changes AP v2 bytes.
 
 ## Acceptance Gates
 
-Host tests must cover all Banks 0-2 and sectors `$8-$F`, nonadjacent chains,
+Host tests must cover all Banks 0-2 and sectors `$8-$F`, require B1:E/B1:F to
+be reported as WORK/BKUP and rejected for mutation, and cover nonadjacent chains,
 coexistence with opaque sectors, catalog/header disagreement, wrong-bank and
 wrong-sector headers, stale generations, interrupted writes at every commit,
 duplicate/missing/reordered extents, corrupt hashes, AP errors, full catalog,

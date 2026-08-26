@@ -59,4 +59,6 @@ DOC/s34
 # Immutable console-input fixture referenced by hardware proof. This is test
 # source, not a generated firmware artifact.
 !/DOC/GUIDES/ASM/SAMPLES/OLD/str8-record-phase1-max252.s19
+# Read-only Slice 6 board diagnostic; immutable S19 test source.
+!/DOC/GUIDES/ASM/SAMPLES/ap-store-v1-slice6-stage-b1sb-1a00.s19
 *.code-workspace

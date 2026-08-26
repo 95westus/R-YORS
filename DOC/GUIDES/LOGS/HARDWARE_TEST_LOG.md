@@ -24939,3 +24939,250 @@ B1:9 advanced from `$6915` to `$65C3`; B1:B advanced from `$5877` to
 post-chain table byte for byte. This completes Slice 5 board acceptance for
 nonadjacent same-bank chaining, commit-last publication, exact reconstruction,
 AP validation, LOAD/RUN, one-shot confirmation, isolation, and persistence.
+
+## 2026-08-25 AP Store V1 Slice 6 DELETE and B1:E WORK acceptance
+
+The board ran frozen HIMON/ASM-F2 `00.0825(2135)`. Bank 3 configuration was
+`1E FF FF FF FF FF FF FF FF FF` at `$FFF0-$FFF9`, and resident inventory
+reported B1:E as `WORK`. The accepted Slice 5 chain remained B1:9/B1:B ACTIVE
+generation 1. Its pre-delete CRC row was:
+
+```text
+7C20: 48 F2 C3 65 E1 0F E7 60 | E1 0F E1 0F E1 0F 99 34
+```
+
+The first PLAN candidate returned `$A0` but exposed prepared generation
+`00 00`; APDEL failed closed with `$D0` before selector boot or any flash
+program operation. The revised APPLAN envelope SHA-256 was
+`9A681EC9C5D55A5661ED34EA36339BA78B2DC02B4AE1E6855D6B7D0C4511A4D5`.
+It produced the required read-only plan:
+
+```text
+>G 7003
+GO 7003
+
+#GO# ENTRY=7003
+RET A=A0 X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>D 7C8A 7C9D
+7C8A: 00 A0 00 10 2A 10 00 00 | 6A 0F 00 00 00 00 0B 96
+7C9A: 00 E7 60 02
+>D 7CA1 7CAA
+7CA1: 01 00 01 0A 02 00 01 00 | 00 10
+```
+
+During the destructive step the operator sent the earlier Slice 5 `$0032`
+chain helper instead of the named `$002C` DELETE helper. Its extra source-card
+stores did not change the bank, mask, object, or generation, and the captured
+prepared snapshot above proves every executor-critical field. Confirmation was
+loaded and executed at `$1A40`. APDEL committed exactly once and consumed the
+confirmation; immediate replay failed without mutation:
+
+```text
+>G 7003
+GO 7003
+
+#GO# ENTRY=7003
+RET A=AC X=03 Y=00 P=B5 S=FD Nv-BdIzC
+>D 7C8A 7C8B
+7C8A: 00 AC
+>D 7C96 7C97
+7C96: 00 00
+>G 7003
+GO 7003
+
+#GO# ENTRY=7003
+RET A=D7 X=33 Y=30 P=F4 S=FD NV-BdIzc
+```
+
+Subsequent tests used only the exact named helpers. Revised APPLAN returned
+`ALREADY DELETED` `$E1`. APNEW exact LIST and VALIDATE returned `$E1`; newest
+LIST and VALIDATE returned `NOT FOUND` `$DB/$DB`:
+
+```text
+>AP 4000 7000
+GO 7000
+
+#GO# ENTRY=7000
+RET A=E1 X=00 Y=00 P=B4 S=FD Nv-BdIzc
+>G 7003
+GO 7003
+
+#GO# ENTRY=7003
+RET A=E1 X=00 Y=00 P=B4 S=FD Nv-BdIzc
+>G 7000
+GO 7000
+
+#GO# ENTRY=7000
+RET A=DB X=03 Y=00 P=B4 S=FD Nv-BdIzc
+>G 7003
+GO 7003
+
+#GO# ENTRY=7003
+RET A=DB X=03 Y=00 P=B4 S=FD Nv-BdIzc
+```
+
+The complete warm post-delete CRC run returned `$AC`. Only B1:B changed, from
+`$60E7` to `$37A8` (stored low/high as `A8 37`):
+
+```text
+>D 7C00 7C04
+7C00: AC 00 00 00 00
+>D 7C10 7C4F
+7C10: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C20: 48 F2 C3 65 E1 0F A8 37 | E1 0F E1 0F E1 0F 99 34
+7C30: E1 0F E1 0F E1 0F E1 0F | E1 0F E1 0F E1 0F E1 0F
+7C40: 83 61 92 C8 30 A1 AC F7 | 49 1C 95 FE BE 2C F3 7C
+```
+
+A read-only B1:B stage resolved the initially incorrect card prediction. The
+header CRC is `$6256`, stored `56 62`, and the exact committed record begins at
+offset `$0096`:
+
+```text
+>D 4090 40AF
+4090: 00 00 00 00 EA A5 41 52 | 01 02 00 FF 02 00 01 00
+40A0: 00 00 00 00 C5 9D 1C 81 | 56 62 A5 FF FF FF FF FF
+```
+
+Finally, `HCOLD` reported `RAM ZERO OK`. Resident `APS` again reported B1:E
+WORK and B1:9/B1:B ACTIVE generation 1. Independently reloaded exact and
+newest readers repeated `$E1/$E1` and `$DB/$DB`. The exact CRC source assembled
+again with ASM-F2 and returned `$AC`; its complete table matched the warm table
+above byte for byte:
+
+```text
+>HCOLD
+RUN HCOLD @C02C K=03 ? y
+BOOT COLD
+RAM ZERO OK
+>AP 4000 7000
+GO 7000
+
+#GO# ENTRY=7000
+RET A=E1 X=00 Y=00 P=B4 S=FD Nv-BdIzc
+>G 7003
+GO 7003
+
+#GO# ENTRY=7003
+RET A=E1 X=00 Y=00 P=B4 S=FD Nv-BdIzc
+>G 7000
+GO 7000
+
+#GO# ENTRY=7000
+RET A=DB X=03 Y=00 P=B4 S=FD Nv-BdIzc
+>G 7003
+GO 7003
+
+#GO# ENTRY=7003
+RET A=DB X=03 Y=00 P=B4 S=FD Nv-BdIzc
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=AC X=00 Y=01 P=B5 S=FD Nv-BdIzC
+>D 7C10 7C4F
+7C10: 79 55 07 D5 D0 AC DF EF | DF EF DF EF DF EF 07 D0
+7C20: 48 F2 C3 65 E1 0F A8 37 | E1 0F E1 0F E1 0F 99 34
+7C30: E1 0F E1 0F E1 0F E1 0F | E1 0F E1 0F E1 0F E1 0F
+7C40: 83 61 92 C8 30 A1 AC F7 | 49 1C 95 FE BE 2C F3 7C
+```
+
+This completes Slice 6 board acceptance for exact-generation DELETE,
+commit-last publication, fail-closed planning/execution, repeat-delete
+rejection, newest/exact visibility, mutation isolation, B1:E WORK exclusion,
+and cold persistence.
+
+## 2026-08-26 AP Store V1 Slice 7 Operator Hardening
+
+The operator installed the regenerated Bank-3 `$8000-$EFFF` HIMON/ASM image,
+then ran the guarded STR8-N top updater. The first confirmation attempt aborted
+before any active top update. The repeated attempt verified a fresh B1:F
+backup, reported old-sector sum `$01E0`, rewrote and verified B3:F, and reset
+into warm HIMON `00.0826(0017)`.
+
+The exact Bank-3 configuration pocket was `1E 1F FF FF FF FF FF FF FF FF`.
+Resident `APS` printed every Bank-0/1/2 sector in the frozen Slice 7 grammar,
+including B1:E `= WORK`, B1:F `= BKUP B3F`, and `APS OK`. The removed `Q`
+command resolved through the normal unknown-command path as `HSH_NF!`.
+
+```text
+STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? y
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.22
+0-2 C W S: .S
+I L C W J
+STR8-N>I
+B0-3: 3
+RANGE: 8-E
+I B3 8-E WRITE? Y: Y
+S19
+......COMMIT? Y: Y.
+OK
+STR8-N>L
+S19
+
+STR8-N 1.22 TOP UPDATE
+BACKUP B1:F; TARGET B3:F
+TYPE BACKUP B1F> BACKUP B1F
+ABORT - NO ACTIVE TOP UPDATE
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.22
+0-2 C W S: .S
+I L C W J
+STR8-N>L
+S19
+
+STR8-N 1.22 TOP UPDATE
+BACKUP B1:F; TARGET B3:F
+TYPE BACKUP B1F> BACKUP B1F
+BACKUP VERIFIED
+SAFE PHY $0F000-$0FFFF; TARGET PHY $1F000-$1FFFF; SUM=$01E0
+TYPE STR8-N 1.22> STR8-N 1.22
+ERASING B3:F - NO RESET/NMI/POWER
+STR8-N 1.22 VERIFIED; RESET
+RESET
+WAIT... WAIT... WAIT... WAIT... WAIT... WAIT...
+STR8-N 1.22
+0-2 C W S: ......
+BOOT WARM
+
+HIMON V 00.0826(0017)
+
+> D FFF0 FFF9
+> FFF0: 1E 1F FF FF FF FF FF FF | FF FF | ..........
+> APS
+> APS 08 UNMANAGED
+> APS 09 UNMANAGED
+> APS 0A UNMANAGED
+> APS 0B UNMANAGED
+> APS 0C UNMANAGED
+> APS 0D UNMANAGED
+> APS 0E UNMANAGED
+> APS 0F HDR ERASED
+> APS 18 + G=0002
+> APS 19 + G=0001
+> APS 1A HDR ERASED
+> APS 1B + G=0001
+> APS 1C HDR ERASED
+> APS 1D HDR ERASED
+> APS 1E = WORK
+> APS 1F = BKUP B3F
+> APS 28 HDR ERASED
+> APS 29 HDR ERASED
+> APS 2A HDR ERASED
+> APS 2B HDR ERASED
+> APS 2C HDR ERASED
+> APS 2D HDR ERASED
+> APS 2E HDR ERASED
+> APS 2F HDR ERASED
+> APS OK
+> Q
+> #D40C0FFC# HSH_NF!
+```
+
+This closes AP Store V1 Slice 7 board acceptance: guarded role publication,
+retained B1:F backup, warm reset, exact compact status vocabulary, complete
+24-row inventory, and removal of `Q` all behave as designed.

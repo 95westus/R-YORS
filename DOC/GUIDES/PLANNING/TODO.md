@@ -33,7 +33,7 @@ append-only delete, and deferred compaction.
   relocation.
 
 Current evidence (2026-08-21): format-oracle and read-only-inventory host
-slices pass. The provisional HIMON `APS` path scans exactly 24 headers without
+slices pass. The HIMON `APS` path scans exactly 24 headers without
 flash mutation and measures its resident/RAM cost. Its functional board scan
 and matching before/after four-bank CRC tables pass, completing Slice 2. These
 queue items remain open. Slice 3 now has a 1832-byte transient inventory plus
@@ -53,9 +53,9 @@ media. B1:9 CLAIM, append, LIST, reconstruction, validation, and LOAD/RUN pass;
 the corrected `$D7` failure-status return and cold persistence also pass. The
 final CRC table changed only B1:9 (`3E 40` to `15 69`, CRC `$403E` to `$6915`)
 and preserved all other 31 sectors, completing Slice 4 board acceptance.
-Slice 5 arbitrary-sector chaining is now accepted; Slice 6 delete and
-exhaustion has a host-accepted candidate and is at the board gate. Provisional resident
-`APS` and `Q` removal is intentionally deferred.
+Slice 5 arbitrary-sector chaining, Slice 6 delete/exhaustion, and the final V1
+Slice 7 operator hardening are host- and board-accepted. Slice 7 freezes `APS`
+as AP Status, protects B1:E/B1:F, and removes `Q`.
 
 Slice 5 is host- and board-accepted with no on-media format or ASM ABI
 change. A single-bank sector mask names the allowed arbitrary sectors;
@@ -86,28 +86,56 @@ error rather than an implicit rollback. Implementation should favor separate
 fixed transient AP variants and shared primitives to minimize each loaded
 image; no resident RAM or ABI allocation is authorized.
 
-The host candidate follows that split: APNEW is 2432 bytes, read-only APPLAN
-is 2344 bytes, and APDEL is 1803 bytes. All end below `$7A00`; only APDEL
+The regenerated host candidate follows that split: APNEW is 2485 bytes,
+read-only APPLAN is 2418 bytes, and APDEL is 1856 bytes. All end below
+`$7A00`; only APDEL
 contains byte-program code, and both APPLAN/APDEL enter safely through an inert
 `$7000` stub before their `$7003` operation. The host model covers all 21
 tombstone interruption cuts, newest/exact visibility, older-generation
 fallback, AP-invalid rollback refusal, exact LIVE/STALE/FREE/BLOCKED counts,
-repeat-delete `$E1`, and no-space without reuse. Board proof on the accepted
-B1:9/B1:B chain is next.
+repeat-delete `$E1`, and no-space without reuse. The first board attempt found
+that PLAN cleared its live exact generation before snapshotting; APDEL rejected
+the resulting zero-generation request with `$D0` before flash. The revised
+planner restores the resolved generation and clears success diagnostics.
+Confirmed board execution returned `$AC`, replay returned `$D7`, exact lookup
+returned `$E1`, and newest LIST/VALIDATE returned `$DB/$DB` before and after
+`HCOLD`. Only B1:B changed CRC, from `$60E7` to `$37A8`; a read-only stage
+showed the exact tombstone at offset `$0096`.
+
+The Slice 7 role policy is host- and board-accepted. Bank 3 publishes `$FFF0=$1E`
+(B1:E WORK) and `$FFF1=$1F` (B1:F protected Bank-3:F backup); `$FFF2-$FFF9`
+remain erased. Resident `APS` and transient `APSTORE` report `= WORK` and
+`= BKUP B3F`, and every AP mutation or explicit sector mask rejects both. The
+22 remaining Bank-0/1/2 mutation
+locations pass; Slice 5/6 mask `$0A` remains valid because it selects only
+B1:9 and B1:B. The 2026-08-25 board transcript confirms `$FFF0=$1E`, B1:E
+`WORK`, successful Slice 6 operation on only B1:9/B1:B, and cold persistence.
+The 2026-08-26 Slice 7 transcript confirms `$FFF0-$FFF9 = 1E 1F FF FF FF FF
+FF FF FF FF`, the complete compact 24-row `APS` display, warm reset, retained
+B1:F backup, and `Q` rejection through `HSH_NF!`.
+
+### Next major pass: consolidated AP tooling
+
+- [ ] Design one persistent AP Store operator menu/dispatcher that replaces
+  the overlapping `$7000` transit images without changing V1 media bytes.
+- [ ] Freeze the new RAM/overlay map, shared-core boundaries, staging ownership,
+  return-to-menu contract, and interrupted-operation recovery before coding.
+- [ ] Decide whether compaction, harder confirmation/recovery rails, and a
+  larger directory locator are part of that version or separately gated work.
 
 ### Near term: Bank 1 application work sector
 
-- [ ] Reserve Bank 1 sector E (`B1:E`, `$E000-$EFFF` while Bank 1 is selected)
+- [x] Reserve Bank 1 sector E (`B1:E`, `$E000-$EFFF` while Bank 1 is selected)
   as the application **Work** sector and display it as `W` in bank maps. `W`
   means application-owned transient workspace: it is not free AP allocation,
   persistent object storage, or the only authoritative copy of data. The first
   intended owner is ASM-F2, for temporary fixup, symbol, and related assembly
   work. Keep the role application-neutral so later applications may reuse it.
-- [ ] Remove `B1:E` from AP-store allocation/test masks before relying on the
+- [x] Remove `B1:E` from AP-store allocation/test masks before relying on the
   `W` designation. Earlier accepted `B1:8-E` AP test-media evidence remains
   historical; the new reservation changes future allocation policy rather than
   retroactively changing those transcripts.
-- [ ] Add only the sector-level `W` map classification in the near-term slice.
+- [x] Add only the sector-level `W` map classification in the near-term slice.
   Defer 256-byte page-level submaps and allocations within the 4K sector until
   an application demonstrates a need for them.
 - [ ] Treat wear leveling as a later design, not part of the first `W` slice.

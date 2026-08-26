@@ -91,6 +91,8 @@ APSC_VALIDATE_REQUEST:
                         LDA             APSC_BANK
                         CMP             #$03
                         BCS             APSC_BAD_REQUEST
+                        JSR             APSC_VALIDATE_WORK_MASK
+                        BCC             APSC_BAD_REQUEST
                         LDA             APSC_OBJECT_LO
                         ORA             APSC_OBJECT_HI
                         BEQ             APSC_BAD_REQUEST
@@ -106,6 +108,56 @@ APSC_VALIDATE_REQUEST:
                         BEQ             APSC_BAD_REQUEST
                         ENDIF
                         SEC
+                        RTS
+
+; Reject any explicit mask that includes either configured protected role:
+; application WORK or the raw B3:F recovery backup. A locator packs bank in
+; the high nibble and sector in the low; $FF means no configured sector.
+; This is checked again by EXECUTE paths.
+APSC_VALIDATE_WORK_MASK:
+                        LDA             STR8_CONFIG_WORK_SECTOR
+                        JSR             APSC_VALIDATE_ROLE_MASK
+                        BCC             APSC_WORK_MASK_BAD
+                        LDA             STR8_CONFIG_TOP_BACKUP_SECTOR
+                        JSR             APSC_VALIDATE_ROLE_MASK
+                        BCC             APSC_WORK_MASK_BAD
+                        SEC
+                        RTS
+
+APSC_VALIDATE_ROLE_MASK:
+                        CMP             #STR8_CONFIG_NONE
+                        BEQ             APSC_ROLE_MASK_OK
+                        PHA
+                        AND             #$F0
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        CMP             APSC_BANK
+                        BNE             APSC_ROLE_MASK_OTHER_BANK
+                        PLA
+                        AND             #$0F
+                        SEC
+                        SBC             #$08
+                        TAX
+                        LDA             #$01
+APSC_WORK_MASK_SHIFT:
+                        CPX             #$00
+                        BEQ             APSC_WORK_MASK_TEST
+                        ASL             A
+                        DEX
+                        BRA             APSC_WORK_MASK_SHIFT
+APSC_WORK_MASK_TEST:
+                        AND             APSC_SECTOR_MASK
+                        BNE             APSC_WORK_MASK_BAD
+APSC_ROLE_MASK_OK:
+                        SEC
+                        RTS
+APSC_ROLE_MASK_OTHER_BANK:
+                        PLA
+                        BRA             APSC_ROLE_MASK_OK
+APSC_WORK_MASK_BAD:
+                        CLC
                         RTS
 APSC_BAD_REQUEST:
                         LDA             #APSC_STATUS_BAD_REQUEST

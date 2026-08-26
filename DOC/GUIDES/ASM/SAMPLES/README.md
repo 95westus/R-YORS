@@ -5,6 +5,11 @@ operator tools here. Historical implementations, smoke programs, negative
 fixtures, proof-only sources, and completed board-test cards belong in
 [`OLD`](OLD/README.md).
 
+`ap-store-v1-sector-tool-7000.a` is generated from the host-linked
+`SRC/PROOFS/ap-store-v1-sector-tool.asm` S19. It is an exact ASM-F2 image
+carrier for AP Status at `$7000`, PREPARE at `$7003`, and confirmed EXECUTE at
+`$7006`; edit the host source, not the generated `DB` rows.
+
 ## AP Build, Install, And Reporting
 
 - `asm-session-report-v1.2-ap-2000.a` - current movable, Bank-0-storable ASM
@@ -49,6 +54,9 @@ sources and an explanation of their former roles are under `OLD`.
 
 - `str8n-v1.2-bank-crc-all-3000.a` - read-only all-bank CRC inventory through
   `$F010/$0203`; no mutation-worker authority.
+- `ap-store-v1-slice6-stage-b1sb-1a00.s19` - read-only Slice 6 diagnostic that
+  reuses the assembled CRC fixture's `$3088` stage routine to copy B1:B into
+  `$4000-$4FFF`; it never erases or programs flash.
 - `str8n-v1.2-bank-maint-2000.a` - carried-worker copy/erase/map/fixed-AP-put
   utility; `M` distinguishes valid AP envelopes from ordinary used bytes and
   also displays all four Bank-3 directory records.
@@ -57,6 +65,16 @@ sources and an explanation of their former roles are under `OLD`.
   Attributes, bounds both reply waits, and prints replies as hex plus safe
   printable text. Board-accepted with configured answerback `RYORS` and
   Primary DA reply `ESC [ ? 1 ; 2 c`.
+- `vt102-exerciser-7000.a` - fixed-load VT102 display, editing, mode, VT52,
+  report, and keyboard exerciser using only the raw console ABI; no AP. Its
+  measured direct-run image is `$7000-$79CD`.
+- `vt525-exerciser-7000.a` - fixed-load VT525/VT500 C1, color, character-set,
+  margin, rectangle, status-line, macro, report, and keyboard exerciser; no AP.
+  Its measured direct-run image is `$7000-$79B2`.
+
+Both terminal exercisers deliberately use the same transient tray and run one
+at a time. Do not move them back to `$3000/$4000`: those ranges overlap the
+live `$2000`-based ASM-F2 image and can crash after `END` before `SEAL>` exits.
 - `str8n-v1.2-topwr-transient-3000.a` - maintained staged top-sector shop tool; preserve
   the live V1 directory when overlaying a replacement image.
 

@@ -6,7 +6,7 @@ Occupied-sector CONVERT remains pending separate operator approval and proof.
 This procedure qualifies implementation Slice 3. The S19 image is
 `SRC/BUILD/s19/ap-store-v1-sector-tool-7000.s19`; the fixed AP v2 package is
 `SRC/BUILD/bin/ap-store-v1-sector-tool-7000.ap.bin`. The BODY owns
-`$7000-$7727` plus transient card `$7C00-$7C2F`. It is mutually exclusive with
+`$7000-$7758` plus transient card `$7C00-$7C2F`. It is mutually exclusive with
 the `$7000` ASM reporter and is terminal for an ASM session. Resident `AP` has
 a narrow `$7000-$7BFF` BODY-destination exception so it can remain the
 bootstrap; resident `APS` and `Q` are unchanged in this slice.
@@ -24,7 +24,7 @@ package BODY and export are fixed at `$7000`, so use destination `$7000`:
 ```text
 >AP $hhhh $7000
 GO 7000
-APSTORE B/S=08 ...
+APSTORE 08 ...
 ...
 APSTORE B/S=2F ...
 APSTORE OK
@@ -33,7 +33,9 @@ APSTORE OK
 Here `$hhhh` is a visible RAM or flash address containing the package. If the
 package begins at a Bank 0-2 sector boundary, use `AP Bn $s000 $7000`; resident
 `AP` first stages that 4K sector through `$0A00-$19FF`. Require exactly 24 rows
-from `08` through `2F`, no Bank-3 row, and a final `APSTORE OK`. The inventory
+from `08` through `2F`, with B1:E reported as `= WORK`, B1:F reported as
+`= BKUP B3F`, no Bank-3 row, and a final `APSTORE OK`. Mutation requests for
+either fixed role must return `BAD REQUEST` without changing flash. The inventory
 is read-only, but it copies the STR8 selector/worker into low RAM and therefore
 still terminates any prior ASM session.
 

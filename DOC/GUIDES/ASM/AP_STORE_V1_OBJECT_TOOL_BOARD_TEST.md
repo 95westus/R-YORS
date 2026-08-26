@@ -10,14 +10,17 @@ claim unmanaged media.
 The fixed AP v2 tool is
 `SRC/BUILD/bin/ap-store-v1-object-tool-7000.ap.bin`, export `APOBJ`. Load its
 AP envelope with `SRC/BUILD/s19/ap-store-v1-object-tool-package-3000.s19`;
-do not send the raw binary to the S19 loader. Its BODY is `$7000-$79EF` (2544
-bytes), ending 16 bytes below HIMON's `$7A00` command buffer. Its five entries
+do not send the raw binary to the S19 loader. The regenerated BODY is
+`$7000-$79FF` (2560 bytes), ending exactly at HIMON's exclusive `$7A00`
+command-buffer boundary. Its five entries
 are LIST `$7000`, INSTALL PREPARE `$7003`,
 INSTALL EXECUTE `$7006`, VALIDATE `$7009`, and LOAD/RUN `$700C`. It uses the
 sector mirror `$2000-$2FFF`, reconstructed-package buffer `$0A00-$19FF`, and
 cards `$7C00-$7C73`. Loading or running it is terminal for an ASM session.
 
-The first approved media is Bank 1 sectors `$8-$E`. Keep B1:F untouched. Use
+The 2026-08-21 proof used the then-approved Bank 1 `$8-$E` range. Current
+candidates reserve B1:E as WORK and B1:F as the protected Bank-3:F backup;
+use only B1:8-D. Use
 B1:9 for this proof so the accepted generation-2 B1:8 header remains separate.
 B1:9 must first be CLAIMed with the accepted Slice 3 `APSTORE` tool and must
 show `ACTIVE G=0001` before any object operation.
@@ -111,7 +114,8 @@ and `$0006/$1A40`, respectively. The CRC item is ASM source: paste it into
 ## Gate Sequence
 
 1. Capture the complete four-bank CRC table and run `APS`. Require B1:8
-   `ACTIVE G=0002`, B1:9 `HEADER-FF`, and the operator-approved B1:8-E range.
+   `ACTIVE G=0002`, B1:9 `HEADER-FF`, B1:A-D in the approved test-media
+   range, and B1:E `WORK`.
 2. Load `ap-store-v1-sector-tool-7000.s19`, run `G 7000`, load
    `ap-store-v1-claim-b1s9-1a00.s19`, and run `G 1A00`. Run PREPARE `$7003`,
    review the card, load `ap-store-v1-claim-confirm-1a20.s19`, run `G 1A20`,

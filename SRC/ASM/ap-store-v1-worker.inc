@@ -313,6 +313,8 @@ APSW_CLASS_ACTIVE           EQU             $04
 APSW_CLASS_RETIRED          EQU             $05
 APSW_CLASS_BAD              EQU             $06
 APSW_CLASS_RETIRED_BAD      EQU             $07
+APSW_CLASS_WORK             EQU             $08
+APSW_CLASS_TOP_BACKUP       EQU             $09
 
 APSW_FLAG_FULL_ERASED       EQU             $01
 APSW_FLAG_TAIL_ERASED       EQU             $02

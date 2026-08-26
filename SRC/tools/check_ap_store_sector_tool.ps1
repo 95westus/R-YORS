@@ -170,6 +170,9 @@ function Prepare([string]$Operation, [byte[]]$Media, [int]$Bank, [int]$Sector) {
     if ($Bank -lt 0 -or $Bank -gt 2 -or $Sector -lt 8 -or $Sector -gt 15) {
         return [pscustomobject]@{ Status = 'BAD_REQUEST'; Snapshot = $null }
     }
+    if ($Bank -eq 1 -and ($Sector -eq 14 -or $Sector -eq 15)) {
+        return [pscustomobject]@{ Status = 'BAD_REQUEST'; Snapshot = $null }
+    }
     $scan = Inspect-Sector $Media $Bank $Sector
     $generation = 1
     switch ($Operation) {
@@ -302,7 +305,9 @@ foreach ($required in @(
     'CMP             #APSW_CONFIRM_EXECUTE', 'STZ             APSW_CONFIRM',
     'APSW_FORCE_BANK3:', 'TRB             STR8_BANK_STATE_BYTE', 'TSB             STR8_BANK_STATE_BYTE',
     'XDEF            APSW_INVENTORY', 'APSW_INVENTORY_SCAN:', 'CMP             #$03',
-    'APSW_VALIDATE_SERVICES:', 'ASM_ABI_SVC_CHECKSUM', 'APSW_MSG_PREFIX:'
+    'APSW_VALIDATE_SERVICES:', 'ASM_ABI_SVC_CHECKSUM', 'APSW_MSG_PREFIX:',
+    'CMP             STR8_CONFIG_WORK_SECTOR',
+    'CMP             STR8_CONFIG_TOP_BACKUP_SECTOR'
 )) {
     if (-not $source.Contains($required)) { Fail "source contract missing $required" }
 }
@@ -366,9 +371,11 @@ if ($export.Length -ne (9 + $packedName.Length) -or $export[0] -ne 1 -or $export
 }
 
 # Policy matrix and exact committed headers across every eligible location.
+# B1:E is WORK and B1:F is the protected B3:F backup, leaving 22 AP locations.
 $cases = 0
 for ($bank = 0; $bank -le 2; $bank++) {
     for ($sector = 8; $sector -le 15; $sector++) {
+        if ($bank -eq 1 -and ($sector -eq 14 -or $sector -eq 15)) { continue }
         [byte[]]$blank = New-ErasedSector
         $claim = Prepare 'CLAIM' $blank $bank $sector
         if ($claim.Status -ne 'PREPARED' -or $claim.Snapshot.Generation -ne 1) { Fail 'erased CLAIM rejected' }
@@ -377,6 +384,12 @@ for ($bank = 0; $bank -le 2; $bank++) {
         if (-not (Equal-Bytes (Slice $claimed.Media 0 16) (New-Header $bank $sector 1))) { Fail 'CLAIM header bytes changed' }
         $cases++
     }
+}
+if ((Prepare 'CLAIM' (New-ErasedSector) 1 14).Status -ne 'BAD_REQUEST') {
+    Fail 'configured B1:E WORK sector accepted for AP mutation'
+}
+if ((Prepare 'CLAIM' (New-ErasedSector) 1 15).Status -ne 'BAD_REQUEST') {
+    Fail 'configured B1:F B3:F backup sector accepted for AP mutation'
 }
 
 [byte[]]$opaque = New-ErasedSector
@@ -475,12 +488,18 @@ $inventoryRows = @()
 for ($bank = 0; $bank -le 2; $bank++) {
     for ($sector = 8; $sector -le 15; $sector++) {
         [byte[]]$media = Slice $inventoryBanks[$bank] (($sector - 8) * 4096) 4096
-        $inventoryRows += [pscustomobject]@{
-            Bank = $bank; Sector = $sector; Scan = Inspect-Sector $media $bank $sector
+        $scan = Inspect-Sector $media $bank $sector
+        if ($bank -eq 1 -and $sector -eq 14) {
+            $scan = [pscustomobject]@{ Class='WORK'; FullErased=$scan.FullErased; TailErased=$scan.TailErased; Generation=$scan.Generation; Crc=$scan.Crc }
+        } elseif ($bank -eq 1 -and $sector -eq 15) {
+            $scan = [pscustomobject]@{ Class='TOP_BACKUP'; FullErased=$scan.FullErased; TailErased=$scan.TailErased; Generation=$scan.Generation; Crc=$scan.Crc }
         }
+        $inventoryRows += [pscustomobject]@{ Bank = $bank; Sector = $sector; Scan = $scan }
     }
 }
 if ($inventoryRows.Count -ne 24) { Fail 'inventory did not produce 24 rows' }
+if ($inventoryRows[14].Scan.Class -ne 'WORK') { Fail 'B1:E inventory is not WORK' }
+if ($inventoryRows[15].Scan.Class -ne 'TOP_BACKUP') { Fail 'B1:F inventory is not protected B3:F backup' }
 for ($i = 0; $i -lt $inventoryRows.Count; $i++) {
     $expectedBank = [Math]::Floor($i / 8)
     $expectedSector = 8 + ($i % 8)

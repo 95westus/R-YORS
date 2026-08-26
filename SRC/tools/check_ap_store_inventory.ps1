@@ -182,6 +182,8 @@ function Invoke-HeaderReader(
 
 function Invoke-Classifier([byte[]]$Image, [byte[]]$Header, [int]$Location) {
     [byte[]]$memory = $Image.Clone()
+    $memory[0xFFF0] = 0x1E
+    $memory[0xFFF1] = 0x1F
     $base = Map 'HIM_APS_HEADER_BASE'
     [Array]::Copy($Header, 0, $memory, $base, 16)
     $memory[(Map 'HIM_APS_LOCATION')] = [byte]$Location
@@ -303,6 +305,9 @@ $readerStart = Map 'HIM_APS_HEADER_READ_CODE'
 $readerEnd = Map 'HIM_APS_HEADER_READ_CODE_END'
 $readerSize = Map 'HIM_APS_HEADER_READ_CODE_SIZE'
 $readerRam = Map 'HIM_APS_HEADER_READ_RAM'
+foreach($name in @('MSG_APS_HEADER_FF','MSG_APS_OPAQUE','MSG_APS_CORRUPT','MSG_APS_STAGED','MSG_APS_ACTIVE','MSG_APS_RETIRED','MSG_APS_BAD','MSG_APS_RETIRED_BAD','MSG_APS_WORK','MSG_APS_TOP_BACKUP')) {
+    if(((Map $name) -shr 8) -ne ((Map 'MSG_APS_HEADER_FF') -shr 8)) { Fail "APS class text $name left the shared page" }
+}
 if ($readerSize -ne ($readerEnd - $readerStart) -or $readerSize -le 0 -or $readerSize -gt 0x80) {
     Fail ('reader extent/size invalid: ${0:X4}-${1:X4} size=${2:X}' -f $readerStart, $readerEnd, $readerSize)
 }
@@ -330,7 +335,7 @@ for ($bank = 0; $bank -lt 4; $bank++) {
     }
 }
 
-$expectedClasses = @(4,0,1,3,2,5,6,7, 0,4,1,2,3,5,6,7, 1,0,4,2,3,5,6,7)
+$expectedClasses = @(4,0,1,3,2,5,6,7, 0,4,1,2,3,5,8,9, 1,0,4,2,3,5,6,7)
 $case = 0
 for ($bank = 0; $bank -le 2; $bank++) {
     for ($sector = 8; $sector -le 15; $sector++) {
@@ -345,6 +350,8 @@ for ($bank = 0; $bank -le 2; $bank++) {
             5 { New-Header $location 0xFC ($case + 0x100) }
             6 { New-Header $location 0xFA ($case + 0x100) }
             7 { New-Header $location 0xF8 ($case + 0x100) }
+            8 { New-Header $location 0xFA ($case + 0x100) }
+            9 { New-Header $location 0xF8 ($case + 0x100) }
         }
         $offset = ($sector - 8) * 0x1000
         [Array]::Copy($header, 0, $banks[$bank], $offset, 16)
@@ -423,7 +430,7 @@ $residentBytes = (Map '_END_DATA') - (Map '_BEG_CODE')
 $margin = 0xF000 - (Map '_END_DATA')
 if ($margin -lt 0) { Fail 'HIMON crosses STR8 at $F000' }
 
-Write-Host (('AP Store inventory check OK candidates=24 banks=0-2 sectors=8-F ' +
+Write-Host (('AP Store inventory check OK candidates=24 banks=0-2 sectors=8-F B1:E=WORK B1:F=BKUP-B3F ' +
     'reader=${0:X4}-${1:X4} bytes={2} ram=${3:X4} HTO=20B staging=0 ' +
     'reader-max={4} classifier-max={5}') -f $readerStart, ($readerEnd - 1),
     $readerSize, $readerRam, $readerMaxSteps, $classifierMaxSteps)
