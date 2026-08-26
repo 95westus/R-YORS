@@ -25385,3 +25385,59 @@ BANKDUMP B0:8000 CRC16=5579
 The maintained card now spells the three semicolon bytes as `$3B`. Host body
 size `$0516`, FNV32 `$2CB2A3ED`, and correct package length `$0597` are
 unchanged. Corrected installation and the remaining board gates are open.
+
+## 2026-08-26 Corrected BANKDUMP Install and Header-Mode Acceptance
+
+The corrected card assembled without errors and produced the required
+`$0597` package. It installed at B2:9, appeared in the complete and filtered
+resident inventories, survived reset, and loaded by name through APMAN.
+
+Before the clean rebuild, `G 2000` was mistakenly entered at `SEAL>`. The raw
+ASM-F2 body has unresolved imports, so the assembler rejected that command and
+a later direct monitor execution produced invalid output. A warm boot followed
+by a fresh `ASM NEW` recovered normally. This is not an APC failure; raw body
+execution is outside the carrier flow.
+
+```text
+ASM>$2516: END
+ASM OK
+SEAL> PACKAGE BANKDUMP $3000
+PKG OK @=$3000 L=$0597
+SEAL> INSTALL 3000 B2
+INST B2 9000 L=0597
+SEAL> .
+ASM BYE
+
+> APS B2
+APS B2 8000 APC APMAN L=0B40 @7000
+APS B2 9000 APC BANKDUMP L=0597 @2000
+
+> RESET
+...
+HIMON V 00.0826(1510)
+> APS B2 BANKDUMP
+APS B2 9000 APC BANKDUMP L=0597 @2000
+> AP B2 BANKDUMP
+AP LOAD B2 9000 -> 2000
+GO 2000
+
+BANKDUMP READ-ONLY
+BANK 0-3> 2
+SECTOR 8-F> 8
+H=APC HEADER P=PAGE A=ALL Q=QUIT> H
+
+BANKDUMP B2:8000 CRC16=60CF
+APC V=02 PKG=0B40 BASE=7000 END=7B12 BODY=0B12 FNV=421C7515
+
+8000: 41 50 02 40 0B 53 0B 00 01 00 70 12 7B 12 0B 15 |AP.@.S....p.{...|
+8010: 75 1C 42 52 01 00 00 45 0D 00 01 81 00 00 20 86 |u.BR...E...... .|
+...
+80F0: B0 03 4C 4A 78 20 09 78 A0 00 B1 A0 F0 03 4C 4A |..LJx .x......LJ|
+
+BANKDUMP OK; B3 RESTORED
+```
+
+This accepts board-gate steps 1-5: corrected assembly, package, installation,
+reset persistence, named discovery/load, APMAN header decode, first-page dump,
+known CRC, and Bank-3 restoration. The B1:C page test and corrected-carrier
+all-pages safe-quit test remain open.

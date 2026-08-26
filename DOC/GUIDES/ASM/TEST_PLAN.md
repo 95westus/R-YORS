@@ -15565,7 +15565,8 @@ utility printed `BANKAUDIT OK; B3 RESTORED`, and the direct run returned
 
 ## 2026-08-26 BANKDUMP Banked APC Candidate
 
-Host status: accepted. Board status: partial; corrected carrier retry open.
+Host status: accepted. Board status: corrected carrier and `H` mode accepted;
+`P` and corrected-carrier `A/Q` checks remain open.
 
 `BANKDUMP` is a read-only fixed-`$2000` carrier utility. It prompts for Bank
 0-3 and sector 8-F, stages the complete sector at `$4000-$4FFF`, restores
@@ -15611,3 +15612,15 @@ body remains `$0516`, FNV32 remains `$2CB2A3ED`, and the correct package is
 still `$0597`. The generator no longer strips semicolons blindly, and the
 checker rejects quoted semicolons. Erase the invalid B2:9 copy, rebuild from
 `ASM NEW`, and repeat the board gate above.
+
+The corrected retry assembled without errors, packaged `$0597`, installed at
+B2:9, survived reset, and was found by both `APS B2` and
+`APS B2 BANKDUMP`. Named `AP B2 BANKDUMP` loaded it at `$2000`; `H` on B2:8
+reported CRC16 `$60CF`, decoded APMAN as `PKG=0B40 BASE=7000 END=7B12
+BODY=0B12 FNV=421C7515`, dumped the first page, and ended with
+`BANKDUMP OK; B3 RESTORED`. Board-gate steps 1-5 are accepted. Steps 6-7
+remain open.
+
+An earlier `G 2000` entered at `SEAL>` correctly failed: the raw body still
+contains unresolved imports and is not executable. This does not affect the
+subsequent clean package/install/reset/named-AP proof.

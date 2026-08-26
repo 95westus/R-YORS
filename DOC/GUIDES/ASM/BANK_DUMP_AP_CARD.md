@@ -1,7 +1,7 @@
 # BANKDUMP Banked APC Utility
 
-Status: host-built and structurally checked. The board proved the complete
-4K stage/CRC/dump path; corrected carrier acceptance is pending.
+Status: corrected `$0597` carrier and APMAN-header mode are board-proven.
+Separate page mode and corrected all-pages safe-quit checks remain open.
 
 `BANKDUMP` is the read-only physical-flash inspection APC. It selects one
 Bank 0-3 sector, copies all 4K to `$4000-$4FFF`, restores Bank 3, calculates
@@ -36,6 +36,10 @@ length `$0597`.
 without a destination override. Its HIMON console imports remain dynamically
 linked, but its internal calls and data pointers are generated from and
 checked against the host `$2000` map.
+
+Do not enter `G 2000` on the raw ASM-F2 body. Its imports are unresolved until
+`PACKAGE` and the named `AP` load link them. At `SEAL>`, use only the package,
+install, and exit commands shown below.
 
 ## Install on the current board
 
@@ -146,6 +150,10 @@ BANKDUMP OK; B3 RESTORED
 The 16 raw rows are the complete first 256 bytes; the card abbreviates only
 the middle rows. The decoded line and CRC are exact for the currently proven
 `$0B40` B2:8 APMAN image.
+
+This test passed on 2026-08-26 with the corrected `$0597` B2:9 carrier after a
+warm reset. Named discovery, load, execution, the exact decoded APMAN fields,
+CRC `$60CF`, completion text, and Bank-3 restoration all matched this card.
 
 ## Test 2: one page
 
