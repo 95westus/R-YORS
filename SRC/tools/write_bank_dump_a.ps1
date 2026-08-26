@@ -35,16 +35,19 @@ function Normalize-Code([string]$Line) {
     return $code.Trim()
 }
 
-$equ = [Collections.Generic.List[string]]::new()
+$constants = @{}
 $inEqu = $false
 foreach ($line in $lines) {
     if ($line -match '^STATUS\s+EQU\s+') { $inEqu = $true }
     if (-not $inEqu) { continue }
     $code = Normalize-Code $line
-    if ($code.Length -gt 0) { $equ.Add($code) }
+    if ($code -match '^([A-Z_][A-Z0-9_]*) EQU \$([0-9A-Fa-f]{2,4})$') {
+        $constants[$matches[1]] = [Convert]::ToInt32($matches[2],16)
+    }
     if ($line -match '^BUFFER_HI\s+EQU\s+') { break }
 }
-if ($equ.Count -eq 0 -or $equ[-1] -notmatch '^BUFFER_HI EQU ') {
+if (-not $constants.ContainsKey('STATUS') -or
+        -not $constants.ContainsKey('BUFFER_HI')) {
     throw 'BANKDUMP EQU block was not found'
 }
 
@@ -60,15 +63,14 @@ foreach ($line in $lines) {
         break
     }
     if (-not $inside) { continue }
+    $definedLabel = $null
+    if ($line -match '^\s*([A-Z_][A-Z0-9_]*):') {
+        $definedLabel = $matches[1]
+    }
     $code = Normalize-Code $line
     if ($code.Length -eq 0) { continue }
-    if ($code -match '^((?:[A-Z_][A-Z0-9_]*\s+)?)(JSR|JMP) ([A-Z_][A-Z0-9_]*)$') {
-        $prefix = $matches[1]
-        $op = $matches[2]
-        $target = $matches[3]
-        if (($imports -notcontains $target) -and $symbols.ContainsKey($target)) {
-            $code = '{0}{1} ${2:X4}' -f $prefix,$op,$symbols[$target]
-        }
+    if ($definedLabel) {
+        $code = $code.Substring($definedLabel.Length).TrimStart()
     }
     $code = [regex]::Replace($code, '#([<>])([A-Z_][A-Z0-9_]*)', {
         param($match)
@@ -79,11 +81,32 @@ foreach ($line in $lines) {
         else { $value = $value -band 0xFF }
         return ('#${0:X2}' -f $value)
     })
+    if (-not $code.StartsWith(';')) {
+        $code = [regex]::Replace($code, '(?<![A-Z0-9_])[A-Z_][A-Z0-9_]*(?![A-Z0-9_])', {
+            param($match)
+            $name = $match.Value
+            if ($constants.ContainsKey($name)) {
+                $value = $constants[$name]
+                if ($value -le 0xFF) { return ('${0:X2}' -f $value) }
+                return ('${0:X4}' -f $value)
+            }
+            if ($name -ne 'BANKDUMP' -and
+                    $imports -notcontains $name -and
+                    $symbols.ContainsKey($name)) {
+                return ('${0:X4}' -f $symbols[$name])
+            }
+            return $name
+        })
+    }
+    if ($definedLabel -eq 'BANKDUMP') {
+        $code = "BANKDUMP $code"
+    }
+    if ($code.Length -eq 0) { continue }
     if ($code.Length -gt 63) {
         throw "generated BANKDUMP line is $($code.Length) columns: $code"
     }
     $body.Add($code)
-    if ($code -eq 'BANKDUMP BRA RUN') { $body.Add('ENTRY BANKDUMP') }
+    if ($definedLabel -eq 'BANKDUMP') { $body.Add('ENTRY BANKDUMP') }
 }
 if ($inside -or $body.Count -eq 0 -or -not $body.Contains('ENTRY BANKDUMP')) {
     throw 'BANKDUMP shared body or ENTRY was not found'
@@ -113,8 +136,6 @@ $output = [Collections.Generic.List[string]]::new()
     'IMPORT BIO_FTDI_WRITE_BYTE_BLOCK',
     ''
 ) | ForEach-Object { $output.Add($_) }
-$equ | ForEach-Object { $output.Add($_) }
-$output.Add('')
 $output.Add('; BEGIN SHARED BANKDUMP BODY')
 $body | ForEach-Object { $output.Add($_) }
 $output.Add('; END SHARED BANKDUMP BODY')

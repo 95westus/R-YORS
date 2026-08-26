@@ -1,7 +1,8 @@
 # BANKDUMP Banked APC Utility
 
 Status: the `$0597` dump-only baseline is accepted on board. The `$09AD`
-read-only bank-map extension is host-accepted and awaits board proof.
+read-only bank-map extension is host-accepted; its symbol-lean onboard source
+awaits a clean board retry.
 
 `BANKDUMP` is the read-only physical-flash inspection APC. It selects one
 Bank 0-3 sector, copies all 4K to `$4000-$4FFF`, restores Bank 3, calculates
@@ -44,9 +45,29 @@ without a destination override. Its HIMON console imports remain dynamically
 linked, but its internal calls and data pointers are generated from and
 checked against the host `$2000` map.
 
+The onboard card deliberately retains only four symbols: `BANKDUMP` and its
+three imports. Constants, internal calls, data addresses, and branch targets
+are fixed from the checked host map. This stays below ASM-F2's global symbol
+budget while the readable host `.asm` retains all routine names.
+
 Do not enter `G 2000` on the raw ASM-F2 body. Its imports are unresolved until
 `PACKAGE` and the named `AP` load link them. At `SEAL>`, use only the package,
 install, and exit commands shown below.
+
+### Retry after `ERR=$08 BS`
+
+The first map-extension card exceeded ASM-F2's global symbol budget beginning
+at `AP_RECORD`. It ended with `ERR=$09 BAD FIX`; no `PACKAGE` or `INSTALL`
+command ran. If that is the immediately preceding board state, flash is
+unchanged and B2:9 remains erased. Enter:
+
+```text
+RESET
+ASM NEW
+```
+
+Then send the current complete `.a` and continue at `PACKAGE` below. Do not
+repeat the erase step.
 
 ## Install on the current board
 

@@ -199,6 +199,10 @@ prompt. It mirrors Bank Maintenance's full-sector erased check, complete
 AP-v2/body-FNV scan, and `E/U/A/W/B/P` roles without importing a mutation
 path. Host body `$092C`, FNV32 `$CEF1F837`, and package `$09AD` pass; replacing
 the accepted `$0597` B2:9 carrier and proving one named map run remain open.
+The first map-card paste exceeded ASM-F2's global symbol budget before
+packaging. The corrected generated `.a` retains only the entry/export and
+three imports, with host-verified fixed branches/constants; a clean retry is
+pending.
 
 ### Near term: Bank 1 application work sector
 

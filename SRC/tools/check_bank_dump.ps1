@@ -76,9 +76,17 @@ foreach ($required in @(
     'IMPORT BIO_FTDI_PUT_CSTR',
     'IMPORT SYS_READ_CSTRING_ECHO_UPPER',
     'IMPORT BIO_FTDI_WRITE_BYTE_BLOCK',
-    'BANK_SELECT EQU $F010',
-    'BANK_SELECT_RAM EQU $0203')) {
+    'JSR $F010',
+    'JSR $0203')) {
     if (-not $aText.Contains($required)) { throw ".a is missing required contract: $required" }
+}
+if ($aText.Contains(' EQU ')) {
+    throw '.a must inline constants to stay below the ASM-F2 symbol budget'
+}
+$symbolicBranches = [regex]::Matches($aText,
+    '(?m)^(?:BCC|BCS|BEQ|BMI|BNE|BPL|BRA|BVC|BVS)\s+([A-Z_][A-Z0-9_]*)\s*$')
+if ($symbolicBranches.Count -ne 0) {
+    throw '.a must use fixed host-verified branch targets'
 }
 foreach ($forbidden in @('$F003','FLASH_WRITE','FLASH_ERASE','PROGRAM_BYTE')) {
     if ($aText.Contains($forbidden)) { throw ".a reaches or names forbidden mutation surface: $forbidden" }
@@ -91,11 +99,13 @@ if (([regex]::Matches($aText, '(?m)^DB .*\$3B')).Count -ne 4) {
 }
 foreach ($required in @(
     "CMP #'M'",
-    'MAP_RUN',
-    'MAP_ERASED',
-    'AP_SCAN',
-    'FNV_UPDATE',
-    'MSG_MAP_LEGEND')) {
+    'LDA $FFF0',
+    'LDA $FFF1',
+    'CMP #$FF',
+    'CMP #$50',
+    'DB $C5,$9D,$1C,$81',
+    "DB 'A','=','A','P',' ','V','A','L','I','D'",
+    "DB 'M','A','P',' ','O','K',`$3B")) {
     if (-not $aText.Contains($required)) { throw ".a is missing map contract: $required" }
 }
 
@@ -162,6 +172,7 @@ if ($packageLength -ne 0x09AD) {
 }
 
 Write-Host 'BANKDUMP host map/onboard fixed operands: identical and current'
+Write-Host 'BANKDUMP onboard symbols: BANKDUMP plus 3 imports; branches/constants fixed'
 Write-Host ('BANKDUMP S19: $2000-${0:X4}, {1} bytes, FNV32=${2:X8}' -f $last,$image.Length,[uint32]$fnv)
 Write-Host ('BANKDUMP onboard AP v2: {0} import relocations, package length=${1:X4}' -f $relocRows,$packageLength)
 Write-Host 'BANKDUMP policy: map/stage/restore/decode/dump/CRC; no mutation doorway'

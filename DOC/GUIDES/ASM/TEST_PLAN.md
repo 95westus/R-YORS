@@ -15662,3 +15662,13 @@ Board gate:
 
 The already accepted `H`, `P`, and `A/Q` behavior is unchanged; a focused map
 run is sufficient for this extension.
+
+The first extension paste reached ASM-F2's global symbol limit at
+`AP_RECORD`, reported repeated `ERR=$08 BS`, and ended with
+`ERR=$09 BAD FIX PC=$252A`. No package or install command ran, so this is a
+source rejection rather than a flash or runtime failure. The generated `.a`
+now keeps only `BANKDUMP` plus the three imported symbols. Every internal
+branch, call, constant, and data address is fixed from the checked host map;
+the host `.asm`, emitted `$092C` bytes, FNV `$CEF1F837`, and predicted `$09AD`
+package are unchanged. Board status remains pending a clean assembly/install
+and the named `M` gate.

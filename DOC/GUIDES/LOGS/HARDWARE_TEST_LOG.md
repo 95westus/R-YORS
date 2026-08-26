@@ -25489,3 +25489,27 @@ BANKDUMP QUIT; NO FLASH WRITE
 
 Together with the corrected install/header proof, this accepts all BANKDUMP
 board gates and closes the read-only inspection carrier candidate.
+
+## 2026-08-26 BANKDUMP Map Extension Symbol-Budget Rejection
+
+The first `$09AD` map-extension card exceeded ASM-F2's global symbol budget.
+Assembly was clean through the start of `AP_RECORD` at `$2444`, then new label
+definitions reported `ERR=$08 BS`. Pending references accumulated and all
+later rows reported `ERR=$09 BAD FIX`, stopping at `$252A`. No `PACKAGE` or
+`INSTALL` command ran, so flash was not modified by this failed assembly.
+
+```text
+ASM>$2444: AP_RECORD JSR $2317
+ERR=$08 BS PC=$2444
+...
+ASM>$252A: END
+ERR=$09 BAD FIX PC=$252A
+#56AD7400# EXEC ERR=$09
+```
+
+The host code and package measurements were not at fault. The generator now
+removes all onboard-only internal labels and EQU symbols, replaces every
+branch/call/data/constant reference with its checked host-map value, and keeps
+only `BANKDUMP` plus the three imports. Emitted body `$092C`, FNV32
+`$CEF1F837`, and package `$09AD` remain unchanged. A clean board retry of the
+symbol-lean card is pending.
