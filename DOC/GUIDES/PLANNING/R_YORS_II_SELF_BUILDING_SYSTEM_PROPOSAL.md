@@ -1,10 +1,17 @@
 # R-YORS II Self-Building System Proposal
 
-Status: formal architecture and shortest-path proposal recorded 2026-08-27.
-It is not yet an accepted implementation plan, frozen ABI, language standard,
-wire protocol, flash format, or release-name commitment. It gathers the
-R-YORS, STR8-N, HIMON, ASM-F2, AP, FNV, `#ISH`, host-terminal, and later RPG II
-directions into one system proposal for review.
+Status: formal architecture and shortest-path proposal recorded 2026-08-27;
+the owner accepts its recommendations in principle. This does not yet freeze
+an ABI, bytecode, language standard, wire protocol, flash format, or release
+name. It gathers the R-YORS, STR8-N, HIMON, ASM-F2, AP, FNV, `#ISH`, RYVM,
+host-terminal, remote-I/O, compiler, and later RPG II directions into one
+system proposal for controlled evolution.
+
+The immediate next project is the stock WDCMONv2-to-R-YORS migration. That
+work is Phase 0A and has its own source, package, test card, and hardware proof
+rail in the STR8-N repository. The compiler, bytecode, virtual-machine, RPG,
+and second-board I/O sections below are agreed direction, not prerequisites or
+authorization to widen that migration project.
 
 For the compact board-facing form, see
 [R-YORS II In 63'ese](R_YORS_II_63ESE_SUMMARY.md).
@@ -134,8 +141,11 @@ The proposed machine grows in layers:
 | #ISH source/control plane                                                |
 | visible registers, calls, conditions, memory inspection, build commands  |
 +--------------------------------------------------------------------------+
+| RYVM / compiler plane                                                    |
+| scoped tokens, verified bytecode, immediate execution, native lowering   |
++--------------------------------------------------------------------------+
 | ASM-F2 build plane                                                       |
-| parse, emit, symbols, fixups, seal, package, load, install                |
+| callable emit, symbols, fixups, seal, package, load, install              |
 +--------------------------------------------------------------------------+
 | routine/object plane                                                     |
 | #MAKE-selected PIN/BIO/COR/SYS/APP families, FNV32 and AP v2 objects     |
@@ -235,11 +245,12 @@ values are meaningful; the monitor shows enough state to prove the contract.
 
 ## `#ISH` In R-YORS II
 
-The existing `#ISH` idea remains the right language level: above raw assembly,
-below a virtual machine or general high-level runtime. R-YORS II changes its
-first implementation direction. The host-translator-first experiment is no
-longer the preferred system path. The host supplies text; the board owns the
-translation.
+The existing `#ISH` idea remains the right visible language level above raw
+assembly. Its implementation may target normal W65C02 code directly or compile
+to the small RYVM bytecode described below. R-YORS II changes its first
+implementation direction: the host-translator-first experiment is no longer
+the preferred system path. The host supplies text; the board owns tokenizing,
+scope resolution, bytecode/native generation, and execution.
 
 `#ISH` should be a thin, inspectable frontend to ASM-F2, not an unrelated
 compiler stack. Prefer direct calls into shared expression, symbol, fixup, and
@@ -295,19 +306,21 @@ INSPECT start [end]
 Memory writes and inspection must remain explicit. A friendly assignment must
 not silently choose zero page, allocate storage, or change an address width.
 
-### Compiled and immediate forms
+### Immediate, bytecode, and native forms
 
-`#ISH` may provide both without becoming an interpreter VM:
+`#ISH` may expose one language through three execution choices:
 
 ```text
 immediate control   INSPECT, GET, BUILD, TEST, SHOW, DROP
-compiled source     register loads, calls, branches, stores, returns
+bytecode             compile a line/block, verify it, execute it now
+native source        emit register loads, calls, branches, stores, returns
 ```
 
-The immediate words call HIMON/ASM services. The compiled words emit normal
-W65C02 instructions and ordinary fixups. This makes the monitor feel like a
-language environment without adding bytecode, a hidden data stack, garbage
-collection, exceptions, or a second calling convention.
+The immediate words call HIMON/ASM services. Bytecode provides a compact,
+movable compiling-interpreter path. Native words emit normal W65C02
+instructions and ordinary fixups. RYVM is explicit and versioned; it must not
+smuggle in an unbounded heap, scheduler, garbage collector, exceptions, or an
+undocumented second calling convention.
 
 ### One pass or two
 
@@ -328,6 +341,163 @@ A later large build may use two logical passes. Because the host is a file
 device, the board can request the same source again for pass 2. The source does
 not have to be cached onboard merely to satisfy a textbook definition of
 self-hosting.
+
+## Hash Once, Resolve By Scope
+
+HIMON, ASM-F2, `#ISH`, and later language processors should share one bounded
+identifier service:
+
+```text
+INPUT TEXT
+  -> NORMALIZE
+  -> LENGTH + FNV32
+  -> SEARCH EXPLICIT SCOPE
+  -> EXACT TEXT/COLLISION CHECK
+  -> ASSIGN SESSION TOKEN/INDEX
+```
+
+FNV32 remains the durable public identity. A short token is a checked,
+session-local acceleration, never a replacement identity. Automatic execution
+still requires one unique fully validated full-hash/text/ABI match.
+
+The initial scope order should be explicit and inspectable:
+
+```text
+1  #ISH LOCALS, LABELS, AND VARIABLES
+2  CURRENT ROUTINE-FAMILY EXPORTS
+3  EXPLICITLY IMPORTED PIN/BIO/COR/SYS FAMILIES
+4  ASM-F2 VOCABULARY, ONLY WHEN ASM-F2 IS IN COMPILE SCOPE
+5  HIMON COMMANDS/SERVICES, ONLY WHEN HIMON IS IN SCOPE
+6  REQUESTED RAM/AP/FLASH PROVIDERS ALLOWED BY BANK POLICY
+```
+
+Removing `HIMON` or `ASM-F2` from scope must reveal the dependency rather than
+silently searching farther. Compile scope and runtime dependency are also
+different: a compiler may use HIMON or ASM-F2 while building a program whose
+sealed result imports neither.
+
+## ASM-F2 As A Callable Emitter
+
+Keep the interactive line assembler, but expose a small versioned emitter
+family so `#ISH`, a C-like compiler, RPG, and third-party front ends can use
+ASM-F2 without printing assembly text and reparsing it:
+
+```text
+ASM_COMPILE_LINE       compatibility/bootstrap entry: pointer + length
+ASM_EMIT_BYTE
+ASM_EMIT_WORD
+ASM_EMIT_OPCODE
+ASM_EMIT_BRANCH
+ASM_DEFINE_LABEL
+ASM_REFERENCE_SYMBOL
+ASM_ADD_FIXUP
+ASM_EMIT_CALL_IMPORT
+ASM_FINALIZE
+```
+
+The exact names and register contracts remain open. The architectural split is
+accepted:
+
+```text
+SOURCE FRONT END -> TOKENS/IR -> CALLABLE ASM EMITTER -> W65C02 BYTES/FIXUPS
+```
+
+`ASM_COMPILE_LINE` is the easiest public bootstrap for another compiler: feed
+it one bounded line and receive status, source position, emitted extent, and
+the normal A/X/Y/result facts. Mature compilers should use structured emitter
+calls so they do not depend on assembly-text formatting.
+
+ASM-F2 may be required during construction without being linked into the
+constructed program. All emitter calls must respect the session's declared
+output range, symbol/fixup limits, and atomic finalize/reject rules.
+
+## RYVM: Bytecode And A Compiling Interpreter
+
+RYVM is the recommended middle representation, not a replacement CPU:
+
+```text
+SOURCE
+  -> HASH/TOKENIZE/SCOPE
+  -> COMPILE TO VERIFIED RYVM BYTECODE
+  -> INTERPRET NOW
+  -> OPTIONALLY LOWER THROUGH ASM-F2 TO NATIVE W65C02
+```
+
+This makes `#ISH` a compiling interpreter: source is parsed once into compact
+bytecode, then execution no longer re-hashes or re-parses the source. A session
+may run temporary bytecode, retain a named RAM object, package bytecode in an
+AP-v2 envelope with an explicit runtime/ABI kind, or compile it to native code.
+
+The first VM should mirror useful R-YORS contracts rather than emulate a large
+abstract machine:
+
+```text
+VA/VX/VY          virtual 8-bit result/argument registers
+VW0-VW3           small set of 16-bit working registers
+VCC               explicit condition state
+VPC               bounded bytecode program counter
+VSP               bounded bytecode call/data stack
+IMPORT[]          pre-resolved native, bytecode, remote, or trap services
+```
+
+Initial bytecode families are loads/stores, literals, compare, bounded
+branches, local/import calls, return, a small stack surface, and explicit
+trap/debug. String, decimal, record, device, and larger arithmetic operations
+should normally call routine families rather than inflate the VM.
+
+For example:
+
+```text
+SYS_GET_CSTRING
+IFT C SYS_PUT_CSTRING
+```
+
+can become bytecode equivalent to:
+
+```text
+CALL import(SYS_GET_CSTRING)
+BRANCH C_CLEAR, skip
+CALL import(SYS_PUT_CSTRING)
+skip: RETURN
+```
+
+and native W65C02 equivalent to:
+
+```asm
+        JSR SYS_GET_CSTRING     ; import relocation if movable
+        BCC ?SKIP
+        JSR SYS_PUT_CSTRING     ; import relocation if movable
+?SKIP:  RTS
+```
+
+`IFT C` is runtime condition flow. A separate form such as `#IF HAS HIMON` is
+compile-time configuration. The VM stores condition results in `VCC`; a native
+compiler may use live W65C02 flags only when intervening code cannot invalidate
+them.
+
+Before interpretation or native lowering, validation must reject invalid
+opcodes, truncated operands, out-of-range branches, stack overflow/underflow,
+undeclared memory, unresolved imports, incompatible ABI, and bad body
+integrity. Inner-loop calls use already-resolved small import indexes; full
+FNV32 and exact text remain in module/import metadata for loading and proof.
+
+## Multiple Front Ends, One Backend
+
+The same backend can accept more than `#ISH`:
+
+```text
+#ISH -------------------+
+C-LIKE / THIRD PARTY ---+-> TOKEN/IR OR RYVM -> ASM-F2 EMITTER -> W65C02
+FIXED-COLUMN RPG II ----+
+FREE-FORM RPG ----------+
+```
+
+Fixed-column and free-form RPG should be alternate source readers over one RPG
+semantic core. Hashes identify fields, record formats, operations, files,
+indicators, routines, and service imports; original spelling, length, and
+source coordinates remain available for collision checking and diagnostics.
+RPG record, packed-decimal, formatting, and device work should lower mainly to
+compact runtime-family calls.
 
 ## `#MAKE` / SYSGEN Chooses The System
 
@@ -794,6 +964,38 @@ SYS    stable file, record, console, or memory service
 A larger memory device should enlarge builds, not change the meaning of a
 small #ISH program.
 
+### A second SXB/816 as an I/O processor
+
+Another W65C02SXB, or later a W65C816 board, may become a dedicated I/O and
+storage controller rather than another boot-bank guest. The main board should
+see remote capabilities through ordinary BIO/SYS contracts:
+
+```text
+MAIN R-YORS BOARD
+  -> REQUEST/SEQUENCE/SERVICE/PAYLOAD/CRC
+  -> SERIAL, SPI, PARALLEL, OR OTHER DECLARED LINK
+  -> I/O SXB/816
+       SD / SPI SRAM / TERMINAL / PRINTER / NETWORK / SENSOR / SPOOL
+  <- STATUS/SEQUENCE/PAYLOAD/CRC
+```
+
+The controller advertises versioned capabilities such as `BIO.CONSOLE`,
+`BIO.FILE`, `BIO.BLOCK`, `BIO.SPOOL`, or `BIO.SENSOR`. Full FNV32 may discover
+and bind a service; the established session should use a checked short service
+index and must not hash the name for every packet. The wire header needs a
+version, sequence, operation, length, integrity check, timeout, retry rule, and
+duplicate-request policy before it carries destructive storage operations.
+
+A W65C02 controller maximizes shared PIN/BIO code and is sufficient for basic
+terminal, SPI, SD, buffering, and spooling. A W65C816 becomes attractive for
+large buffers, filesystems, networking, compiler service, or virtual-machine
+memory. The exact physical link remains a board-profile decision.
+
+The second controller is optional. STR8-N recovery and at least one local
+console path must survive its absence, reset, protocol mismatch, or partial
+reply. Remote I/O extends the machine; it must not become an undisclosed boot
+dependency.
+
 ## Onboard Boot-Image Construction
 
 Boot-image construction follows routine development; it is not the first
@@ -1118,8 +1320,8 @@ bank.
 
 ## Path Toward A Small IBM-Like System
 
-R-YORS II is not proposed as a System/34 or System/360 emulator. The useful
-lineage is architectural behavior:
+R-YORS II does not require System/34 or System/360 binary emulation. Its first
+useful lineage is architectural behavior:
 
 ```text
 operator console
@@ -1154,6 +1356,38 @@ operator diagnostics and listings
 That is the important direction: RPG is not grafted onto a monitor. The
 monitor, catalogs, routine ABI, record I/O, build services, and load-module
 lifecycle mature until an RPG compiler has a native machine to inhabit.
+
+### Virtual 65C02 and System/360 are optional guests
+
+RYVM is the portable system bytecode and should remain smaller than either
+hardware architecture. Separate optional VMs may later serve compatibility,
+education, debugging, or historical execution.
+
+A virtual 65C02 can provide controlled guest memory, virtualized I/O, tracing,
+single-step, illegal-write traps, and pre-boot testing of a candidate image.
+It is not the ordinary execution path: native W65C02 code should run on the
+real processor when isolation or instrumentation is not required.
+
+A literal System/360 subset is a much larger AP/overlay project. Even a useful
+subset needs sixteen 32-bit registers, a PSW and condition code, big-endian
+operands, 24-bit guest addressing, character/binary/packed-decimal behavior,
+EBCDIC, interruptions, and a channel/device model. SPI SRAM, a W65C816, or a
+second board acting as channel/memory processor may make that practical, but
+none is required to compile RPG.
+
+The intended separation is:
+
+```text
+RPG II / FREE-FORM RPG -> RYVM OR NATIVE W65C02     useful first system
+VIRTUAL 65C02          -> OPTIONAL DEBUG/GUEST AP   later
+SYSTEM/360 VM          -> OPTIONAL COMPATIBILITY AP later
+```
+
+RYVM condition state should name logical results such as success, equal, less,
+greater, zero, carry, overflow, and end-of-record. A W65C02 backend may map
+them to processor flags where safe; a System/360 backend may map comparisons
+to its two-bit condition code. They are contracts, not assumed bit-for-bit
+equivalence.
 
 ## A Living, Growing, And Aging Machine
 
@@ -1195,33 +1429,41 @@ merely because its design is interesting.
 Exit: everyone can say which side parses, assembles, links, installs, and
 executes.
 
-### Phase 0A: optional stock-board STR8-N ramp
+### Phase 0A: immediate next project, stock WDCMONv2 to R-YORS
 
 - Publish `wdcmonv2ryors.asm`, or the more precise `wdcmonv2str8n.asm`, as a
   WDCMONv2-loadable RAM application.
 - Inventory first, then copy and verify the stock Bank-3 WDCMONv2/SPI image in
   Bank 0.
 - Install standalone STR8-N as the Bank-3 reset/recovery supervisor.
+- Install and verify the selected R-YORS Bank-3 payload only after STR8-N is
+  independently bootable.
 - Prove `J0` returns to the preserved stock system.
+- Prove `C` enters the installed R-YORS payload and returns the expected HIMON
+  identity/evidence.
 - Prove one independent Bank-1 guest handoff without HIMON or AP involvement.
   If no external guest is available, ship a reference `MINCON`-class image with
   valid vectors, console, and visible interrupt status; its recipe can become
   the later onboard `#MAKE GUEST` proof.
 
-Exit: a stock SXB/EDU board has preserved factory firmware and payload-agnostic
-STR8-N multiboot/recovery without adopting R-YORS II.
+Exit: a stock SXB/EDU board has preserved factory firmware, standalone STR8-N
+multiboot/recovery, and a separately verified R-YORS payload. Standalone
+STR8-N remains a valid stopping point.
 
 ### Phase 1: PIN in RAM
 
-- Add the smallest onboard `#ISH` surface that reuses ASM-F2 emission.
+- Add the shared normalized-text/FNV32/exact-match service and an explicit
+  compile scope.
+- Add the smallest onboard `#ISH` surface. Compile one bounded control fragment
+  to verified RYVM bytecode and execute it from RAM.
 - Request or paste one PIN-family source file through the C terminal.
-- Build it in a bounded RAM region.
+- Let ASM-F2 build the native PIN family in a bounded RAM region.
 - Resolve three named exports.
-- Call each from HIMON and display return context.
+- Call each through bytecode/native imports and display HIMON return context.
 - Inspect code and work bytes.
 
-Exit: source retained by the host becomes tested executable code without a
-host compiler or linker.
+Exit: source retained by the host becomes verified bytecode plus tested native
+PIN code without a host compiler or linker.
 
 ### Phase 2: routine family and ABI
 
@@ -1230,6 +1472,9 @@ host compiler or linker.
 - Add a correctly bounded `SYS_GET_CSTRING`-class service.
 - Record tests and clobber/resource contracts.
 - Reject duplicate identities and incompatible ABI versions.
+- Publish the minimum callable ASM-F2 emitter surface.
+- Lower one accepted `IFT C` fragment to native W65C02 branch/call code and
+  prove that result runs without RYVM, `#ISH`, or ASM-F2 resident.
 
 Exit: #ISH composes routines made from routines across at least two layers.
 
@@ -1247,7 +1492,8 @@ remains only the terminal and durable file device.
 
 ### Phase 3: durable movable program
 
-- Package one accepted family with existing AP v2.
+- Package one accepted native family and one small RYVM body with existing AP
+  v2 plus explicit body/runtime kinds.
 - Store, cold-load, relocate, and run it.
 - Add optional Debug as a RAM/AP capability only if the existing monitor proof
   surface is no longer adequate.
@@ -1273,6 +1519,8 @@ terminal/file bytes.
 - Add job/control statements only where they reduce operator effort.
 - Add SPI RAM, VIA/PIA SPI, or other devices through capability-based PIN/BIO/
   SYS layers.
+- Prototype a second-SXB/816 I/O controller only after the local service and
+  recovery contracts are proven; keep remote I/O optional.
 - Add the first guided guest recipe and bounded hardware qualification cards;
   prefer reusable interrupt, PIA, VIA, console, and SPI components over a
   discipline-specific monolith.
@@ -1282,9 +1530,10 @@ Exit: the system can support a nontrivial onboard language processor.
 
 ### Phase 6: RPG II
 
-- Implement RPG II from original lineage and behavior.
+- Implement fixed-column RPG II from original lineage and behavior; permit a
+  free-form reader over the same semantic core.
 - Use the established record, routine, build, object, and file-device services.
-- Emit normal board-owned modules or image components.
+- Emit RYVM and/or normal board-owned native modules or image components.
 
 Exit: an RPG program is compiled, installed, and run by the board, with the
 host serving only source/data files and terminal I/O.
@@ -1306,39 +1555,53 @@ automatic flash garbage collection
 fully packed relocatable boot ROM
 RPG syntax or compiler implementation
 W65C816 port
+optimizing native compiler
+virtual W65C02 guest machine
+System/360 instruction-set VM
+second-board I/O-controller protocol and hardware
 ```
 
-If one of these is proposed before the PIN-to-BIO vertical slice works, it must
-show that it shortens that slice rather than merely belonging to the eventual
-machine.
+None of these may enter Phase 0A merely because the direction is accepted. If
+one is proposed before the PIN-to-BIO vertical slice works, it must show that
+it shortens that slice rather than merely belonging to the eventual machine.
 
-## Acceptance Questions
+## In-Principle Calls And Remaining Questions
 
-Before promoting this proposal to a settled direction, decide:
+The following direction is accepted in principle:
 
-1. Is **R-YORS II** the desired architecture/release name, with the current
-   system retained as its bootstrap and proof base?
-2. Is the practical self-hosting boundary accepted as "host stores/transports;
-   board transforms/builds/installs/runs"?
-3. Should the first #ISH implementation be onboard and share ASM-F2 internals,
-   superseding the earlier host-translator-first recommendation?
-4. Is the first vertical slice the three-routine PIN family built and tested in
-   RAM?
-5. May B1:E WORK, SPI RAM, a new module format, and the image compositor remain
-   off the critical path until the RAM routine loop is proven?
-6. Is the long system direction an IBM midrange/mainframe-like operator,
-   library, load-module, job, record, and RPG environment rather than literal
-   hardware emulation?
-7. Should `#MAKE`/SYSGEN select a minimal dependency closure rather than make
-   `PIN -> BIO -> COR -> SYS -> APP` mandatory?
-8. Should the WDCMONv2-to-standalone-STR8-N converter be treated as its own
-   publishable product and stopping point before R-YORS II installation?
-9. Is FSEDIT accepted as the intended onboard editor, beginning with one
-   host-backed RAM-resident file and growing into explicit data windows,
-   AP overlays, SPI SRAM, and SPI SD backends?
-10. Should onboarding promise a guided path to create a minimal qualified guest
-    when the operator has no Bank-0/1/2 image, with time-to-use and reusable
-    hardware profiles as explicit design measures?
+1. R-YORS II evolves from the current proof base rather than starting over.
+2. The host stores and transports; the board parses, builds, links, installs,
+   and runs.
+3. Full FNV32 plus exact collision checking supplies durable identity; scoped,
+   checked short tokens may accelerate a session.
+4. HIMON, ASM-F2, `#ISH`, and later compilers see only explicitly selected
+   namespaces and providers.
+5. ASM-F2 grows a callable line/emitter backend that other front ends can use.
+6. RYVM bytecode provides a compact compiling-interpreter path; accepted code
+   may later lower to native W65C02 through the same emitter.
+7. Runtime `IFT` conditions compile to bytecode branches or ordinary W65C02
+   branches and calls. Compile-time capability selection is a separate form.
+8. Fixed-column RPG II and possible free-form RPG share one semantic/runtime
+   backend rather than becoming unrelated compilers.
+9. A second W65C02SXB or W65C816 may provide optional remote I/O services, but
+   local recovery never depends on it.
+10. Virtual W65C02 and System/360 machines are optional later guests. RPG and
+    the IBM-like system character do not wait for binary hardware emulation.
 
-If accepted, the next planning artifact should be one short Phase-1 test card,
-not another broad subsystem design.
+The following remain deliberately open until their implementation phase:
+
+```text
+exact RYVM opcode/state/stack/condition ABI
+bytecode AP-v2 body-kind spelling and validator contract
+width and lifetime of checked session token indexes
+public ASM-F2 emitter names, registers, and error/result card
+whether native lowering is direct, bytecode driven, or both for each frontend
+second-board physical link, packet ABI, retry, and destructive-I/O policy
+virtual W65C02 memory/I/O boundary
+scope and memory provider of any System/360 subset
+fixed/free-form RPG source grammar beyond their shared semantic core
+```
+
+The next implementation and evidence artifact is not a Phase-1 language card.
+It is the existing Phase-0A WDCMONv2-to-R-YORS migration board card and accepted
+hardware transcript. Language/VM work resumes afterward in a separate task.

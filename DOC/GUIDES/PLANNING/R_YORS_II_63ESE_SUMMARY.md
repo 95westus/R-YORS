@@ -1,9 +1,14 @@
 # R-YORS II In 63'ese
 
-Status: concise technical summary recorded 2026-08-27. This summarizes the
-formal
+Status: concise technical summary recorded 2026-08-27 and accepted in
+principle. This summarizes the formal
 [R-YORS II self-building proposal](R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md);
 it does not independently freeze an ABI, command, format, or release.
+
+```text
+IMMEDIATE NEXT PROJECT = STOCK WDCMONV2 -> STR8-N -> R-YORS
+BYTECODE / COMPILERS / VMS / REMOTE I/O = AGREED LATER DIRECTION
+```
 
 ## $00 - The Call
 
@@ -274,7 +279,8 @@ Displayed registers are evidence. Only declared results are ABI.
 
 ## $06 - `#ISH`
 
-`#ISH` is a visible-machine language above ASM and below a VM:
+`#ISH` is a visible-machine language above ASM. It may emit RYVM bytecode for
+immediate verified execution or lower to native W65C02:
 
 ```text
 A = $41
@@ -287,13 +293,15 @@ INSPECT $0200 $023F
 RETURN
 ```
 
-No hidden heap, scheduler, exception runtime, or second CPU model.
+No hidden heap, scheduler, exception runtime, or accidental CPU model.
 
 Prefer:
 
 ```text
-#ISH PARSER
-  -> ASM EXPRESSION/SYMBOL/FIXUP/EMIT SERVICES
+TEXT -> NORMALIZE + FULL FNV32
+     -> EXPLICIT SCOPE + EXACT COLLISION CHECK
+     -> CHECKED SESSION TOKEN
+     -> RYVM BYTECODE OR CALLABLE ASM-F2 EMITTER
 ```
 
 Avoid:
@@ -305,6 +313,17 @@ Avoid:
 Assembly may ingest source once and leave forward fixups. A later large build
 may ask the host to resend source for logical pass 2. Host storage does not make
 the host the compiler.
+
+```text
+SYS_GET_CSTRING
+IFT C SYS_PUT_CSTRING
+
+BYTECODE: CALL GET; BRANCH C_CLEAR SKIP; CALL PUT
+NATIVE:   JSR GET; BCC SKIP; JSR PUT
+```
+
+HIMON and ASM-F2 enter scope only when requested. A compiler may use them while
+building without leaving them as runtime dependencies.
 
 ## $07 - FSEDIT
 
@@ -385,6 +404,7 @@ Do not make one envelope do every job:
 ```text
 RAM TRIAL    FAST BUILD/TEST, SESSION OWNED
 FNV32 HREC   NAME -> VALIDATED RESIDENT ENTRY
+RYVM         VERIFIED MOVABLE BYTECODE + IMPORT INDEXES
 AP V2        MOVABLE BODY + IMPORT/EXPORT + RELOCATION
 IMAGE        SELECTED FIXED BOOTABLE 32K COMPOSITION
 WORK         DISCARDABLE BUILD JOURNAL/SPILL
@@ -443,6 +463,16 @@ RPG WORK RECORDS
 
 SPI memory is explicit external memory through `PIN/BIO/MEM`; it is not
 pretended to be directly addressed W65C02 RAM.
+
+A second SXB/816 may be an optional I/O processor:
+
+```text
+MAIN SYS/BIO -> VERSION/SEQ/SERVICE/LEN/PAYLOAD/CRC -> I/O BOARD
+I/O BOARD    -> SD / SRAM / TERMINAL / PRINTER / NET / SENSOR / SPOOL
+```
+
+Discover with full FNV32, bind a checked short service index, then transact.
+LOCAL STR8-N RECOVERY AND A LOCAL CONSOLE DO NOT DEPEND ON THE SECOND BOARD.
 
 Flash sizes have two meanings:
 
@@ -563,9 +593,9 @@ not evidence. Only timeout checks and read-back/CRC/compare prove flash.
 
 ```text
 0   ACCEPT R-YORS II BOUNDARY
-0A  PUBLISH WDCMONv2 -> STANDALONE STR8-N RAMP
-1   BUILD/TEST PIN FAMILY IN RAM
-2   COMPOSE PIN/BIO/SYS CONTRACTS
+0A  NEXT: WDCMONv2 -> STR8-N -> R-YORS, PROVE J0 + C
+1   HASH/SCOPE + RYVM CONTROL + NATIVE PIN FAMILY IN RAM
+2   PIN/BIO/SYS + CALLABLE ASM EMITTER + NATIVE IFT PROOF
 2A  FSEDIT-0 HOST-BACKED EDIT/BUILD LOOP
 3   PACKAGE ONE FAMILY AS AP V2
 4   #MAKE + INACTIVE-BANK IMAGE CANDIDATE
@@ -577,8 +607,8 @@ Do not block `$01` with `$09` machinery.
 
 ## $0D - Long Direction
 
-R-YORS II is not a System/34 or System/360 emulator. It grows toward their
-useful system character:
+R-YORS II does not require a System/34 or System/360 emulator. It first grows
+toward their useful system character:
 
 ```text
 OPERATOR CONSOLE
@@ -591,6 +621,18 @@ BUILD/INSTALL HISTORY
 RECOVERABLE GENERATIONS
 RPG II
 ```
+
+```text
+FIXED RPG II ----+
+FREE-FORM RPG ---+-> SHARED RPG CORE -> RYVM OR NATIVE W65C02
+
+VIRTUAL 65C02    OPTIONAL DEBUG/GUEST AP
+SYSTEM/360 VM    OPTIONAL LATER COMPATIBILITY AP
+```
+
+An S/360 subset needs 16 x 32-bit registers, PSW/CC, 24-bit guest addresses,
+big endian, EBCDIC, packed decimal, interruptions, and channel I/O. SPI SRAM,
+an 816, or a second controller may help. RPG DOES NOT WAIT FOR IT.
 
 It becomes a living machine by accumulating validated routine versions, build
 identities, device capabilities, guest recipes, qualification records, and
