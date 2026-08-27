@@ -200,15 +200,9 @@ HISTORICAL_CODE_MIGRATION_PLAN.md
   relates to TECHNICAL_GUIDE.md, MAP.md, REF.md, TODO.md,
   HISTORICAL_DOCUMENTS.md, and SRC/ARCHIVE/README.md
 
-R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md
-  defines the proposed host-terminal/file-device boundary and shortest onboard
-  #ISH/ASM-F2 source-to-RAM-to-call proof
-  connects routine families, AP/FNV artifacts, optional Debug and SPI RAM,
-  inactive-bank image construction, and the eventual RPG II system direction
-
-R_YORS_II_63ESE_SUMMARY.md
-  condenses the R-YORS II proposal into bank, bootstrap, build, editor, object,
-  guest-image, safety, and delivery-rail cards in board-facing 63'ese
+Sibling R-YORS-II repository
+  owns the self-building proposal, 63'ese summary, #ISH planning, product
+  namebook, and future cross-project architecture
 ```
 
 ## Source Cross-Reference

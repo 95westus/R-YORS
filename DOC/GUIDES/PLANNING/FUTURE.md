@@ -1,11 +1,10 @@
 # R-YORS Future Notes
 
-The formal
-[R-YORS II self-building system proposal](R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md)
-collects the host-terminal/file-device boundary, onboard `#ISH`/ASM-F2 build
-loop, routine-family path, FSEDIT editor, optional Debug/SPI RAM, image
-construction, and eventual RPG II direction. It proposes an evolutionary
-R-YORS II architecture, not a clean-sheet rewrite.
+The formal R-YORS II self-building proposal now lives in the sibling
+`R-YORS-II` repository. It collects the host-terminal/file-device boundary,
+onboard `#ISH`/ASM-F2 build loop, routine-family path, FSEDIT editor, optional
+Debug/SPI RAM, image construction, and eventual RPG II direction. It proposes
+an evolutionary R-YORS II architecture, not a clean-sheet rewrite.
 
 ## Architecture Direction
 

@@ -78,11 +78,8 @@ board:
   tests, proofs, apps, and data into `SRC/ARCHIVE/`.
 - [DATA_STRUCTURE_OPPORTUNITIES.md](PLANNING/DATA_STRUCTURE_OPPORTUNITIES.md) -
   audit of shared byte schemas, fixed-address ABIs, and compact table layouts.
-- [R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md](PLANNING/R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md) -
-  shortest-path self-building architecture: host file I/O, onboard `#ISH`/
-  ASM-F2, routine families, image growth, and RPG II direction.
-- [R_YORS_II_63ESE_SUMMARY.md](PLANNING/R_YORS_II_63ESE_SUMMARY.md) -
-  compact technical form of the R-YORS II direction.
+- R-YORS II self-building, `#ISH`, and release planning moved to the sibling
+  `R-YORS-II` repository.
 - [FUTURE.md](PLANNING/FUTURE.md) - direction notes.
 
 ## Core Thread
