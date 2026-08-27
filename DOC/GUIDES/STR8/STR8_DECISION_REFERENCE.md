@@ -151,11 +151,13 @@ bank 0 = selectable backup image
 Banks 0-2 are storage banks for now. STR8 reads, copies, verifies, and writes
 them, but does not execute from them.
 
-Bank 0 may eventually hold the board's original live WDCMONv2/base image, but
-saving that image is a TODO for the future WDCMONv2-to-R-YORS bridge and is not
-part of today's STR8 RAM proof. Current `B` treats Bank 0 like Bank 1 and Bank
-2: the operator names it as the sole destination and separately confirms the
-erase. There is no enrollment state; the old `$FFF0` bit is ignored.
+This historical RAM proof did not save the board's original WDCMONv2/base
+image. The adjacent STR8-N repository now has a separate host-qualified
+WDCMONv2 migration kit that archives B0/B3 and preserves stock B3 in an erased
+or byte-identical B0; its stock-board acceptance is still pending. Current `B`
+inside this older proof treats Bank 0 like Bank 1 and Bank 2: the operator names
+it as the sole destination and separately confirms the erase. There is no
+enrollment state; the old `$FFF0` bit is ignored.
 
 ## First Recovery Target
 
@@ -192,10 +194,13 @@ The two unselected backup banks remain unchanged. STR8 does not impose newest,
 previous, or oldest roles; the operator chooses which recovery image to
 replace.
 
-Base-image preservation remains separate future bridge work:
+Base-image preservation remains separate from this historical `B` command,
+but it is implemented by the adjacent migration kit:
 
 ```text
-TODO bridge/install path = offer to save original WDCMONv2/base image
+read-only bridge = export exact local B0/B3 BIN/S19/receipt
+seed installer   = accept erased or byte-identical B0; otherwise refuse
+hardware status  = stock-board acceptance pending
 ```
 
 Restoring bank 0 means restoring whatever bank 0 currently holds. It may be an

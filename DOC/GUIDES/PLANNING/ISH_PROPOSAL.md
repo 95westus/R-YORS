@@ -2,7 +2,12 @@
 
 Status: informal planning proposal recorded 2026-08-21. The canonical name is
 `#ISH`, with `#ish` accepted as its lowercase form. The name is not yet an
-acronym, committed language, command, ABI, or resident feature.
+acronym, committed language, command, ABI, or resident feature. The later
+[R-YORS II self-building proposal](R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md)
+retains this language level but proposes an onboard first implementation that
+shares ASM-F2 services. If that overall proposal is accepted, it supersedes
+this document's host-translator-first sequencing while leaving the small
+surface, visible-machine-state, and ABI cautions applicable.
 
 ## The Idea
 

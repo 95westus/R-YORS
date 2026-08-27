@@ -407,6 +407,15 @@ but they are noisy unless the object in RAM carries the same catalog proof
 fields as a persistent block. Scanners should avoid touching `$7F00-$7FFF`
 unless the selected policy is I/O-aware.
 
+The accepted first concrete scoped resolver keeps the persistent bank allow
+mask separate from these window selectors. Bank-3 `$FFF2=$A6` will enroll B1
+and B2 while excluding the current WDCMONv2 Bank 0; `$FF` means no automatic
+external search. A RAM request may only intersect that flash-bank policy and
+may select RAM windows separately. Lookup order is resident Bank-3 HREC,
+explicit RAM, then B2/B1/B0 AP carriers, with a unique validated external match
+required. The exact byte/routine/board gates are in
+[HIMON_SCOPED_FNV_BANK_SEARCH.md](../PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md).
+
 The practical rule is:
 
 ```text

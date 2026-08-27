@@ -16,7 +16,11 @@ otherwise opaque in every sector not explicitly registered as AP storage.
   the protected Bank-3:F backup, both as packed bank/sector bytes. The current
   values `$1E/$1F` reserve B1:E/B1:F; AP inventory labels them `= WORK` and
   `= BKUP B3F`, and every mutation path rejects both. `$FF` means no assignment.
-  `$FFF2-$FFF9` remain erased and unassigned.
+  `$FFF2-$FFF9` remain erased and unassigned in the implemented V1 contract.
+  The accepted but unimplemented
+  [scoped FNV/AP bank-search plan](HIMON_SCOPED_FNV_BANK_SEARCH.md) proposes
+  `$FFF2` as a future self-identifying B0-B2 search-eligibility byte; it does
+  not change current media or configuration bytes.
 - Bank 3 owns the discovery logic and reconstructs its volatile catalog by
   scanning self-identifying managed-sector headers in Banks 0-2. No persistent
   Bank-3 catalog or Bank-3 flash allocation is required.

@@ -21,6 +21,9 @@ DOC/GUIDES/TECHNICAL_GUIDE.md
 - [GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md](./GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - pending persistence proof for the host-accepted `$1FFD-$1FFF` Bank Jump Record.
 - [GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md](./GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) - required per-image handoff, peripheral, vector, CRC, and recovery procedure for unrelated 32K guests.
 - [GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md](./GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - retained S19/bank-volume direction and superseded compatible-bank design history.
+- [GUIDES/PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md](./GUIDES/PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md) - accepted, unimplemented `$FFF2` bank-eligibility, RAM-window, search-order, and BANKDUMP-resolution contract.
+- [GUIDES/PLANNING/R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md](./GUIDES/PLANNING/R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md) - formal evolutionary R-YORS II proposal: the host as terminal/file device, onboard `#ISH`/ASM-F2 build authority, RAM-tested routine families, boot-image growth, and eventual RPG II.
+- [GUIDES/PLANNING/R_YORS_II_63ESE_SUMMARY.md](./GUIDES/PLANNING/R_YORS_II_63ESE_SUMMARY.md) - concise 63'ese summary of the R-YORS II machine, bootstrap, build/edit loop, objects, guests, and delivery rail.
 - [GUIDES/ASM/BANKED_AP_CARRIER_VS_AP_STORE.md](./GUIDES/ASM/BANKED_AP_CARRIER_VS_AP_STORE.md) - AP carrier versus larger AP Store.
 - [GUIDES/ASM/APMAN_V1_BOARD_TEST.md](./GUIDES/ASM/APMAN_V1_BOARD_TEST.md) - accepted named carrier manager lifecycle.
 - [GUIDES/ASM/APMAN_APC_DISSECTION.md](./GUIDES/ASM/APMAN_APC_DISSECTION.md) - exact APMAN/APC flash, envelope, RAM, and flow maps.

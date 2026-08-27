@@ -25,6 +25,9 @@ This is the full guide index for the current R-YORS documentation set.
   important per-image warm-handoff, peripheral, vector, CRC, and recovery
   qualification procedure for unrelated 32K systems.
 - [PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md](PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - retained shared-S19/bank-volume direction and superseded compatible-bank design history.
+- [PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md](PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md) - accepted, unimplemented scoped FNV/AP provider policy: `$FFF2`, explicit RAM windows, B2/B1/B0 traversal, uniqueness, and BANKDUMP resolution.
+- [PLANNING/R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md](PLANNING/R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md) - formal shortest-path proposal for an evolutionary R-YORS II: host terminal/file I/O, onboard `#ISH`/ASM-F2 builds, RAM-tested routine families, later image composition, and RPG II direction.
+- [PLANNING/R_YORS_II_63ESE_SUMMARY.md](PLANNING/R_YORS_II_63ESE_SUMMARY.md) - concise board-facing summary of the R-YORS II banks, bootstrap, `#MAKE`, `#ISH`, FSEDIT, AP/FNV, guest creation, image build, and short delivery rail.
 - [REF.md](./REF.md) - compact reference sheet.
 - [GLOSSARY.md](./GLOSSARY.md) - vocabulary contract.
 - [DECISIONS.md](./DECISIONS.md) - settled calls.
@@ -119,6 +122,8 @@ the main operator/technical path.
   test, proof, demo, and one-off code/data.
 - [DATA_STRUCTURE_OPPORTUNITIES.md](PLANNING/DATA_STRUCTURE_OPPORTUNITIES.md) -
   shared schema, fixed-ABI, table-generation, and structure-of-arrays audit.
+- [R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md](PLANNING/R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md) -
+  evolutionary self-building architecture and shortest credible delivery path.
 - [FUTURE.md](PLANNING/FUTURE.md) - direction notes.
 
 ## Current Generated Source Snapshot

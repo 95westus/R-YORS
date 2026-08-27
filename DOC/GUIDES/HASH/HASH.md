@@ -259,6 +259,26 @@ Do not use this selector byte for record kind, hash width, or commit state.
 Those belong to the `RCAT`/`RREC` layout/control byte. The selector answers
 "where"; the record control byte answers "what and how."
 
+### Accepted Scoped Bank-Search Direction
+
+The first accepted cross-bank application of this separation is documented in
+[HIMON_SCOPED_FNV_BANK_SEARCH.md](../PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md).
+It is a design contract, not current command behavior.
+
+Bank-3 `$FFF2` will carry a self-identifying persistent B0-B2 eligibility mask.
+`$FF` or an invalid signature disables automatic external search. The initial
+planned value `$A6` permits Banks 1 and 2 and excludes Bank 0 while Bank 0 holds
+WDCMONv2. A RAM request mask may narrow those eligible banks but cannot add one.
+RAM itself remains separately and explicitly selected by 4K windows; persistent
+flash policy never turns on an all-RAM scan.
+
+The initial lookup order is resident Bank-3 HREC, explicitly selected RAM, then
+eligible AP carriers in B2/B1/B0 order. Resident hits win before fallback.
+External AP lookup still scans all enabled candidates and requires one unique,
+fully validated carrier/export match; first traversal is not first-hit wins.
+This immediate AP rule does not settle the broader future RREC generation and
+provider-precedence policy described below.
+
 Q: Why is the commit bit active low?
 
 A: Erased flash is `$FF`, so erased bytes must not look live. Clearing bit 7

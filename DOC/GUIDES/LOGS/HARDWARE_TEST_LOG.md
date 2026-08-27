@@ -25556,3 +25556,43 @@ B1:C was correctly reported `U` for its live bytes rather than being assumed
 valid from its former BANKAUDIT role. B2:8 APMAN and B2:9 BANKDUMP validated
 as `A`; B1:E, B1:F, and B3:F retained `W`, `B`, and `P`. This accepts the
 complete `$09AD` read-only bank-map extension and closes its board gate.
+
+## 2026-08-27 WDCMONv2 Migration Probe Refusal On Present COM3
+
+The migration host bridge first enumerated one present VCP, `COM3`. Windows
+registry data identified it only as FTDI VID `$0403`, PID `$6001`; that is a
+transport identity, not proof of WDCMONv2 or even of the intended SXB.
+
+The new `-ProbeOnly` path opened COM3, applied the documented host reset/DTR
+sequence, sent WDCMONv2 sync `$55,$AA`, and waited for `$CC` before command
+`$0C`. No reply arrived within the one-second receive timeout:
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File C:\SRC\STR8-N\tools\wdcmonv2\start_wdcmonv2_ram.ps1 `
+  -Port COM3 -ProbeOnly
+
+WDCMONv2 timeout during sync for command $0C: received 0/1 bytes
+```
+
+Because `$CC` was absent, the bridge did not transmit command `$0C`, did not
+write RAM, did not execute a RAM image, and had no path to a flash command.
+No WDCMONv2 identity, bank inventory, or migration acceptance is claimed from
+this run. COM3 may be the current non-stock board, the wrong FTDI device, an
+unready target, or a board requiring an independently observed reset/startup
+condition. Further binary traffic is deferred until the operator identifies a
+stock-WDCMONv2 target and its port.
+
+A follow-up diagnostic used the same DTR reset sequence and listened for five
+seconds without transmitting any serial byte. The retained local capture is
+`LOCAL/wdcmonv2-migration/com3-listen-20260827.bin` and is zero length:
+
+```text
+LISTEN RX CAPTURE = C:\SRC\R-YORS\LOCAL\wdcmonv2-migration\com3-listen-20260827.bin
+
+LISTEN ONLY = COMPLETE; RX=0 BYTES; TX=0 BYTES
+```
+
+This rules out an unsolicited startup banner during that observation window;
+it does not prove what device or firmware owns COM3. No further target traffic
+was sent.

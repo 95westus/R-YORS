@@ -95,6 +95,8 @@ Operator
 
 Technical
   TECHNICAL_GUIDE.md
+  PLANNING/R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md
+  PLANNING/R_YORS_II_63ESE_SUMMARY.md
   PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md
   STR8/PRODUCT_BOUNDARIES.md
   STR8/STR8.md
@@ -195,6 +197,8 @@ ASM/HASHED_ASM.md               assembler thesis and fixups
 ASM/ASM_CALL_MAP.md             renderable ASM top-level routine-purpose and flow map
 ASM/ASM_SHARED_ROUTINES_AUDIT.md ASM/HIMON shared-helper audit
 PLANNING/OIL_710_TEST_PLAN.md .710 Overlay Integration Layer board-test rail
+PLANNING/R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md evolutionary onboard-build direction
+PLANNING/R_YORS_II_63ESE_SUMMARY.md compact board-facing R-YORS II summary
 PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md multiboot/S19/bank-volume direction
 PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md retired code/data archive plan
 STORY/BOOK.md                   narrative manuscript spine

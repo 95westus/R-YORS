@@ -334,8 +334,10 @@ start +count    count is the number of bytes
   dangerous proof behavior, not the final casual restore policy.
 - Bank 3 is the live boot image. Bank 2 is the newest backup. Bank 1 is the
   previous backup. Bank 0 is held out of rotation unless the operator runs `E`.
-  Saving the board's original WDCMONv2/base image is future bridge/install work,
-  not today's STR8 RAM proof.
+  In this historical V0 decision, saving the board's original WDCMONv2/base
+  image was future bridge/install work, not part of that STR8 RAM proof. The
+  adjacent STR8-N repository now implements the host-qualified B0/B3 archive
+  and guarded seed path; its separate stock-board acceptance remains pending.
 - Automatic backup copies bank 2 to bank 1 and bank 3 to bank 2 until bank 0 is
   enrolled. After `E` clears the one-way in-flash flag, automatic backup copies
   bank 1 to bank 0, bank 2 to bank 1, and bank 3 to bank 2.
@@ -478,6 +480,22 @@ start +count    count is the number of bytes
   tooling and public routine identity.
 - Existing `hash0..3` fields store FNV-1a low byte through high byte.
 - Words and longs are little-endian: low byte first.
+- Accepted, not yet implemented: HIMON's first scoped external-name resolver
+  uses Bank-3 `$FFF2` as a persistent B0-B2 eligibility byte and a separate RAM
+  request card for one lookup. `$FFF2=$FF` or an invalid policy signature means
+  policy absent and disables automatic external search; it does not fall back
+  to scanning all banks. `$FFF2=$A6` is the intended initial board policy:
+  Banks 1 and 2 eligible, Bank 0 excluded while it contains WDCMONv2. The live
+  request is always intersected with the persistent allow mask, so RAM state
+  cannot re-enable an excluded bank. See
+  [HIMON_SCOPED_FNV_BANK_SEARCH.md](PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md).
+- The accepted scoped order is resident Bank-3 HREC first, explicitly selected
+  RAM windows second, then eligible AP carriers in Bank 2, Bank 1, and Bank 0.
+  Resident hits remain authoritative. External AP search scans every enabled
+  location and requires one unique fully validated match; traversal order is
+  not permission to execute the first duplicate. Bank 0 catalog lookup remains
+  off under `$A6`, while `J0`, BANKDUMP inspection, CRC/audit, and separately
+  authorized recovery operations remain distinct and available.
 - Current HIMON proving record shape is:
 
 ```text

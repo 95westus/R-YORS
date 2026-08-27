@@ -29,6 +29,36 @@ CBI code form stays condensed for source comments:
 ;                         continuation line
 ```
 
+## REHASH: Scoped External FNV/AP Search Policy Accepted
+
+```text
+2026
+         08
+                27
+                   14:58Z COLLAB-AI Accepted a fail-closed Bank-3 search
+                               policy, explicit RAM windows, and fixed
+                               resident/RAM/B2/B1/B0 lookup order.
+```
+
+This is design direction, not current command behavior. Bank-3 `$FFF2` is the
+accepted future persistent B0-B2 eligibility byte. `$FF` or an invalid policy
+signature disables automatic external search; it does not scan every bank.
+The initial planned `$A6` policy permits B1+B2 and excludes Bank 0 while it
+holds WDCMONv2.
+
+A RAM request may narrow the persistent bank mask but cannot add an excluded
+bank. RAM search is separately opt-in by 4K window and always clips window 7
+at `$7EFF` to avoid I/O. Resident Bank-3 HREC lookup remains authoritative;
+fallback searches explicit RAM, then eligible AP carriers in B2/B1/B0 order.
+External lookup requires one unique fully validated AP/export match rather
+than executing the first hash hit.
+
+The proving case is `BANKDUMP`: name FNV `$71516DF1`, currently accepted BODY
+FNV `$CEF1F837`, expected unique carrier B2:9, logical execution through the
+normal `AP B2 BANKDUMP` load/link path, and no Bank-0 selection under `$A6`.
+The complete byte, failure, implementation, and board gates are in
+[HIMON_SCOPED_FNV_BANK_SEARCH.md](PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md).
+
 ## REHASH: STR8 ROM Location Joins Identity Line
 
 ```text

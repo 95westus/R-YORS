@@ -147,6 +147,16 @@ B1:F backup, and `Q` rejection through `HSH_NF!`.
   The command must never load, execute, erase, program, or alter directory/AP
   Store state. Decide separately whether an optional raw whole-sector dump is
   useful; do not make 4K of `$FF` the default output.
+- [ ] Implement the accepted
+  [scoped HIMON FNV/AP bank search](HIMON_SCOPED_FNV_BANK_SEARCH.md) only after
+  the consolidated RAM/overlay map is frozen. The settled design keeps resident
+  Bank-3 HREC authoritative, makes RAM windows explicit, then searches eligible
+  AP carriers in B2/B1/B0 order and rejects duplicates. Bank-3 `$FFF2=$A6`
+  enrolls B1+B2 while excluding the present WDCMONv2 Bank 0; `$FF` or an invalid
+  policy disables automatic external search. Required gates include config
+  decode, request/allow intersection, proof that `$06` never selects B0,
+  format-specific HREC/AP validation, BANKDUMP B2:9 unique resolution, malformed
+  and duplicate rejection, size measurement, docs, and board proof.
 - [ ] Freeze the new RAM/overlay map, shared-core boundaries, staging ownership,
   return-to-menu contract, and interrupted-operation recovery before coding.
 - [ ] Decide whether compaction, harder confirmation/recovery rails, and a
@@ -226,6 +236,19 @@ RESTORED`; the map extension gate is complete.
   The likely first wear metric is a persistent per-sector erase count; define
   its storage, update/recovery rules, counter lifetime/overflow behavior, and
   allocation policy before using it to rotate work or AP sectors.
+- [ ] Add a Bank Maintenance first-role transaction for the unconfigured
+  stock-migration profile. It must leave `$FFF0/$FFF1=$FF/$FF` until the
+  operator selects media, establish and verify an explicit old-B3:F recovery
+  copy before rewriting B3:F, keep WORK and backup distinct, and leave
+  directory/VTOC/catalog/rotation initialization as separate choices. Do not
+  change the canonical STR8-N release image's accepted B1:E/B1:F defaults.
+- [ ] Specify the `F` / provisional `FL#` flash service with `$100` logical
+  pages and `$1000` physical erase sectors. Require a read-only plan showing
+  OLD/NEW, `1->0`, `0->1`, and direct-program versus whole-sector erase-cycle;
+  limit the initial direct path to changed bytes still `$FF`, and preserve
+  protected-role and RAM-worker gates. Do not implement until the command
+  grammar, staging ownership, recovery copy, and hardware test matrix are
+  accepted.
 
 - [x] **Compact `DC` text family.** `DC 'text'`
   emits raw bytes, while `DC C'text'`, `DC H'text'`, and `DC P'text'` emit

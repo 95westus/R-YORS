@@ -68,8 +68,11 @@ current HIMON image documented
 T48 programmer ready to rewrite the flash/ROM
 ```
 
-A future WDCMON bridge may become another path, but the first STR8 bringup
-keeps the T48 as the final escape hatch.
+The adjacent STR8-N repository now builds host-qualified read-only archive and
+guarded seed-install candidates plus the explicit binary-WDCMONv2
+load/readback/execute and terminal bridge. Their physical WDCMONv2 board
+transcript is still pending, so the T48 remains the accepted first-install and
+final escape path until that proof is complete.
 
 ## Bringup Order And Remaining Rail
 
@@ -115,9 +118,10 @@ verify copied bytes by read-back
 There is no cascade and no `E` command. Bank 0 is accepted on the same terms as
 Bank 1 or Bank 2; the old enrollment flag is ignored.
 
-Saving the board's original WDCMONv2/base flash image is still desired, but it
-belongs to the future bridge/install path. It is not part of today's STR8 RAM
-proof.
+Saving the board's original WDCMONv2/base flash image is now implemented by the
+adjacent STR8-N migration kit's read-only B0/B3 archive stage. Its stock-board
+acceptance transcript is still pending, so it does not retroactively change
+the evidence for this historical STR8 RAM proof.
 
 Restore request:
 

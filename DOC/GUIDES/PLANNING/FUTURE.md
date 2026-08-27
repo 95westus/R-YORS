@@ -1,5 +1,12 @@
 # R-YORS Future Notes
 
+The formal
+[R-YORS II self-building system proposal](R_YORS_II_SELF_BUILDING_SYSTEM_PROPOSAL.md)
+collects the host-terminal/file-device boundary, onboard `#ISH`/ASM-F2 build
+loop, routine-family path, FSEDIT editor, optional Debug/SPI RAM, image
+construction, and eventual RPG II direction. It proposes an evolutionary
+R-YORS II architecture, not a clean-sheet rewrite.
+
 ## Architecture Direction
 
 - Follow the accepted `J0`-`J2` direction in
@@ -37,9 +44,12 @@
   lower bytes in the same 4K sector when possible. Both STR8 updates and lower
   top-sector changes must stage the full sector, erase, rewrite the full staged
   sector, and verify.
-- Preserve the layer ladder (`PIN -> BIO -> COR -> SYS -> APP`) where it still
-  fits, with `MEM` as a future core memory-ownership layer beneath public
-  `SYS` calls.
+- Preserve `PIN`, `BIO`, `COR`, `SYS`, and `APP` as ownership/contract levels,
+  not a mandatory five-layer call path. A future `#MAKE`/SYSGEN recipe should
+  select the shortest dependency closure that fits the configured system;
+  diagnostics may use `PIN -> APP`, while richer systems may select the full
+  ladder. Keep `MEM` as a future core memory-ownership layer beneath public
+  `SYS` calls when that layer is present.
 - Keep CSTR, HBSTR, and packed command-text forms explicit at API boundaries.
 - Keep the common STR8 HB/NUL printer and product-prefix experiment deferred.
   The pushed `4b73509` planning pass measured too little return--about 25-32
@@ -177,6 +187,11 @@
   baked into the composed ROM, stored as a sealed object for later RAM loading,
   or omitted. The recipe and package metadata should make that lifecycle
   explicit rather than treating all three states as equivalent.
+- Let SYSGEN reduce installed metadata when it binds an AP into a fixed image:
+  keep full AP, strip optional text/debug only, or bake a resolved body plus the
+  required HREC/entry/ABI runtime records. A baked result is an image component,
+  not AP v2. Preserve the canonical AP and build/provenance/strip manifest
+  outside the reduced nucleus.
 
 ## Long-Term RPG II Direction
 
@@ -214,57 +229,113 @@
 
 ## Board Onboarding Direction
 
-- Define a standalone WDCMONv2 S19 flash utility.  It is launched on a
-  WDCMONv2 board and is not an extension of the HIMON/STR8 loader contract.
-- Its first deliverable is read/create only.  It must not erase or program
-  flash.
-  - `READ` takes a selected flash range and emits checksum-valid `S1` data
-    records followed by an `S9` termination record.
-  - `CREATE` takes a selected RAM or ROM range and emits the same
-    checksum-valid `S1`/`S9` S19 image form.
-- `WRITE` is deferred.  When it is introduced, it must receive S19, validate
-  the complete input before any destructive operation, then require an
-  explicit commit gate before erase, program, and verify.
+- The first standalone bridge artifacts now live in the adjacent STR8-N
+  repository and are host-qualified, with stock-board proof still pending:
+  `str8n-v1.23-wdcmonv2-archive-2000.s19` inventories/exports banks without
+  flash mutation, and `str8n-v1.23-wdcmonv2-install-2000.s19` preserves an
+  erased-or-identical B0, installs only STR8-N in B3:F, and leaves B1/B2
+  untouched. R-YORS continues to consume this path rather than forking it.
+- `make wdcmonv2-package` now produces the explicit STR8-N/R-YORS publication
+  ZIP. Its checked allowlist excludes WDCMONv2 firmware and owner bank
+  archives; the ZIP carries the bootstrap artifacts, R-YORS payload, source,
+  binary-monitor/terminal host bridge, procedures, license, manifest, and
+  self-verifier.
+- Keep the migration candidate `$FFF0/$FFF1=$FF/$FF`; assigning B1:E/B1:F in
+  that image would contradict the promise that onboarding leaves B1/B2
+  untouched. Add a post-migration Bank Maintenance transaction that inventories
+  the device, qualifies and writes an explicit B3:F backup, then assigns WORK
+  and top-backup roles. Directory/VTOC initialization, catalog enrollment, and
+  backup rotation remain separate opt-in operations.
+- Treat `$100` as the future logical allocation/transfer/display page while
+  retaining the SST39's `$1000` physical erase transaction. A proposed `F` /
+  `FL#` service first displays `1->0` and forbidden `0->1` masks. Direct byte
+  program initially targets only bytes still `$FF`; any changed non-`$FF` byte
+  uses guarded whole-sector stage/erase/rewrite/verify, even if its bit delta is
+  only `1->0`. Exact command spelling remains open.
 
-- Support a WDCMONv2-to-R-YORS installation bridge for boards that already boot
-  the current WDC monitor.
+- Treat a WDCMONv2-to-standalone-STR8-N converter as a useful publishable
+  intermediate product, not merely a private ramp into HIMON. A candidate
+  `wdcmonv2ryors.asm`/`wdcmonv2str8n.asm` runs from RAM under stock WDCMONv2,
+  preserves and verifies the WDCMONv2/SPI Bank-3 image in Bank 0, then installs
+  STR8-N as the Bank-3 reset, multiboot, flash, and recovery supervisor.
+- The resulting board may stop there. Bank 1 or Bank 2 can hold an independently
+  adapted opaque guest without HIMON, ASM-F2, AP, or `#ISH`. This makes STR8-N
+  independently useful to SXB/EDU owners and keeps R-YORS II an optional later
+  development-system profile.
+- Keep the converter's authoritative source and release kit in the standalone
+  STR8-N repository. R-YORS records the integration and optional payload path;
+  it must not fork a second live copy of STR8-N implementation source.
+- Permit an explicit later release of the retained Bank-0 WDCMONv2 role only
+  after an exact 32K BIN/check manifest is exported and round-trip compared.
+  S19 and a GibberLink-style channel may be additional transports. Export,
+  erase, backup enrollment, and `$FFF2=$A7` catalog enrollment remain separate
+  confirmations; no successful transfer silently authorizes the next step.
+- Do not require a new owner to arrive with a finished Bank-0/1/2 guest image.
+  Add a later guided `#MAKE GUEST`/SYSGEN path that can compose a minimal image
+  from reset/vector, console, safe IRQ/NMI, PIA, VIA, SPI, and monitor pieces,
+  emit its map/checks/recipe, build it in an inactive bank, and qualify it with
+  `Jn`.
+- Treat hardware selections as claims until bounded diagnostics observe them.
+  Interrupt, PIA, VIA, FTDI, SPI SRAM, and SPI SD checks must report the exact
+  test performed and what pins/storage they may alter. Do not drive unknown
+  external circuits or write a storage device merely to make a friendly
+  automatic probe.
+- Optimize starter profiles for time-to-use across laboratory, education,
+  control, art, data, storage, and retrocomputing work. Share small proven
+  services across disciplines; do not create one all-features image or one
+  framework per discipline.
+
+- Retain the standalone WDCMONv2 S19 archive utility. The host bridge validates
+  its S19, uses binary WDCMONv2 commands `$02/$03/$06` to load, read back, and
+  execute it, then stays on the same COM handle as the ASCII terminal. This is
+  not an extension of the HIMON/STR8 loader contract.
+- Its implemented first deliverable is read-only and does not erase or program
+  flash. It inventories all four 32K banks and emits a selected complete bank
+  as dense checksum-valid `S1` records followed by `S9`; the host extractor
+  creates the exact local BIN/S19/receipt set.
+- A general `WRITE` remains deferred. The narrow seed installer carries its
+  checked STR8-N top candidate in RAM, requires the local archive hash token,
+  refuses a used/different B0, and uses separate copy and final-install
+  confirmations. A later arbitrary `WRITE` must receive and validate complete
+  input before any destructive operation.
+
+- Retain the implemented WDCMONv2-to-R-YORS installation bridge for boards that
+  already boot the current WDC monitor. It remains a release candidate until
+  the stock-board test card and readbacks pass.
 - This is mainly for a new WDC board owner, not for a board that already has
   R-YORS/HIMON flashed and running.
-- The bridge should use the WDCMONv2 style of loading and starting code because
-  that is what a fresh board already has. After it starts, the bridge converts
-  the flash layout to R-YORS/STR8/HIMON.
-- The bridge should use the same kind of simple program structure that BSO2
-  used around the WDC monitor style: a code region, a visible `WDC`-style
-  signature, fixed reset/NMI/IRQ jump trampolines, a documented cold-start
-  routine, and a tiny board I/O/FTDI API linked at a known load address.
-- That structure is the style to preserve, not literal BSO2 code. The new
-  bridge's job is to identify the board, verify assumptions, and reflash the
-  board into STR8/HIMON.
-- Preserve useful WDC-style ideas such as a board/firmware signature block and
-  fixed jump-vector/service entries. Those make the bridge self-identifying and
-  give the installer stable places to call without needing a full symbolic
-  linker on the board.
-- The goal is field installation without an external ROM/flash programmer:
-  start from WDCMONv2, load the bridge, verify the board, flash STR8/HIMON, and
-  reboot into R-YORS.
+- The bridge uses WDCMONv2 only to load and start a self-contained RAM program
+  at `$2000`. It then owns direct FTDI/VIA I/O and bank selection; it does not
+  depend on private WDCMONv2 entry points or return through an unmapped caller.
+  A binary signature block or fixed public bridge API is an optional later
+  refinement, not a first-migration dependency.
+- The runtime path can perform installation without an external programmer:
+  start from WDCMONv2, archive B0/B3 through the host terminal, run the guarded
+  seed, and let STR8-N install R-YORS. Until hardware acceptance is complete,
+  and whenever recovery from power loss during B3:F matters, keep a programmer
+  and complete 128K image available.
 - WDCMONv2 is the entry ramp, not the final runtime owner. After installation,
   R-YORS boots through STR8 and normal operation belongs to HIMON.
 - Author preference: when available, the cleanest installation path is still to
   program the flash/ROM directly with a T48 programmer. The WDCMONv2 bridge is
   for new users who have the stock board and want to reach R-YORS without first
   adopting extra programmer hardware or WDC's full toolchain.
-- The migration bridge is a future option, not a committed V0 feature. It may
-  never be implemented, or it may ship with more or fewer features depending on
-  what STR8, the board, and new-user installation actually require.
-- Later, the WDCMONv2 bridge should offer to preserve the original WDCMONv2/base
-  image, bridge image, or provenance notes before conversion. That is a TODO for
-  the bridge/install path, not today's STR8 RAM proof.
+- The host-qualified bridge is implemented. What remains is physical acceptance,
+  not a design decision: prove read-only B0/B3 export, refusal gates, exact B3
+  preservation in B0, B3:F seed/recovery, STR8-N `I`, R-YORS `C`, and stock
+  guest `J0` using the published board-test card. Because WDCMONv2 is binary,
+  the `J0` proof is a `$0C` board-info reply, not an assumed ASCII banner.
+- Original-image preservation is implemented as local exact B0/B3
+  BIN/S19/receipt sets plus byte-exact B3-to-B0 proof where B0 is erased. A
+  used/different B0 is archived and then refused by this first installer.
 - The future movable-module/object-store plan must treat that preserved
   WDCMONv2/base image as a protected object or explicit bank role, not as
   scratch flash. See [MOVABLE_MODULES.md](../ASM/MOVABLE_MODULES.md).
-- Bank 0 starts as an optional base-image hold slot, but STR8 can enroll it into
-  automatic backup rotation with a one-way in-flash flag. After enrollment,
-  bank 0 is the oldest rotating backup slot.
+- Bank 0 starts as the retained base-image hold slot for the publishable stock-
+  board conversion path. Keep it out of automatic backup rotation and catalog
+  search while that role is configured. Repurposing it requires an explicit
+  policy/configuration change plus ordinary destructive confirmation; it must
+  not happen as a side effect of installing or booting another guest.
 
 ## Assembler Direction
 
@@ -284,6 +355,29 @@
   image-recovery path is stable.
 - Keep PACK5/3x5 as a candidate for compact 3-letter mnemonic tables, because
   three 5-bit characters fit in two bytes.
+
+## FSEDIT Direction
+
+- Add FSEDIT as the intended simple onboard full-screen source editor, in the
+  operator style of the System/34 POP utility. Its first slice loads one small
+  host file into ordinary RAM, edits it, and saves it through the terminal
+  responder with explicit length/CRC/commit behavior.
+- Keep display and file windows independent. Display size follows negotiated or
+  configured terminal rows/columns; file-window size follows acquired ordinary
+  RAM and optional external-memory capability.
+- Treat paging as explicit range I/O and overlay loading, not virtual memory.
+  A small nucleus owns cursor, dirty state, backend calls, and overlay return;
+  search/help/block operations may be pageable AP components later.
+- Let FSEDIT itself be an AP that may be stored in RAM, visible/banked flash,
+  host storage, SPI SD, or SPI SRAM. Non-visible and serial storage is not
+  executable memory; required code must be copied/relocated into executable RAM.
+- Use one bounded OPEN/READ/WRITE/COMMIT/CLOSE-style backend contract. Begin
+  with the host responder, then add SPI SRAM and SPI SD without rewriting the
+  editor core. Treat flash/AP Store editing as copy-on-write object generation,
+  not mutable in-place text.
+- Preserve dirty text on failed window motion or save. Variable window sizes,
+  multiple buffers, undo, syntax assistance, and richer overlays follow
+  measured need; they do not block the first source-to-RAM build loop.
 
 ## RJOIN Debug Hash Stack Direction
 
@@ -426,6 +520,12 @@
   may be tied to a narrower decode than the banked ROM window, may see only very
   short command/read pulses, or may be invisible without pulse stretching. Flash
   software must report success from readback verification, not from LED state.
+- A configured EDU/SXB LED may still flash as an operator `DO NOT POWER OFF`
+  warning from erase entry through program, verify, and safe-bank restore. Put
+  the LED control in the RAM worker so no call crosses into an unmapped bank.
+  Declare LED port, polarity, preserved bits, and fixture ownership; the
+  warning must not commandeer guest PIA/VIA outputs. Text status and readback
+  remain authoritative.
 - Keep separate flash result facts:
   - command accepted/completed without timeout
   - byte readback equals the requested programmed value
