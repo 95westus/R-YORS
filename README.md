@@ -167,7 +167,7 @@ system type. After handoff, the selected guest owns `$8000-$FFFF`, its vectors,
 peripherals, and execution. Bank-3 STR8 is unmapped and cannot enforce a
 timeout or recover control until physical reset.
 
-**Important:** V1 validates only that the selected reset vector is plausible.
+V1 validates only that the selected reset vector is plausible.
 Bank identity and whole-image CRC authentication require future Bank-3-owned
 metadata. Every unrelated guest system still needs its own warm-handoff,
 peripheral, vector, and CRC qualification before it is treated as supported.
