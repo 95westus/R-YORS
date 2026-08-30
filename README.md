@@ -333,3 +333,12 @@ encodings, and increasingly self-hosted work.
 R-YORS is independent and is not affiliated with or endorsed by The Western
 Design Center, Inc. Product names identify compatible hardware only. No
 warranty is provided.
+
+HIMON and ASM-F2 are independently authored implementations. They use WDC
+hardware names, documented interfaces, memory maps, entry points, and protocol
+values only for compatibility; this repository does not include or
+redistribute the privately supplied WDCMONv2 source or firmware. A 2026-08-30
+source comparison found no meaningful WDCMONv2 code or comment duplication in
+the tracked HIMON or ASM-F2 implementation sources. AI-assisted development
+does not change this boundary: generated or revised contributions must remain
+original to this project and must not reproduce private third-party source.
