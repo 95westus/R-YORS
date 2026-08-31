@@ -109,13 +109,11 @@ $rComponentArtifacts = @(
     "SRC/BUILD/s19/apman-v1-bank2-8000.s19",
     "SRC/BUILD/s19/bank-audit-2000.s19",
     "SRC/BUILD/s19/bank-dump-2000.s19",
-    "SRC/BUILD/s19/fnv1a-hbstr-6000.s19",
     "SRC/BUILD/s19/himon-c000.s19",
     "SRC/BUILD/s19/himon-rom-c000-install-8000.s19",
     "SRC/BUILD/s19/himon-rom-c000.s19",
     "SRC/BUILD/s19/life-2000.s19",
     "SRC/BUILD/s19/pia-led-show-2000.s19",
-    "SRC/BUILD/s19/rom-append-calc-b804.s19",
     "SRC/BUILD/s19/ryors-v1.2-asm-bank3-8-b.s19",
     "SRC/BUILD/s19/ryors-v1.2-himon-bank3-c-e.s19"
 )
@@ -125,7 +123,14 @@ foreach ($relative in $rComponentArtifacts) {
 Publish-File -Source (Join-Path $repo "SRC/BUILD/bin/apman-v1.ap") -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
 Publish-File -Source (Join-Path $repo "SRC/BUILD/bin/apman-v1-bank2-8000.bin") -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
 Publish-File -Source (Join-Path $repo "SRC/ASM/apman-v1.inc") -RelativeDir "ARTIFACTS/SOURCES"
-Publish-File -Source (Join-Path $repo "SRC/BUILD/s19/himon-apv2-bank3-c-e.s19") -RelativeDir "ARTIFACTS/ARCHIVE/COMPONENT-IMAGES"
+$rArchivedComponentArtifacts = @(
+    "SRC/BUILD/s19/fnv1a-hbstr-6000.s19",
+    "SRC/BUILD/s19/himon-apv2-bank3-c-e.s19",
+    "SRC/BUILD/s19/rom-append-calc-b804.s19"
+)
+foreach ($relative in $rArchivedComponentArtifacts) {
+    Publish-File -Source (Join-Path $repo $relative) -RelativeDir "ARTIFACTS/ARCHIVE/COMPONENT-IMAGES"
+}
 Publish-File -Source (Join-Path $repo "SRC/BUILD/s19/ryors-v1.2-himon-asm-bank3-8-e.s19")
 Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/APMAN_V1_BOARD_TEST.md") -RelativeDir "BOARD-CARDS"
 Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/BANK_AUDIT_AP_CARD.md") -RelativeDir "BOARD-CARDS"
@@ -133,19 +138,34 @@ Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/BANK_DUMP_AP_CARD.md") -Re
 
 $str8ComponentArtifacts = @(
     "BUILD/str8n-manifest.json",
-    "BUILD/v1.23/bin/str8n-v1.23-bank3-f000-ffff.bin",
-    "BUILD/v1.23/s19/str8n-v1.23-bank-maint-2000.s19",
-    "BUILD/v1.23/s19/str8n-v1.23-bank-maint-menu-2000.s19",
-    "BUILD/v1.23/s19/str8n-v1.23-console-abi-test-2000.s19",
-    "BUILD/v1.23/s19/str8n-v1.23-directory-refresh-2000.s19",
-    "BUILD/v1.23/s19/str8n-v1.23-f000.s19",
-    "BUILD/v1.23/s19/str8n-v1.23-worker-0200.s19"
+    "BUILD/v1.29/bin/str8n-v1.29-bank3-f000-ffff.bin",
+    "BUILD/v1.29/s19/str8n-v1.29-bank-maint-2000.s19",
+    "BUILD/v1.29/s19/str8n-v1.29-bank-maint-menu-2000.s19",
+    "BUILD/v1.29/s19/str8n-v1.29-directory-refresh-2000.s19",
+    "BUILD/v1.29/s19/str8n-v1.29-f000.s19",
+    "BUILD/v1.29/s19/str8n-v1.29-worker-0200.s19"
 )
 foreach ($relative in $str8ComponentArtifacts) {
     Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
 }
-Publish-File -Source (Join-Path $str8n "BUILD/v1.23/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19")
-Publish-File -Source (Join-Path $str8n "BUILD/v1.23/s19/str8n-v1.23-top-update-2000.s19")
+Publish-File -Source (Join-Path $str8n "BUILD/v1.29/s19/str8n-v1.29-console-abi-test-2000.s19") -RelativeDir "ARTIFACTS/ARCHIVE/COMPONENT-IMAGES"
+
+$str8ArchivedComponentArtifacts = @(
+    "BUILD/ARCHIVE/v1.23/bin/str8n-v1.23-bank3-f000-ffff.bin",
+    "BUILD/ARCHIVE/v1.23/s19/str8n-v1.23-bank-maint-2000.s19",
+    "BUILD/ARCHIVE/v1.23/s19/str8n-v1.23-bank-maint-menu-2000.s19",
+    "BUILD/ARCHIVE/v1.23/s19/str8n-v1.23-console-abi-test-2000.s19",
+    "BUILD/ARCHIVE/v1.23/s19/str8n-v1.23-directory-refresh-2000.s19",
+    "BUILD/ARCHIVE/v1.23/s19/str8n-v1.23-f000.s19",
+    "BUILD/ARCHIVE/v1.23/s19/str8n-v1.23-top-update-2000.s19",
+    "BUILD/ARCHIVE/v1.23/s19/str8n-v1.23-worker-0200.s19"
+)
+foreach ($relative in $str8ArchivedComponentArtifacts) {
+    Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/ARCHIVE/COMPONENT-IMAGES"
+}
+Publish-File -Source (Join-Path $str8n "BUILD/ARCHIVE/v1.23/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19") -Name "ryors-v1.2-str8n-v1.23-himon-asm-bank0-2-8-f.s19" -RelativeDir "ARTIFACTS/ARCHIVE/COMPONENT-IMAGES"
+Publish-File -Source (Join-Path $str8n "BUILD/v1.29/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19")
+Publish-File -Source (Join-Path $str8n "BUILD/v1.29/s19/str8n-v1.29-top-update-2000.s19")
 
 $sourceRoots = @(
     (Join-Path $repo "SRC/ASM"),
@@ -161,15 +181,22 @@ foreach ($sourceRoot in $sourceRoots) {
 $str8Sources = @(
     "src/str8.asm",
     "src/str8-worker.asm",
-    "src/util-delay.asm",
+    "src/util-delay.asm"
+)
+foreach ($relative in $str8Sources) {
+    Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/SOURCES"
+}
+Publish-File -Source (Join-Path $str8n "tools/bank-maint/str8n-v1.29-bank-maint-menu-2000.a") -RelativeDir "ARTIFACTS/SOURCES"
+
+$str8ArchivedSources = @(
     "tools/bank-maint/str8n-v1.23-bank-maint-2000.asm",
     "tools/bank-maint/str8n-v1.23-bank-maint-rename.inc",
     "tools/bank-maint/str8n-v1.23-bank-maint-menu-2000.asm",
     "tools/bank-maint/str8n-v1.23-bank-maint-menu-2000.a",
     "tools/top-update/str8n-v1.23-top-update-2000.asm"
 )
-foreach ($relative in $str8Sources) {
-    Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/SOURCES"
+foreach ($relative in $str8ArchivedSources) {
+    Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/ARCHIVE/SOURCES"
 }
 
 $archivedSampleNames = @(
@@ -247,7 +274,7 @@ Bank-3 sectors 8-E update, without protected sector F:
 
 Guarded Bank-3 sector-F update, retaining a verified B1:F backup:
 
-- str8n-v1.23-top-update-2000.s19
+- str8n-v1.29-top-update-2000.s19
 
 Board-use artifacts:
 
@@ -258,9 +285,9 @@ Board-use artifacts:
 - ARTIFACTS/COMPONENT-IMAGES/apman-v1.ap - exact AP v2 APMAN envelope
 - ARTIFACTS/AP-STORE/ap-store-v1-chain-install-tool-package-4000.s19
 - ARTIFACTS/AP-STORE/ap-store-v1-slice6-catalog-tool-package-4000.s19
-- ARTIFACTS/SOURCES/str8n-v1.23-bank-maint-menu-2000.a - onboard `ASM NEW`
+- ARTIFACTS/SOURCES/str8n-v1.29-bank-maint-menu-2000.a - onboard `ASM NEW`
   source for banked AP put, guarded directory rename, and directory reclaim
-- ARTIFACTS/COMPONENT-IMAGES/str8n-v1.23-bank-maint-menu-2000.s19 - direct
+- ARTIFACTS/COMPONENT-IMAGES/str8n-v1.29-bank-maint-menu-2000.s19 - direct
   loader form of the same maintenance menu
 - ARTIFACTS/COMPONENT-IMAGES - component, diagnostic, and recovery images
 - ARTIFACTS/SOURCES - source snapshots and onboard sample sources
@@ -269,11 +296,14 @@ Board-use artifacts:
 - BOARD-CARDS/BANK_AUDIT_AP_CARD.md - BANKAUDIT utility reference
 - BOARD-CARDS/BANK_DUMP_AP_CARD.md - BANKDUMP install and inspection tests
 
-Historical artifacts:
+Archived artifacts:
 
 - ARTIFACTS/ARCHIVE/AP-STORE - superseded AP Store transit variants
-- ARTIFACTS/ARCHIVE/COMPONENT-IMAGES - superseded named component images
-- ARTIFACTS/ARCHIVE/SOURCES - AP v1/v2 proof fixtures retained for regression
+- ARTIFACTS/ARCHIVE/COMPONENT-IMAGES - superseded and proof/test component images,
+  including every retained pre-v1.29 STR8-N image, `fnv1a-hbstr-6000.s19`,
+  the current console ABI test, and `rom-append-calc-b804.s19`
+- ARTIFACTS/ARCHIVE/SOURCES - pre-v1.29 STR8-N sources and AP v1/v2 proof
+  fixtures retained for regression
 
 The canonical source remains under `SRC/` and the adjacent `STR8-N`
 repository. `SHA256SUMS.txt` covers every file recursively.
