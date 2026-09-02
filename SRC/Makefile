@@ -691,13 +691,13 @@ board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(
 release-files: board-s19-check apman bank-audit bank-dump life pia-led-show rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
-asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show asm-ap-v2-check
+asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show asm-ap-v2-check
 	@echo "ASM v1 smoke checks passed."
 
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_ABI_CHECK) -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)"
 
-asm-terminal-check: $(ASM_TERMINAL_CHECK) ../DOC/GUIDES/ASM/SAMPLES/vt102-exerciser-7000.a ../DOC/GUIDES/ASM/SAMPLES/vt525-exerciser-7000.a
+asm-terminal-check: $(ASM_TERMINAL_CHECK) ../DOC/GUIDES/ASM/SAMPLES/terminal-answerback-vt100-3000.a ../DOC/GUIDES/ASM/SAMPLES/vt102-exerciser-7000.a ../DOC/GUIDES/ASM/SAMPLES/vt525-exerciser-7000.a
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_TERMINAL_CHECK)
 
 ap-store-v1-check: $(AP_STORE_V1_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC)

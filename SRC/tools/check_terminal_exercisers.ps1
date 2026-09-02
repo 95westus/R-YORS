@@ -1,6 +1,9 @@
 param(
+    [string]$Vt100Path = "../DOC/GUIDES/ASM/SAMPLES/terminal-answerback-vt100-3000.a",
     [string]$Vt102Path = "../DOC/GUIDES/ASM/SAMPLES/vt102-exerciser-7000.a",
-    [string]$Vt525Path = "../DOC/GUIDES/ASM/SAMPLES/vt525-exerciser-7000.a"
+    [string]$Vt525Path = "../DOC/GUIDES/ASM/SAMPLES/vt525-exerciser-7000.a",
+    [string]$BuildDir = "BUILD/tmp/asm-terminal-check",
+    [string]$Assembler = "wdc02as"
 )
 
 $ErrorActionPreference = "Stop"
@@ -11,6 +14,56 @@ function Assert-True {
     if (-not $Condition) {
         throw $Message
     }
+}
+
+function Test-Vt100Answerback {
+    param([string]$Path)
+
+    $sourceFile = (Resolve-Path -LiteralPath $Path).Path
+    $lines = [IO.File]::ReadAllLines($sourceFile)
+    $text = [string]::Join([Environment]::NewLine, $lines)
+    $maxLine = ($lines | ForEach-Object { $_.Length } |
+        Measure-Object -Maximum).Maximum
+    Assert-True ($maxLine -le 63) "VT100 has a source line longer than 63 characters"
+    Assert-True ($text -notmatch 'STR8-N 1\.22') "VT100 still advertises STR8-N 1.22"
+    Assert-True ($text -match 'STR8-N 1\.29') "VT100 does not identify the current STR8-N 1.29 ABI"
+
+    foreach ($required in @(
+        'ABI     EQU $F006',
+        'CHARIN  EQU $F013',
+        'CHAROUT EQU $F019',
+        'READY   EQU $F03E',
+        'BUF     EQU $1A00'
+    )) {
+        Assert-True ($text.Contains($required)) "VT100 is missing $required"
+    }
+
+    $symbols = [Collections.Generic.HashSet[string]]::new(
+        [StringComparer]::OrdinalIgnoreCase
+    )
+    foreach ($line in $lines) {
+        $code = ($line -split ';', 2)[0]
+        if ($code -match '^([A-Za-z_][A-Za-z0-9_]*)\s*(?:\s|$)') {
+            [void]$symbols.Add($matches[1])
+        }
+    }
+    Assert-True ($symbols.Count -le 64) "VT100 exceeds ASM-F2's 64-symbol limit"
+
+    New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
+    $testSource = Join-Path $BuildDir 'terminal-answerback-vt100-3000.asm'
+    $hostLines = $lines | ForEach-Object {
+        if ($_ -match "^(\s*[A-Za-z_][A-Za-z0-9_]*\s+)DC C'([^']*)'\s*$") {
+            return ('{0}DB "{1}",$00' -f $matches[1], $matches[2])
+        }
+        $_
+    }
+    [IO.File]::WriteAllLines($testSource, $hostLines, [Text.Encoding]::ASCII)
+    $assemblerCommand = Get-Command $Assembler -ErrorAction Stop
+    & $assemblerCommand.Source -G -L -S -W $testSource | Out-Host
+    Assert-True ($LASTEXITCODE -eq 0) "VT100 WDC assembler exited $LASTEXITCODE"
+
+    Write-Host ("VT100 OK org=3000 symbols={0}/64 line={1} STR8-N=1.29" -f `
+        $symbols.Count, $maxLine)
 }
 
 function Test-TerminalExerciser {
@@ -130,5 +183,6 @@ function Test-TerminalExerciser {
     Write-Host $result
 }
 
+Test-Vt100Answerback -Path $Vt100Path
 Test-TerminalExerciser -Path $Vt102Path -Name "VT102" -ExpectedEnd 0x79CE -ExpectedWaitTokens 2
 Test-TerminalExerciser -Path $Vt525Path -Name "VT525" -ExpectedEnd 0x79B3 -ExpectedWaitTokens 3
