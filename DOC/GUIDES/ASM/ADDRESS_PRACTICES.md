@@ -238,11 +238,11 @@ SEAL> PACKAGE ENTRYNAME $7000
 PKG OK @=$7000 L=$00ll
 SEAL> .
 ASM BYE
->ASM NEW
-  send the complete str8n-v1.23-bank-maint-menu-2000.a
-SEAL> .
-ASM BYE
->G 2000
+>STR8
+  confirm entry to STR8-N
+STR8-N>L
+  send STR8-N/BUILD/v1.29/s19/str8n-v1.29-bank-maint-menu-2000.s19
+  STR8-N executes its validated S9=$2000 entry
 BM> P
 TYPE PUT BnS000 (n=0-2,S=8-F)> PUT B28000
  OK
@@ -432,7 +432,7 @@ ORG $5000
 Wrong under flash ASM: `$5000-$7EFF` is live ASM/HIMON workspace.
 
 ```text
-Run reporter after BOOT or L F
+Run reporter after reset or flash reinstall
 ```
 
 Wrong for session inspection: those actions destroy or replace the live session

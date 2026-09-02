@@ -5,6 +5,7 @@ This is the full guide index for the current R-YORS documentation set.
 ## Start Here
 
 - [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md) - canonical board-facing guide for R-YORS, STR8, and HIMON operation.
+- [CAPABILITIES.md](./CAPABILITIES.md) - current STR8-N/HIMON/ASM-F2 command, ownership, S19, and ABI matrix.
 - [ASM/ASM_USER_GUIDE.md](ASM/ASM_USER_GUIDE.md) - operator guide for ASM source, prompts, END/SEAL, relocation, and packages.
 - [ASM/ADDRESS_PRACTICES.md](ASM/ADDRESS_PRACTICES.md) - practical address-role guide for ASM, SEAL, PACKAGE, INSTALL, LOAD, and AP.
 - [ASM/LIFE16_QUICK_CARD.md](ASM/LIFE16_QUICK_CARD.md) - exact board commands and checkpoints for the ASM-F2 Life bank-2 procedure.
@@ -18,7 +19,7 @@ This is the full guide index for the current R-YORS documentation set.
 - [ASM/BANK_MAINT_RENAME_BOARD_TEST.md](ASM/BANK_MAINT_RENAME_BOARD_TEST.md) - guarded five-character D0-D3 description rename sequence.
 - [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) - canonical architecture guide for R-YORS, STR8, HIMON, memory, flash, source layout, and build outputs.
 - [PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md](PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted `J0`-`J2` implementation, size, recovery, and hardware-proof plan for opaque 32K banks.
-- [STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - accepted reset-time `0`/`1`/`2`/`3`/`S` selector proof record.
+- [STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md](STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - historical selector proof record; current reset choices are `0`-`2`/`C`/`W`/`S`.
 - [STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md](STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - pending persistence proof for the host-accepted Bank Jump Record.
 - [STR8/STR8_V1_02_PRESENTATION_BOARD_TEST.md](STR8/STR8_V1_02_PRESENTATION_BOARD_TEST.md) - fully accepted `$0E5D` presentation and WAIT-discard evidence.
 - [STR8/STR8_GUEST_IMAGE_QUALIFICATION.md](STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) -
@@ -34,7 +35,10 @@ This is the full guide index for the current R-YORS documentation set.
 
 ## Current Milestone
 
-The compatible fixed `$C000-$EFFF` payload path has hardware proof for HIMON,
+The current integrated line is STR8-N `1.29` with HIMON/ASM-F2
+`00.0902(1707)`. HIMON bare `L` uses STR8-N `$F009` `SR/02`, is load-only,
+and rejects the retired `L G`/`L F` forms. The compatible fixed
+`$C000-$EFFF` payload path has hardware proof for HIMON,
 OSI BASIC, and fig-FORTH. That historical proof is not qualification of those
 systems as unrelated opaque 32K `Jn` guests. `J0`-`J2` is hardware-proven on
 the recorded R-YORS bank images; each future unrelated guest requires its own

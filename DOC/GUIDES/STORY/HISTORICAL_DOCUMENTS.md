@@ -1,5 +1,12 @@
 # Historical Documents
 
+> [!IMPORTANT]
+> **Capability status: superseded/mixed historical record.** Retained commands
+> and examples describe the dated image under discussion, not the current
+> board. Current HIMON accepts bare `L` only and calls STR8-N `$F009` `SR/02`;
+> `L G` and `L F` are invalid. Use STR8-N `I` for persistent flash installation.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 This guide traces the practical path from the WDCMON/WDC board-monitor starting
 point, through BSO2 and the Himonia experiments, to the current HIMON path. It
 is a source map, not mythology: where a point is based on visible source, it
@@ -19,8 +26,11 @@ layered routines (`PIN`, `BIO`, `COR`, `SYS`), test lanes, exported symbols, and
 small monitors that could be recomposed.
 
 HIMON is the current compact recomposition: a small supervisory monitor with
-FNV-1a command dispatch, NMI/BRK trap capture, S-record load/go, assembler and
-disassembler helpers, flash command discovery, and fixed ROM ABI jump points.
+FNV-1a command dispatch, NMI/BRK trap capture, a load-only RAM S19 adapter over
+STR8-N `SR/02`, memory/debug commands, AP-v2 clients, flash command discovery,
+and a published RAM service-vector block. ASM-F2 is a separate flash-resident
+catalog command; the old resident assembler/disassembler and load/go forms are
+historical.
 
 ## Short Weave
 

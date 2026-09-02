@@ -20,7 +20,7 @@ ASM-F2, OIL, or AP, and can supervise compatible non-R-YORS guest systems.
 ## System
 
 ```text
-physical RESET -> Bank 3 STR8-N 1.23 -- timeout --> Bank 3 HIMON/ASM 1510
+physical RESET -> Bank 3 STR8-N 1.29 -- timeout --> Bank 3 HIMON/ASM 1707
                        |                              |
                        |                              +--> ASM-F2 -> SEAL/AP
                        |                                           |
@@ -49,6 +49,10 @@ default payload, currently HIMON.
 
 ## Current Capability Snapshot
 
+The compact live command/ABI authority is the
+[Current Capability Matrix](DOC/GUIDES/CAPABILITIES.md). It explicitly
+separates current operation from retained historical proof.
+
 - The current host-built storage policy reserves Bank 1 sector E as an
   application-neutral WORK/TWS sector and Bank 1 sector F as the protected
   Bank-3:F backup. Bank 3 publishes `$FFF0=$1E` and `$FFF1=$1F`; bank/AP maps
@@ -56,11 +60,11 @@ default payload, currently HIMON.
   roles. `$FFF2-$FFF9` remain erased for later directory/configuration use.
   The complete Slice 7 display/update path is board-accepted on 2026-08-26.
 
-- STR8-N `1.23` installs dense S19 ranges transactionally, runs recovery tools
+- STR8-N `1.29` installs dense S19 ranges transactionally, runs recovery tools
   from RAM, maintains bank-directory journals, updates its protected top
   sector through a verified B1:F backup, publishes B1:E WORK/B1:F backup role
   bytes, and launches enrolled Banks 0-3.
-- HIMON/ASM-F2 `00.0826(1510)` is the board-accepted line and provides RAM
+- HIMON/ASM-F2 `00.0902(1707)` is the board-accepted line and provides RAM
   loading, memory/debug commands,
   resident FNV/RJOIN lookup, AP-v2 validation/linking, named banked-carrier
   lookup, automatic carrier installation, and onboard assembly.
@@ -73,16 +77,20 @@ default payload, currently HIMON.
   0-2. `AP Bn name|s000 [dst]` loads/links/runs an installed carrier, `AP L`
   loads without running, and `APS` reports status or carrier detail.
 
-The current `1.23`/`1510` installation and the complete
+HIMON bare `L` now submits records to STR8-N's checked `$F009` `SR/02`
+parser, then applies only HIMON's load-only RAM policy. It has no private S19
+parser; `L G` and `L F` are rejected.
+
+The current `1.29`/`1707` installation and the complete
 ASM -> PACKAGE -> INSTALL -> reset -> APS -> named AP lifecycle are
 board-accepted. APMAN at B2:8 is the transient carrier manager. BANKDUMP at
 B2:9 is the accepted read-only physical-sector inspector and 4x8 bank map.
 The earlier compact-data, persistence, fixed-ROM-head, Bank Maintenance, and
 synthetic `J3` evidence remains valid for unchanged paths.
 
-## Recent Work — 2026-08-26
+## Recent Work — 2026-09-02
 
-- STR8-N 1.23 reserves B1:E as WORK and B1:F as the verified B3:F backup;
+- STR8-N 1.29 reserves B1:E as WORK and B1:F as the verified B3:F backup;
   resident `APS` and BANKDUMP present those roles as `W`/`B` while B3:F is
   protected `P`.
 - APMAN is a banked APC at B2:8. HIMON discovers it after reset, loads it into
@@ -98,7 +106,7 @@ synthetic `J3` evidence remains valid for unchanged paths.
 
 ## Current Board
 
-The accepted split-V1 board line through 2026-08-26 is hardware-proven for:
+The accepted split-V1 board line through 2026-09-02 is hardware-proven for:
 
 - Bank-3 reset, the visible three-second countdown, and timeout into the
   Bank-3 HIMON default;
@@ -112,7 +120,8 @@ The accepted split-V1 board line through 2026-08-26 is hardware-proven for:
 - unchanged pre/post-handoff bank inventories, with accepted full-image CRCs
   `$4B59/$2A3D/$04EF/$4663` for Banks 0-3;
 - boot, backup rotation, restore, and guarded payload updates;
-- RAM inspection, S19 loading, one-shot breakpoints, and single-step debugging;
+- RAM inspection, STR8-N `SR/02`-parsed HIMON load-only S19, explicit `G`,
+  rejected `L G`/`L F`, one-shot breakpoints, and single-step debugging;
 - onboard W65C02 assembly, `%` binary literals, expression/data directives,
   local symbols, `SEAL`, `RELOCATE`, `PACKAGE`, `LOAD`, `INSTALL`, and `AP`;
 - internal AP relocation and resident RJOIN import resolution;
@@ -132,7 +141,7 @@ The banked-AP bullets also apply to the split V1 line. Current HIMON stages
 `AP Bn` input with a RAM-resident `$F010/$0203` select/copy/restore routine;
 its host matrix, invalid-package stage/restore rail, and valid Bank-0 package
 execution are hardware-accepted. The historical V1.02 combined-image proofs
-remain in this repository. Current STR8-N v1.23 is built and released from the
+remain in this repository. Current STR8-N v1.29 is built and released from the
 adjacent standalone STR8-N repository; R-YORS imports its checked public ABI
 and builds only the `$8000-$EFFF` ASM/HIMON payload.
 
@@ -195,7 +204,7 @@ The current line retains the 2026-07-18 size-pass proof: its fixed-width `D`
 path, positive RAM AP/RJOIN import path, missing-import atomicity, and
 banked-source RJOIN path are hardware-proven. It retires the STR8 `M` map and
 the richer resident HIMON `D`/quoted-hash forms, and keeps AP import linking in
-HIMON. Standalone STR8-N v1.23 publishes `$F006` as its resident ABI query;
+HIMON. Standalone STR8-N v1.29 publishes `$F006` as its resident ABI query;
 R-YORS verifies that service and its capabilities through the external public
 contract.
 
@@ -241,8 +250,8 @@ RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19
 
 $8000-$BD2A  ASM-F2, entry $800C
 $BD2B-$BFFF  low-flash growth margin ($02D5 bytes)
-$C000-$EE78  current HIMON image
-$EE79-$EFFF  HIMON growth margin ($0187 bytes)
+$C000-$EE11  current HIMON image
+$EE12-$EFFF  HIMON growth margin ($01EE bytes)
 ```
 
 The build first verifies the adjacent STR8-N manifest, locked top-sector hash,

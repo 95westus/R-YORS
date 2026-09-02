@@ -1,5 +1,12 @@
 # Hashed Assembler Notes
 
+> [!IMPORTANT]
+> **Capability status: superseded/mixed historical record.** Retained commands
+> and examples describe the dated image under discussion, not the current
+> board. Current HIMON accepts bare `L` only and calls STR8-N `$F009` `SR/02`;
+> `L G` and `L F` are invalid. Use STR8-N `I` for persistent flash installation.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 This document captures a possible HIMON direction:
 
 Status: this file was born under the `HASHED_ASM` name and still contains many

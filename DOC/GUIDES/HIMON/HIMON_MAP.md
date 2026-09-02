@@ -166,7 +166,8 @@ flowchart TD
     DISPATCH --> L[L CMD_L]
     DISPATCH --> B[B CMD_B]
     DISPATCH --> N[N CMD_N]
-    DISPATCH --> Q[Q CMD_Q]
+    DISPATCH --> STR8[STR8 CMD_STR8_FNV]
+    DISPATCH --> EXTERNAL[catalog FNV records such as ASM]
 ```
 
 #### Hash And Memory Commands
@@ -197,14 +198,15 @@ flowchart TD
     G --> GOINDIRECT[indirect JMP to target]
 ```
 
-#### Loader, Debug, And Quit Commands
+#### Loader, Debug, And STR8 Commands
 
 ```mermaid
 flowchart TD
     L[L CMD_L] --> LOADMAP[S19 loader map]
     B[B CMD_B] --> DBGMAP[breakpoint map]
     N[N CMD_N] --> STEPMAP[step map]
-    Q[Q CMD_Q] --> QUIESCE[SEI / WAI / MON_REENTER]
+    STR8[STR8 CMD_STR8_FNV] --> CONFIRM[EXEC + CONFIRM hash dispatch]
+    CONFIRM --> RESETOWNER[entry $F000]
 ```
 
 ### RAM Loader Edges
@@ -214,14 +216,17 @@ flowchart TD
 ```mermaid
 flowchart TD
     L[CMD_L] --> ARGS[bare L only]
-    L --> READY[print ready]
-    L --> READ[HIM_READ_LINE_UPPER]
+    L --> ABI[L_STR8_REQUIRE_SERVICE: require SR/02 buffer parser]
+    ABI -->|accepted| READY[print ready]
+    READY --> READ[HIM_READ_LINE_UPPER]
     READ -->|Ctrl-C| ABORT[return immediately to prompt]
-    READ --> PARSE[L_PARSE_RECORD]
-    PARSE --> S0[L_PARSE_RECORD_S0]
-    PARSE --> S1[L_PARSE_RECORD_S1]
-    PARSE --> S9[L_PARSE_RECORD_S9]
-    S0 --> SKIP[S0 skipped after checksum]
+    ABI -->|missing or incompatible| HARDFAIL[LERR=$03; do not receive]
+    READ --> ADAPTER[L_PARSE_RECORD_STR8]
+    ADAPTER --> PARSE[STR8_RECORD_SERVICE at $F009]
+    PARSE --> S0[validated metadata descriptor]
+    PARSE --> S1[validated data descriptor]
+    PARSE --> S9[validated end descriptor]
+    S0 --> SKIP[S0 skipped]
     PARSE -->|fatal error| POISON[latch failure; suppress later S1 writes]
     POISON --> READ
     S9 --> END{failure latched?}
@@ -234,9 +239,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    S1[L_PARSE_RECORD_S1] --> DECODE[decode complete record into FREE_BUF]
-    DECODE --> CHECK[validate count, hex, checksum, and EOL]
-    CHECK --> SPAN{nonempty span ends at or below $7A00?}
+    S1[STR8-N validated S1 descriptor] --> DECODE[payload at descriptor pointer / $7B00]
+    DECODE --> SPAN{nonempty span ends at or below $7A00?}
     SPAN -->|yes| NOTE[L_NOTE_S1_ADDR]
     NOTE --> RAMWRITE[copy validated bytes to RAM]
     SPAN -->|no| RAMPROTECT[LOAD_FAIL_PROTECT; quench through S9 or Ctrl-C]
@@ -246,15 +250,14 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    S9[L_PARSE_RECORD_S9] --> CHECK[L_VERIFY_CHECKSUM_EOL]
-    CHECK --> SAVE[save S9 entry]
+    S9[STR8-N validated S9 descriptor] --> SAVE[save S9 entry]
     SAVE --> DONE[print L OK byte count and ENTRY]
     DONE --> PROMPT[return to prompt]
 ```
 
-HIMON has no S19 flash-write or load-and-run form. Persistent installation and
-flash policy belong to STR8-N; changes to that interface require a separate
-review.
+HIMON has no S19 flash-write or load-and-run form. STR8-N owns S19 parsing and
+persistent installation; HIMON applies only validated records under its
+narrower RAM policy.
 
 ### Trap, Breakpoint, And Step Edges
 
@@ -336,6 +339,7 @@ flowchart TD
     HIMON[HIMON] --> SYS[SYS_INIT / SYS_FLUSH_RX / SYS_WRITE_* / SYS_VEC_SET_*]
     HIMON --> BIO[BIO_FTDI_*]
     HIMON --> FLASH[FLASH_WRITE_BYTE_AXY]
+    HIMON --> STR8REC[STR8-N SR/02 record parser at $F009]
     HIMON --> DBGEXT[DBG_HANDLE_BRK in debug include]
     APP[loaded-language bridge] -.map-patched calls.-> BIO
     APP -.optional re-entry.-> START[START at $8000]
@@ -344,6 +348,12 @@ flowchart TD
 The old fixed HIMONIA entry slots at `$F00D`, `$FADE`, and `$FEED` have been
 removed. Current local bridge builds may patch against `himon-rom-c000.map`, but
 there is no promised fixed high-ROM ABI.
+
+STR8-N is the primary board owner. HIMON has no private S19 fallback: the
+integration lock proves the exact STR8-N top image at build time, and `L`
+checks the `SR/02` discovery face at runtime. A damaged STR8-N image that no
+longer satisfies the complete service contract is a board repair condition,
+not a supported degraded configuration.
 
 ## Full Capability Map
 
@@ -372,7 +382,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | AP package/carrier run | `AP pkg dst`; `AP Bn name\|s000 [dst]`; `AP L ...` | `CMD_AP`, `HIM_APMAN_BOOTSTRAP`, APMAN `APMAN_COMMAND_AP` | The direct form validates and loads a visible envelope. Bank/name/address forms discover APMAN, stage and validate one bank sector, load/link the body below `$7000`, and either run it or return after load-only. | APMAN rejects its own `AM01` carrier as a child and restores Bank 3 around bank access. Named carrier execution is board-accepted. |
 | AP status/list/detail | `APS`; `APS Bn`; `APS Bn name\|s000` | `CMD_APS`, `HIM_APMAN_BOOTSTRAP`, APMAN `APMAN_COMMAND_APS` | Delegates to APMAN. Bare `APS` prints the 24 Bank 0-2 storage sectors with erased/unmanaged/managed/APC/WORK/backup states. Bank/detail forms list or inspect validated carriers. | Read-only. The accepted board has APMAN at B2:8 and BANKDUMP at B2:9; BANKDUMP `M` supplies the complete Bank 0-3 physical map. |
 | Enter STR8 | `STR8` | `CMD_STR8_FNV` | Hash-record alias for `$F000`; confirms, then jumps into the resident STR8 entry without typing `G F000`. | Token hash is `$A2AD0E18`; kind is `K03`; display text is `STR8: BOOTLOADER`. STR8's separate identity marker remains `#5F6A0F7A`. |
-| S-record load to RAM | `L` | `CMD_L`, `L_PARSE_RECORD`, `L_PARSE_RECORD_S1`, `L_VALIDATE_RAM_SPAN` | Accepts S0/S1/S9, validates each complete record before copying S1 data, tracks the byte count, and reports the S9 entry without executing it. A fatal error latches failure, suppresses later S1 writes, and quenches through S9 or Ctrl-C; earlier accepted records remain in RAM. | Every nonempty span touching `$7A00-$FFFF` reports `LERR=$02`; `L G` and `L F` are rejected by the bare-`L` grammar. |
+| S-record load to RAM | `L` | `CMD_L`, `L_STR8_REQUIRE_SERVICE`, `L_PARSE_RECORD_STR8`, `L_VALIDATE_RAM_SPAN` | Requires STR8-N `SR/02`, submits each complete line to `$F009`, copies only a validated S1 descriptor, tracks the byte count, and reports the S9 entry without executing it. A fatal error latches failure, suppresses later S1 writes, and quenches through S9 or Ctrl-C; earlier accepted records remain in RAM. | Missing/incompatible STR8-N reports `LERR=$03` before receive. Every nonempty span touching `$7A00-$FFFF` reports `LERR=$02`; `L G` and `L F` remain invalid. |
 | AP package service | service vector/request block | `HIM_AP_SERVICE`, `HIM_AP_PARSE_MIN`, `HIM_AP_LOAD_*`, `HIM_AP_IMPORT_LINK`, `HIM_AP_FIND_HOLE`, `HIM_APMAN_BOOTSTRAP` | Parses AP-v2 envelopes, loads BODY into an allowed application/tool lane, resolves kind-matched RJOIN imports, applies relocation rows, derives the entry, suggests holes, or discovers/starts APMAN for manager operation `$04`. | Published through `$7E2D-$7E40`; ASM and APMAN share it. AP-v2 uses 16-bit section lengths and accepts 64 relocation/export/import rows. STR8 carries no AP/FNV linker code. |
 | Breakpoint set/clear/list | `B start`, `B C start`, `B L` | `CMD_B`, `DBG_SET_BP`, `DBG_CLEAR_BP`, `DBG_LIST_BP` | Replaces target byte with `BRK` and stores original opcode in monitor workspace. | Patch targets are limited to user program RAM below `$7A00`, so monitor RAM and `$7F00-$7FFF` I/O stay protected. |
 | BRK handling | BRK trap | `MON_BRK_TRAP`, `DBG_HANDLE_BRK` | Detects step breakpoint or user breakpoint, restores original opcode, rewinds PC to trapped opcode. | Plain BRK captures signature byte and re-enters monitor. |
@@ -545,7 +555,7 @@ This leaves `$022D` bytes below `$F000`. The 31-byte growth supplies the
 case-preserving echoed input entry and its resident `SYS_READ_CSTRING` record;
 board acceptance is still pending.
 
-Current board-accepted HIMON/ASM-F2 `00.0826(1510)` map:
+Earlier board-accepted HIMON/ASM-F2 `00.0826(1510)` map:
 
 ```text
 CODE     $292F / 10543
@@ -566,6 +576,23 @@ This leaves `$0187` bytes below `$F000`. The accepted board proof includes
 APMAN discovery at B2:8, `$7000` loading, named carrier installation and
 execution, detailed/list `APS`, BANKAUDIT execution, and BANKDUMP's complete
 read-only physical-sector map with Bank 3 restored.
+
+2026-09-02 STR8-N-owned S19 parser host candidate:
+
+```text
+CODE     $28C8 / 10440
+DATA     $054A /  1354
+TOTAL    $2E12 / 11794
+_END_DATA = $EE12
+L_STR8_REQUIRE_SERVICE = $D0BB
+L_PARSE_RECORD_STR8 = $D0DD
+L_VALIDATE_RAM_SPAN = $D1AC
+```
+
+This leaves `$01EE` bytes below STR8-N at `$F000`. A private S19 parser is
+absent; HIMON calls the checked `SR/02` buffer service and retains only its
+RAM-span/copy/session adapter. Host gates pass; the complete board card and
+physical-reset ownership gate passed on COM4 on 2026-09-02.
 
 ## Edge Evidence Rules
 

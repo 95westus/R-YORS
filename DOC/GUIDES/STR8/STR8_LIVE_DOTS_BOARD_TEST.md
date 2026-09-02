@@ -1,5 +1,10 @@
 # STR8 Live-Dots and Warm-Selector Board Test
 
+> [!NOTE]
+> Historical image-specific work/proof record. Preserve its exact prompts,
+> versions, and artifacts as evidence; they are not current board instructions.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 Status: hardware accepted.
 
 This is the focused, non-destructive board rail for the compact startup and

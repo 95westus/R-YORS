@@ -1,5 +1,10 @@
 # ASM-F2 Final-Image Onboard Test Cards
 
+> [!NOTE]
+> Historical image-specific work/proof record. Preserve its exact prompts,
+> versions, and artifacts as evidence; they are not current board instructions.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 The board-accepted `00.0814(1524)` compact-string image has its own focused,
 paste-ready card: [`COMPACT_DC_BOARD_TEST_CARD.md`](COMPACT_DC_BOARD_TEST_CARD.md).
 The material below remains exact evidence for the earlier final-image phases.

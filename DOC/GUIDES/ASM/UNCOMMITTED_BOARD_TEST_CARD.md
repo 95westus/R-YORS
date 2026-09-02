@@ -1,5 +1,10 @@
 # Frozen `1157` / STR8-N `1.2` Board Test Card
 
+> [!NOTE]
+> Historical image-specific work/proof record. Preserve its exact prompts,
+> versions, and artifacts as evidence; they are not current board instructions.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 Status: retained historical qualification card; superseded for current loading.
 
 STR8-N now publishes `1.21` and the current R-YORS rebuild publishes `1303`.

@@ -63,7 +63,7 @@ sources and an explanation of their former roles are under `OLD`.
   utility; `M` distinguishes valid AP envelopes from ordinary used bytes and
   also displays all four Bank-3 directory records.
 - `terminal-answerback-vt100-3000.a` - read-only Tera Term/VT100 probe using
-  the pinned STR8-N 1.23 raw console ABI. It sends ENQ and Primary Device
+  the pinned STR8-N 1.29 raw console ABI. It sends ENQ and Primary Device
   Attributes, bounds both reply waits, and prints replies as hex plus safe
   printable text. Board-accepted with configured answerback `RYORS` and
   Primary DA reply `ESC [ ? 1 ; 2 c`.

@@ -89,6 +89,7 @@ HIMON_ROM_S19 := $(S19_DIR)/himon-rom-c000.s19
 HIMON_ROM_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 HIMON_ROM_BIN := $(BIN_DIR)/himon-rom-c000.bin
 HIMON_BANKED_AP_CHECK := tools/check_himon_banked_ap.ps1
+HIMON_STR8_RECORD_CHECK := tools/check_himon_str8_record_client.ps1
 AP_V2_PACKAGE_CHECK := tools/check_ap_v2_package.ps1
 HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-c000-install-8000.s19
 HIMON_APV2_INSTALL_S19 := $(S19_DIR)/himon-apv2-bank3-c-e.s19
@@ -477,7 +478,7 @@ str8n-external-check: $(STR8N_IMPORTED_CONTRACT)
 str8n-external-release-check: str8n-external-artifacts $(STR8N_LOCK) $(STR8N_EXTERNAL_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8N_EXTERNAL_CHECK) -Str8nHome "$(STR8N_HOME)" -ManifestPath "$(STR8N_MANIFEST)" -LockPath "$(STR8N_LOCK)" -ImportedContractPath "$(STR8N_IMPORTED_CONTRACT)" -ReceiptPath "$(STR8N_RECEIPT)" -RequireClean
 
-himon: $(ROM_LIB) $(HIMON_S19) himon-rom-bin
+himon: $(ROM_LIB) $(HIMON_S19) himon-rom-bin himon-str8-record-check
 	@echo "Built $(HIMON_S19)."
 	@$(MAKE) artifacts
 
@@ -485,8 +486,11 @@ himon-rom: $(ROM_LIB) $(HIMON_ROM_S19)
 	@echo "Built $(HIMON_ROM_S19)."
 	@$(MAKE) artifacts
 
-himon-banked-ap-check: $(HIMON_ROM_S19) $(HIMON_BANKED_AP_CHECK) $(STR8N_IMPORTED_CONTRACT)
+himon-banked-ap-check: $(HIMON_ROM_S19) $(HIMON_BANKED_AP_CHECK) $(STR8N_IMPORTED_CONTRACT) himon-str8-record-check
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_BANKED_AP_CHECK) -HimonSourcePath "$(HIMON_SRC)" -HimonS19Path "$(HIMON_ROM_S19)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -PublicContractPath "$(STR8N_IMPORTED_CONTRACT)"
+
+himon-str8-record-check: $(HIMON_ROM_S19) $(HIMON_STR8_RECORD_CHECK) $(STR8N_IMPORTED_CONTRACT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_STR8_RECORD_CHECK) -HimonSourcePath "$(HIMON_SRC)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -PublicContractPath "$(STR8N_IMPORTED_CONTRACT)"
 
 himon-rom-bin: $(HIMON_ROM_BIN)
 	@echo "Built $(HIMON_ROM_BIN)."
@@ -1480,7 +1484,7 @@ endif
 
 .PHONY: \
 	all firmware lab everything proofs apps tests help release release-local release-files \
-	himon himon-rom himon-rom-bin himon-banked-ap-check \
+	himon himon-rom himon-rom-bin himon-banked-ap-check himon-str8-record-check \
 	str8n-external-artifacts str8n-external-check str8n-external-release-check ryors-v1.2 \
 	str8-readonly-bank-tools-check himon-rom-install-s19 himon-apv2-install-s19 rom-install-s19 \
 	basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr \

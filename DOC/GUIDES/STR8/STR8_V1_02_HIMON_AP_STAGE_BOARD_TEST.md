@@ -1,5 +1,10 @@
 # STR8 V1.02 Bank-3 HIMON And AP-Stage Board Test
 
+> [!NOTE]
+> Historical image-specific work/proof record. Preserve its exact prompts,
+> versions, and artifacts as evidence; they are not current board instructions.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 Status: hardware-accepted on 2026-08-08 as HIMON `00.0807(2141)` with the
 preserved STR8-N `00.0807(2000)` sector F.
 

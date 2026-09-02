@@ -1,5 +1,12 @@
 # The Rolling Of My Own Hashed Runtime System
 
+> [!IMPORTANT]
+> **Capability status: superseded/mixed historical record.** Retained commands
+> and examples describe the dated image under discussion, not the current
+> board. Current HIMON accepts bare `L` only and calls STR8-N `$F009` `SR/02`;
+> `L G` and `L F` are invalid. Use STR8-N `I` for persistent flash installation.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 This is the book spine for R-YORS as a designed, built, and argued system. It
 does not replace the reference docs. It gives the story a table of contents:
 what each chapter should answer, what questions remain alive, and where the

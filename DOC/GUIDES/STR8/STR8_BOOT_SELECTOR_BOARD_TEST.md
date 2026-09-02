@@ -1,5 +1,10 @@
 # STR8 Boot Selector Board Test
 
+> [!NOTE]
+> Historical image-specific work/proof record. Preserve its exact prompts,
+> versions, and artifacts as evidence; they are not current board instructions.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 This is the staged hardware-proof rail for the reset-time `0`/`1`/`2`/`3`/`S`
 selector. It does not replace the accepted interactive `J0`-`J2` proof.
 

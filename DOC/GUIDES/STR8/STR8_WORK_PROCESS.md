@@ -1,5 +1,10 @@
 # STR8 Work Process
 
+> [!NOTE]
+> Historical image-specific work/proof record. Preserve its exact prompts,
+> versions, and artifacts as evidence; they are not current board instructions.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 This is the working rail for returning to STR8 without reopening the whole
 design each time.
 

@@ -7,7 +7,7 @@ For the bench-facing names and layered diagrams of the active control areas,
 see [Control Deck Map](../../GENERATED/CONTROL_DECK_MAP.md). The formal ranges
 in this file remain authoritative.
 
-The standalone HIMON map and the split STR8-N v1.23 integration map are listed
+The standalone HIMON map and the split STR8-N v1.29 integration map are listed
 separately below. R-YORS builds `$8000-$EFFF`; the adjacent STR8-N repository
 owns `$F000-$FFFF` and composes the optional full-bank payload.
 
@@ -17,9 +17,9 @@ Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
 $8000-$BFFF   current image gap
-$C000-$E92E   HIMON CODE, START/standalone RESET entry at $C000
-$E92F-$EE78   HIMON DATA
-$EE79-$FFF9   current image gap and external STR8-N/high-ROM space
+$C000-$E8C7   HIMON CODE, START/standalone RESET entry at $C000
+$E8C8-$EE11   HIMON DATA
+$EE12-$FFF9   current image gap and external STR8-N/high-ROM space
 $FFFA-$FFFF   hardware vectors
 ```
 
@@ -80,10 +80,10 @@ Combined image layout:
 ```text
 $8000-$BD2A   ASM-F2 low-flash image, entry $800C
 $BD2B-$BFFF   current low-flash growth margin; no carrier storage in Bank 3
-$C000-$EE78   HIMON body, including resident AP-v2 linker/APMAN bootstrap
-$EE79-$EFFF   current image gap inside the E sector
-$F000-$FD54   STR8-N v1.23 resident supervisor, installer, loader, and services
-$FD55-$FD5B   currently available resident growth, 7 bytes
+$C000-$EE11   HIMON body, including resident AP-v2 linker/APMAN bootstrap
+$EE12-$EFFF   current image gap inside the E sector
+$F000-$FD55   STR8-N v1.29 resident supervisor, installer, loader, and services
+$FD56-$FD5B   currently available resident growth, 6 bytes
 $FD5C-$FFAF   stored unified STR8-N RAM worker, copied to $0200-$0453
 $FFB0-$FFEF   fixed V1 directory, erased in a new primary image
 $FFF0-$FFF9   STR8 config pocket
@@ -168,9 +168,9 @@ a dense STR8-N `I` payload before installing them.
 
 Historical STR8 bench tests temporarily placed fig-Forth at `$C000-$EFFF` with
 `BUILD/s19/fig-forth-str8-update.s19`. That was a deliberate V0 `U`
-replacement of HIMON, not a current v1.23 installation procedure.
+replacement of HIMON, not a current v1.29 installation procedure.
 
-The matching OSI MS BASIC artifact is likewise historical. Current v1.23 flash
+The matching OSI MS BASIC artifact is likewise historical. Current v1.29 flash
 installation uses standalone STR8-N dense range payloads.
 
 ## Flash Window Mapping
@@ -217,12 +217,14 @@ L G          usage error
 L F          usage error
 ```
 
-The first fatal syntax, checksum, or protected-span error poisons the receive
+HIMON calls STR8-N `$F009` `SR/02` for record syntax, type, checksum, and
+decoded descriptor data. It carries no private S19 parser. The first fatal
+syntax, checksum, or protected-span error poisons the receive
 session. HIMON retains the first failure, suppresses all later S1 writes, and
 continues consuming non-echoed input until a valid S9 or Ctrl-C. Accepted S1
 records from before the error remain in RAM.
 
-There is no user-facing sector erase/condense path in HIMON. STR8-N v1.23 owns
+There is no user-facing sector erase/condense path in HIMON. STR8-N v1.29 owns
 selected-bank erase, program, verify, and journal flows through its `I`
 transaction and standalone RAM maintenance tools.
 
@@ -364,7 +366,7 @@ when no valid target is available. Thus `D 7DFD 7DFF` reports the bank selected
 for the preceding successful STR8 handoff rather than the Bank 3 selection
 that is live after returning to HIMON.
 
-`$1A00-$1FFF` is free for user code and data in v1.23. HIMON cold start still
+`$1A00-$1FFF` is free for user code and data in v1.29. HIMON cold start still
 clears it as part of the general RAM clear, but STR8-N, HIMON, ASM-F2, Bank
 Maintenance, and the maintained RAM tools do not reserve any byte in the
 range. The `$7C00-$7DBF` High Tool Overlay replaces the former low-RAM tool

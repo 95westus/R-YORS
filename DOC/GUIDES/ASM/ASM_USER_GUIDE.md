@@ -4,9 +4,8 @@ The stable HIMON service-vector/RAM-card and AP v2 package interfaces are
 defined in [ASM_ABI_V1.md](ASM_ABI_V1.md). Internal ASM addresses are not part
 of that ABI.
 
-Status: current operator guide for ASM v1 as of 2026-08-21. The repository
-build identifies as ASM-F2 `00.0821(1039)`; the bounded-table note is also
-reconciled with board-observed `00.0821(0132)`. ASM is a young onboard W65C02
+Status: current operator guide for ASM v1 as of 2026-09-02. The repository and
+accepted integrated board identify as ASM-F2 `00.0902(1707)`. ASM is a young onboard W65C02
 workbench, not a hosted toolchain. The hardware proof source of truth remains
 [TEST_PLAN.md](TEST_PLAN.md). For WDC, ca65, and vasm translation, including
 the non-equivalent AP metadata model, see
@@ -87,20 +86,29 @@ G 4000
 ```
 
 For an older board image or a narrow development pass, update HIMON through
-STR8 when needed, then return with `G HIMON`. Load the optional external
+STR8-N `I` when needed, then return with `W` or `C`. Load the optional external
 reporter first if table detail will be needed later:
 
 ```text
 L              send SRC/BUILD/s19/asm-session-report-v1.2-7000.s19
 ```
 
-Load flash-resident ASM into the visible low-flash window:
+Install flash-resident ASM into an already-enrolled Bank 3 through STR8-N:
 
 ```text
-L F            send SRC/BUILD/s19/asm-v1-flash-8000.s19
+>STR8          confirm entry
+STR8-N>I
+B0-3: 3
+RANGE: 8-B
+I B3 8-B WRITE? Y: Y
+S19            send RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-asm-bank3-8-b.s19
+...COMMIT? Y: Y
+OK
+STR8-N>W
 ```
 
-The current flash image should report `LF OK WR=3969 GO=800C`. A useful service
+The ASM-only S9 `$FFFF` preserves the Bank-3 directory entry, so it is not a
+first-install image. Use the combined `8-E` payload for first enrollment. A useful service
 sanity check after updating HIMON is:
 
 ```text
@@ -812,7 +820,7 @@ reuses that low RAM, so run `asm-session-report` before staging if symbol and
 fixup names from the current session are required.
 
 For a current STR8-N top-sector update, load the standalone repository's
-`BUILD/v1.23/s19/str8n-v1.23-top-update-2000.s19` through STR8-N `L`. It embeds
+`BUILD/v1.29/s19/str8n-v1.29-top-update-2000.s19` through STR8-N `L`. It embeds
 the exact manifest-checked top image, verifies a full B1:F backup, preserves
 the live directory/configuration pocket, and requires exact confirmations
 before B3:F erase. The former ASM transient writers are archived under

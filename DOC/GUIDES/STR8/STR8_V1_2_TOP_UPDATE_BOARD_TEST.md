@@ -1,5 +1,10 @@
 # STR8-N v1.2 Top-Update Board Test
 
+> [!NOTE]
+> Historical image-specific work/proof record. Preserve its exact prompts,
+> versions, and artifacts as evidence; they are not current board instructions.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 Date: 2026-08-11
 
 Status: onboard migration path hardware-accepted. The transcript accepts the

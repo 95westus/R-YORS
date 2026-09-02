@@ -1,5 +1,11 @@
 # APMAN/APC Dissection
 
+> [!NOTE]
+> The topology remains the accepted APMAN/APC reference. The version block
+> below identifies the board image from which its exact addresses and hashes
+> were captured; it is not the current component-version declaration. See
+> [the capability matrix](../CAPABILITIES.md) for the live line.
+
 This is the post-board-test map of the accepted AP carrier system. It ties the
 physical flash carrier, serialized AP-v2 envelope, transient RAM overlays,
 resident services, and operator commands to exact addresses.

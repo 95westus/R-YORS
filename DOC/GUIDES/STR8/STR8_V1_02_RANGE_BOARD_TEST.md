@@ -1,5 +1,10 @@
 # STR8 V1.02 Range Installer Board Test
 
+> [!NOTE]
+> Historical image-specific work/proof record. Preserve its exact prompts,
+> versions, and artifacts as evidence; they are not current board instructions.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 Status: parameterized range installer hardware-accepted as `00.0807(2000)`.
 
 This is the first destructive board rail for the V1.02 parameterized dense

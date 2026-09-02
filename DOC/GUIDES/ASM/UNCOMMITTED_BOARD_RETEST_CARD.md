@@ -1,5 +1,10 @@
 # STR8-N `1.21` / R-YORS `1303` Board Card
 
+> [!NOTE]
+> Historical image-specific work/proof record. Preserve its exact prompts,
+> versions, and artifacts as evidence; they are not current board instructions.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 Status: host-accepted and board-accepted; all three phases complete.
 
 This card supersedes the `1157` residual procedure. The retained `1157`

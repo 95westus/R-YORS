@@ -59,8 +59,8 @@ does not recommend a centralized command registry.
 The `$1FE9-$1FFF` state board is one shared fixed-address structure. Its fields
 are currently repeated in:
 
-- [`str8.asm`](../../../SRC/STR8/str8.asm)
-- [`str8-worker.asm`](../../../SRC/STR8/str8-worker.asm)
+- [`str8.asm`](../../../../STR8-N/src/str8.asm)
+- [`str8-worker.asm`](../../../../STR8-N/src/str8-worker.asm)
 - [`himon.asm`](../../../SRC/HIMON/himon.asm)
 
 A narrow `str8-worker-state-eq.inc` could define a base, field offsets, size,
@@ -99,7 +99,7 @@ and current table capacities are not necessarily properties of the on-media
 format. Prefix aliases may be retained temporarily if they make the first
 change smaller and easier to compare.
 
-The existing [`str8-record-eq.inc`](../../../SRC/STR8/str8-record-eq.inc) is the
+The existing [`str8-record-eq.inc`](../../../../STR8-N/src/str8-record-eq.inc) is the
 model for this kind of shared fixed ABI.
 
 ## Priority 2: Structured Metadata Sources

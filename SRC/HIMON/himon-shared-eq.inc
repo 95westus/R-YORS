@@ -217,9 +217,9 @@ KEYT_ESC_BYTE              EQU             $7E94
 ; ----------------------------------------------------------------------------
 ; LOAD (S-Record) workspace
 ; ----------------------------------------------------------------------------
-; Persistent CMD_L state stays outside $7E95-$7EA8. The private parser uses
-; transient cells in that former record-service request block while the
-; foreground loader owns the command processor.
+; Persistent CMD_L state stays outside STR8-N's $7E95-$7EA8 record-service
+; request/result block. LOAD_LINE_STATUS is transient and is consumed before
+; each record-service request overwrites the same byte.
 LOAD_REC_KIND              EQU             $7E79
 LOAD_FAIL_CODE             EQU             $7E7A
 LOAD_DST_LO                EQU             $7E7B
@@ -232,9 +232,6 @@ LOAD_FAIL_ADDR_LO          EQU             $7E82
 LOAD_FAIL_ADDR_HI          EQU             $7E83
 
 LOAD_LINE_STATUS           EQU             $7E95
-LOAD_COUNT                 EQU             $7E95
-LOAD_DATA_LEN              EQU             $7E96
-LOAD_SUM                   EQU             $7E97
 LOAD_HAVE_DATA             EQU             $7EAB
 LOAD_LAST_LO               EQU             $7EAE
 LOAD_LAST_HI               EQU             $7EAF
@@ -260,6 +257,7 @@ LOAD_REC_KIND_SKIP         EQU             $03
 LOAD_FAIL_NONE             EQU             $00
 LOAD_FAIL_PARSE            EQU             $01
 LOAD_FAIL_PROTECT          EQU             $02
+LOAD_FAIL_SERVICE          EQU             $03
 
 LOAD_RANGE_MAX             EQU             $08
 LOAD_RANGE_BASE            EQU             $7EBE

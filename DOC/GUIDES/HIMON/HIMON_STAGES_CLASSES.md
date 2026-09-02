@@ -333,7 +333,7 @@ CMD_HASH_*     token hashing, record scan, record match, entry lookup
 FNV1A_*        runtime hash calculation
 MATH_*         hash multiply support
 CMD_*          command bodies exposed through FNV records
-L_*            RAM-only S-record loader
+L_*            STR8-N-parsed, HIMON-policy RAM loader
 HIM_*          line input and HBSTR output
 MON_*          boot, trap, context, print, return-status helpers
 DBG_*          breakpoints and step
@@ -433,7 +433,7 @@ any later free-list heap
 | `MON_CMD_*` | Split Himon | Older modular command bodies | Full-word shell commands such as display/fill/copy/load/go/resume. |
 | `MON_CTX_*` | Himon parent/Himonia | Current debug context | Saved A/X/Y/P/S/PC, edit, print, and `RTI` resume. |
 | `MON_PRINT_*` | Himonia | Current monitor output | Stop reports, register reports, memory dump formatting, return-status display. |
-| `L_*` / `MON_LOAD_*` | Himon parent/Himonia | Current loader behavior | HIMON-owned S0/S1/S9 session, validate-before-copy RAM write below `$7A00`, S9 entry report, and prompt return. |
+| `L_*` / `MON_LOAD_*` | Himon parent/Himonia | Current loader behavior | STR8-N `SR/02` owns S0/S1/S9 decoding; HIMON owns validate-before-copy RAM writes below `$7A00`, poisoned-session drain, S9 entry report, and prompt return. |
 | `DBG_*` | Himonia | Current debug include | Breakpoint slots, temporary step breakpoint, opcode-length support. |
 | `DIS_*` | Himonia | Current disassembler include | Opcode/mode tables rendered into readable W65C02 mnemonics. |
 | `ASM_*` | Himonia | Current assembler include | Numeric mini assembler; future hash assembler adds symbols/fixups. |
@@ -492,13 +492,16 @@ Current short commands group naturally like this:
 ?      help
 #      FNV/catalog list or lookup
 D M    memory display and modify
-U      disassemble
 ASM    flash-resident assembler when present
 R X    register/context view, edit, and resume
 G L    explicit execute, RAM S19 load-and-return
+AP APS AP-v2 direct/managed execution and carrier inspection
 B N    breakpoints and single step
-Q      controlled BRK test/quit
+STR8   confirmed return to the primary board owner at `$F000`
 ```
+
+`U` and `Q` occur in historical stage descriptions above; they are not
+commands in the current HIMON help/dispatch surface.
 
 The command class split is important:
 

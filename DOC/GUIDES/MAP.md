@@ -12,6 +12,7 @@ repository `README.md` under `SRC`.
 README.md
   -> DOC/INDEX.md
      -> GUIDES/OPERATORS_GUIDE.md
+     -> GUIDES/CAPABILITIES.md
      -> GUIDES/TECHNICAL_GUIDE.md
      -> GUIDES/REF.md
      -> GUIDES/GLOSSARY.md
@@ -26,7 +27,7 @@ R-YORS
   keeps source, ROMs, maps, decisions, reports, and manuals together
 
 STR8
-  reset-time recovery/update guard
+  primary reset-time recovery/update owner
   installs dense sector ranges transactionally and runs recovery RAM tools
   maintains directory journals, guarded top-sector backup/rewrite, and recovery
   validates enrolled-bank handoffs and publishes the accepted Bank Jump Record
@@ -38,8 +39,8 @@ IVI / LEAF
 
 HIMON
   default monitor payload
-  owns ordinary inspection, loading, debug, disassembly, assembler direction,
-  and current hash/catalog workbench behavior
+  owns ordinary inspection, load-only RAM policy, debug, AP client behavior,
+  and the hash/catalog workbench; delegates S19 record parsing to STR8-N SR/02
 
 ASM
   onboard assembler and AP v2 object producer
@@ -78,6 +79,7 @@ Short form:
 ```text
 R-YORS boots through STR8.
 STR8 keeps recovery/update safe.
+STR8 parses S19 records for both its own recovery loader and HIMON's adapter.
 STR8 hands normal operation to HIMON or another payload.
 HIMON provides the default monitor/debug/catalog workbench.
 ASM creates AP objects; OIL integrates and runs them.
@@ -88,6 +90,7 @@ APMAN manages installed AP carriers; BANKDUMP inspects their physical map.
 
 ```text
 Operator
+  CAPABILITIES.md
   OPERATORS_GUIDE.md
   REF.md
   LOGS/HARDWARE_TEST_LOG.md
@@ -160,6 +163,7 @@ LOCAL/s3x/
 
 ```text
 OPERATORS_GUIDE.md              current board-facing guide
+CAPABILITIES.md                  live command, ownership, S19, and ABI matrix
 ASM/ASM_USER_GUIDE.md           ASM operator guide
 ASM/ADDRESS_PRACTICES.md        ASM address-role operator guide
 ASM/BANKED_AP_CARRIER_VS_AP_STORE.md carrier lifecycle versus record-store design

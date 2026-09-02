@@ -8,17 +8,19 @@ supporting references only when you need detail.
 ```text
 README.md
 DOC/GUIDES/OPERATORS_GUIDE.md
+DOC/GUIDES/CAPABILITIES.md
 DOC/GUIDES/TECHNICAL_GUIDE.md
 ```
 
 - [GUIDES/OPERATORS_GUIDE.md](./GUIDES/OPERATORS_GUIDE.md) - board operation: current status, STR8 workflows, HIMON commands, payload updates, recovery.
+- [GUIDES/CAPABILITIES.md](./GUIDES/CAPABILITIES.md) - live STR8-N/HIMON/ASM-F2 command, S19-owner, and ABI matrix.
 - [GUIDES/TECHNICAL_GUIDE.md](./GUIDES/TECHNICAL_GUIDE.md) - architecture: product roles, source layout, memory, flash, IVI, build artifacts.
 - [GUIDES/REF.md](./GUIDES/REF.md) - compact reference sheet.
 - [GUIDES/GLOSSARY.md](./GUIDES/GLOSSARY.md) - vocabulary contract.
 - [GUIDES/DECISIONS.md](./GUIDES/DECISIONS.md) - settled policy.
 - [GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md](./GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted `J0`-`J2` opaque-bank implementation and hardware-proof plan.
-- [GUIDES/STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md](./GUIDES/STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - accepted reset-time `0`/`1`/`2`/`3`/`S` selector proof record.
-- [GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md](./GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - pending persistence proof for the host-accepted `$1FFD-$1FFF` Bank Jump Record.
+- [GUIDES/STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md](./GUIDES/STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - historical reset-selector proof record; current selector is `0`-`2`/`C`/`W`/`S`.
+- [GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md](./GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - accepted historical development record for the current `$7DFD-$7DFF` Bank Jump Record.
 - [GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md](./GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) - required per-image handoff, peripheral, vector, CRC, and recovery procedure for unrelated 32K guests.
 - [GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md](./GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - retained S19/bank-volume direction and superseded compatible-bank design history.
 - [GUIDES/PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md](./GUIDES/PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md) - accepted, unimplemented `$FFF2` bank-eligibility, RAM-window, search-order, and BANKDUMP-resolution contract.
@@ -32,12 +34,15 @@ DOC/GUIDES/TECHNICAL_GUIDE.md
 
 ## Current Status
 
-The compatible fixed `$C000-$EFFF` payload path has hardware proof for HIMON,
+The current board line is STR8-N `1.29` with HIMON/ASM-F2
+`00.0902(1707)`. HIMON bare `L` uses STR8-N `$F009` `SR/02`, reports S9
+without executing, and rejects the retired `L G`/`L F` forms. The compatible
+fixed `$C000-$EFFF` payload path has hardware proof for HIMON,
 OSI BASIC, and fig-FORTH. That is not opaque 32K `Jn` qualification.
 `J0`-`J2` is hardware-proven on the recorded R-YORS bank images; every
 unrelated guest requires its own H/P/V/CRC record. HIMON RAM-only debug is
 hardware-proven for the current one-shot breakpoint and single-step surface.
-The reset-time `0`/`1`/`2`/`3`/`S` selector, uppercase interactive echo, and
+The reset-time `0`/`1`/`2`/`C`/`W`/`S` selector, uppercase interactive echo, and
 Bank Jump Record are hardware-accepted. The current AP-v2 carrier lifecycle is
 also accepted: ASM PACKAGE/INSTALL, reset-time APMAN discovery, named AP/AP L,
 APS status/detail, BANKAUDIT, and BANKDUMP's read-only physical map.

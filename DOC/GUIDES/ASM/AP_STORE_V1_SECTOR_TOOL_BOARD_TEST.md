@@ -1,5 +1,10 @@
 # AP Store V1 Single-Sector Tool Board Test
 
+> [!NOTE]
+> Historical image-specific work/proof record. Preserve its exact prompts,
+> versions, and artifacts as evidence; they are not current board instructions.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 Status: host-accepted; board-accepted for AP bootstrap, CLAIM, and FORMAT.
 Occupied-sector CONVERT remains pending separate operator approval and proof.
 

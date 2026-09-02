@@ -6,11 +6,12 @@ connect.
 
 ## Read First
 
-1. [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md) - use the board: STR8, HIMON, payload updates, recovery, and current status.
-2. [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) - understand the system: product roles, memory, flash, IVI, source layout, and build artifacts.
-3. [REF.md](./REF.md) - compact reference sheet.
-4. [GLOSSARY.md](./GLOSSARY.md) - shared vocabulary.
-5. [DECISIONS.md](./DECISIONS.md) - settled calls to avoid reopening by accident.
+1. [CAPABILITIES.md](./CAPABILITIES.md) - verify the live STR8-N/HIMON/ASM-F2 command and ownership surface.
+2. [OPERATORS_GUIDE.md](./OPERATORS_GUIDE.md) - use the board: STR8, HIMON, payload updates, recovery, and current status.
+3. [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) - understand the system: product roles, memory, flash, IVI, source layout, and build artifacts.
+4. [REF.md](./REF.md) - compact reference sheet.
+5. [GLOSSARY.md](./GLOSSARY.md) - shared vocabulary.
+6. [DECISIONS.md](./DECISIONS.md) - mixed current and historical decisions; the capability matrix wins on live behavior.
 
 ## Status And Proof
 
@@ -26,8 +27,8 @@ connect.
   [J0-J2 first board test](STR8/STR8_J012_BOARD_TEST.md),
   [Bank Jump Record board test](STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md),
   [independent guest qualification](STR8/STR8_GUEST_IMAGE_QUALIFICATION.md),
-  [restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md), and
-  [edge evidence](STR8/STR8_EDGE_DUMP.md).
+  [restore/failure gates](STR8/STR8_V0_RESTORE_FAILURE_GATES.md), and the
+  [standalone STR8-N map index](STR8/STR8.md).
 - [HIMON](HIMON/HIMON_MAP.md) - top-level routine-purpose and subsystem maps,
   stage notes, debug, search, and edge evidence.
 - [MEMORY](MEMORY/MEMORY_MAP.md) - address ownership and allocation direction;

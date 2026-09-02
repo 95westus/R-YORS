@@ -78,7 +78,7 @@ first enrollment or replacement of the normal `$C000` Bank-3 entry.
 
 ## Runtime Public Interface
 
-HIMON includes only the generated external contract. The fixed v1.23 services
+HIMON includes only the generated external contract. The fixed v1.29 services
 used or checked by R-YORS are:
 
 ```text
@@ -112,6 +112,10 @@ The two `L` commands intentionally differ:
 HIMON accepts bare `L` only; `L G` and `L F` are usage errors. Explicit `G`
 runs a HIMON-loaded program. STR8-N uses its load-and-run behavior for versioned
 maintenance and recovery tools.
+
+Both paths use STR8-N's `$F009` `SR/02` parser. HIMON has no private S19
+decoder; it owns only its destination/copy/accounting and load-only session
+policy, and refuses `L` before receive if STR8-N is absent or incompatible.
 
 Both receivers poison a session after the first fatal record or destination
 error. They stop applying S1 data and keep the command prompt closed while

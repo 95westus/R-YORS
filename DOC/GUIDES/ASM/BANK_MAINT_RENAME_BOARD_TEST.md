@@ -5,7 +5,7 @@ Status: host-built; board proof pending.
 Use this exact onboard source:
 
 ```text
-C:\SRC\R-YORS\RELEASE\ARTIFACTS\SOURCES\str8n-v1.23-bank-maint-menu-2000.a
+C:\SRC\STR8-N\tools\bank-maint\str8n-v1.29-bank-maint-menu-2000.a
 ```
 
 At HIMON:
@@ -37,4 +37,3 @@ Require `B3F REWRITE`, a displayed `SCRATCH Bn:s`, `BACKUP VERIFIED`, and
 exact confirmation. Run `M` again and require only the selected five-character
 description to change; type, seal, entry, journal, other directory rows, and
 the erased scratch state must be unchanged.
-

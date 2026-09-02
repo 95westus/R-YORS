@@ -1,5 +1,11 @@
 # APMAN V1 Board Preparation and First Carrier Test
 
+> [!NOTE]
+> Accepted development record for the original STR8-N 1.23/APMAN bring-up.
+> Preserve its exact artifacts and transcript as evidence; use
+> [the capability matrix](../CAPABILITIES.md) and current operator guides for
+> STR8-N 1.29/HIMON `00.0902(1707)` operation.
+
 Status: host candidate. This card is destructive to all of Bank 2 and D2.
 Do not mark APMAN hardware-proven until every required checkpoint below passes.
 

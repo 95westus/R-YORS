@@ -176,11 +176,11 @@ that makes transcripts and diagrams easier to follow.
 - **Record Payload Tray (RPT):** `$7B00-$7BFB`, the 252-byte decoded S19
   payload produced by the validated-record service. It lives inside the VOD
   and is transient: its matching RTC descriptor says what the bytes mean.
-- **Record Transit Card (RTC):** `$7E95-$7EA8`, the frozen V1 validated-record
-  request/result block. It carries the `PARSE` or `APPLY_LF` request and then
-  the decoded kind, address, length, payload pointer, entry, and failure data.
+- **Record Transit Card (RTC):** `$7E95-$7EA8`, the frozen V2 validated-record
+  request/result block. It carries the parser operation, format, and source,
+  then the decoded kind, address, length, payload pointer, entry, and status.
 - **Record Frontdoor (RFD):** `$F009-$F00F`, the STR8 validated-record jump
-  entry and its `SR/01` signature/capability bytes. A caller uses the RTC, then
+  entry and its `SR/02` signature/capability bytes. A caller uses the RTC, then
   enters through this frontdoor; it does not jump into STR8's private parser.
 - **Recovery State Capsule (RSC):** `$1FE9-$1FFF`, STR8's compact bank, sector,
   copy, worker-result, and update-state control block.

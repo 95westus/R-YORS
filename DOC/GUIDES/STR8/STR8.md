@@ -1,6 +1,6 @@
 # STR8-N Integration Index
 
-STR8-N v1.23 is maintained in the adjacent standalone `STR8-N` repository.
+STR8-N v1.29 is maintained in the adjacent standalone `STR8-N` repository.
 R-YORS owns no live STR8-N implementation source.
 
 For current work:
@@ -22,8 +22,10 @@ copy-plus-enrollment, metadata-only `D2` adoption followed by successful `J2`,
 and physical-reset recovery. The observed non-R-YORS payload is called the
 **factory onboard firmware** unless later artifact provenance identifies it
 more specifically; operator directory labels beginning with `WDC` are not
-identity proof. Version 1.23 is the current host-qualified release candidate;
-its board proof remains pending.
+identity proof. It is retained only as historical evidence. Version 1.29 is
+the current host-qualified and factory-migration/quiet-start board-accepted
+release. The integrated HIMON `00.0902(1707)` loader calls its `$F009`
+`SR/02` record parser directly.
 
 Files in this directory other than the boundary/index pages are retained
 hardware proof and historical board procedures. Their artifact names,
@@ -33,7 +35,7 @@ time; they are intentionally not rewritten as current instructions.
 The external ABI is imported from:
 
 ```text
-STR8-N/BUILD/v1.23/include/str8n-public.inc
+STR8-N/BUILD/v1.29/include/str8n-public.inc
 ```
 
 and locked by:

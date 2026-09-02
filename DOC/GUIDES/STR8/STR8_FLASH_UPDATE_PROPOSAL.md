@@ -1,5 +1,12 @@
 # STR8 Flash Update Proposal
 
+> [!IMPORTANT]
+> **Capability status: superseded/mixed historical record.** Retained commands
+> and examples describe the dated image under discussion, not the current
+> board. Current HIMON accepts bare `L` only and calls STR8-N `$F009` `SR/02`;
+> `L G` and `L F` are invalid. Use STR8-N `I` for persistent flash installation.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 This is the historical design note for STR8 flash update behavior. The
 first-pass physical `M` map was implemented and hardware-proven, then removed
 from the current resident image in the 2026-07-18 size pass. Its transcripts

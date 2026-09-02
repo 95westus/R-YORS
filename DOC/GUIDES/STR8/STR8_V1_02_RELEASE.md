@@ -1,5 +1,10 @@
 # STR8-N V1.02 Release Record
 
+> [!NOTE]
+> Historical image-specific work/proof record. Preserve its exact prompts,
+> versions, and artifacts as evidence; they are not current board instructions.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 Status: frozen hardware-accepted release. Firmware source is commit
 `ee45327281b2`; later commits freeze its operator rail, hardware evidence,
 release status, and generated documentation. Current source is a partially

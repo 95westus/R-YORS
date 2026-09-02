@@ -1,6 +1,7 @@
 # ASM-F2 Hosted-Assembler Crosswalk
 
-Status: current for the repository ASM-F2 `00.0821(1039)` build on 2026-08-21.
+Status: current for the repository and board-accepted ASM-F2
+`00.0902(1707)` build on 2026-09-02.
 The bounded-table observation below is also reproduced in the supplied board
 transcript from ASM-F2 `00.0821(0132)`.
 

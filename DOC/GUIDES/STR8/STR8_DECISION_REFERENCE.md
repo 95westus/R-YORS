@@ -1,5 +1,12 @@
 # STR8 Development Decision Reference
 
+> [!IMPORTANT]
+> **Capability status: superseded/mixed historical record.** Retained commands
+> and examples describe the dated image under discussion, not the current
+> board. Current HIMON accepts bare `L` only and calls STR8-N `$F009` `SR/02`;
+> `L G` and `L F` are invalid. Use STR8-N `I` for persistent flash installation.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 STR8 means **Subroutine To Return**. It is pronounced **S-T-R-8**, may be read
 as **Straight 8**, and deliberately echoes `RTS` / Return from Subroutine.
 

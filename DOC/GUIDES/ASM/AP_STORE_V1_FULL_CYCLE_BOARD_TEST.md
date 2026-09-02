@@ -1,5 +1,10 @@
 # AP Store V1 LED Full-Cycle Board Test
 
+> [!NOTE]
+> Historical prepared card for the AP Store branch. It is not the current
+> APMAN carrier workflow and its retained STR8-N 1.23 transcript is not a
+> current installation instruction. See [the capability matrix](../CAPABILITIES.md).
+
 Status: prepared; board proof not yet captured.
 
 This is the managed-object alternative to the raw sector-base carrier. See

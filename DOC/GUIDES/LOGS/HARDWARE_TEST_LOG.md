@@ -25596,3 +25596,229 @@ LISTEN ONLY = COMPLETE; RX=0 BYTES; TX=0 BYTES
 This rules out an unsolicited startup banner during that observation window;
 it does not prove what device or firmware owns COM3. No further target traffic
 was sent.
+
+## 2026-09-02 STR8-N-Owned HIMON S19 Parser Acceptance On COM4
+
+The board began at a live STR8-N prompt with no compatible local HIMON. A
+Bank-3 restart identified the primary owner exactly as STR8-N 1.29 and returned
+`NO` for the absent local image. The accepted host artifacts were:
+
+```text
+STR8-N B3:F top SHA-256       C52CBE162B23147657406AC4709D8908639351FBEF97FDCD016EE77FF32B0682
+HIMON C-E S19 SHA-256         47EE6274285A6D8763B356F82E8A3AD10D272DA5C64A8A7EB036CB9892E95265
+HIMON stream                  384 S1 records; $C000-$EFFF; S903C0003C
+COM port                      COM4, FTDI VID 0403 PID 6001, 115200 8N1
+```
+
+STR8-N enrolled the new Bank-3 `C-E` row as type `$48`, description `HIMON`.
+Only `$C000-$EFFF` was selected; protected STR8-N sector F was not selected.
+The full-speed payload produced two receive-time sector dots, the explicit
+commit gate, the final-sector dot, and `OK`:
+
+```text
+STR8-N>I
+B0-3: 3
+RANGE: C-E
+TYPE: 48
+DESC: HIMON
+I B3 C-E WRITE? Y: Y
+S19
+..COMMIT? Y: Y.
+OK
+STR8-N>C
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0902(1609)
+>
+```
+
+The positive parser/client case proved that HIMON did not execute S9. The
+loaded four-byte body ran only after the separate `G 3000` command:
+
+```text
+>L
+L S19
+L @3000
+L OK=0004 ENTRY=3000
+>D 3000 3003
+3000: A9 11 60 EA | ..`.
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=11 X=30 Y=30 P=35 S=FD Nv-BdIzC
+>
+```
+
+For poisoned-session proof, a valid setup stream wrote `AA BB` at
+`$3010-$3011`. A checksum-invalid S1 returned `LERR=$01`; a later valid S1
+inside the same stream was suppressed; valid S9 drained the stream and
+returned the prompt. Readback remained unchanged:
+
+```text
+>D 3010 3011
+3010: AA BB | ..
+>L
+L S19
+LERR=$01
+>D 3010 3011
+3010: AA BB | ..
+>
+```
+
+The upper RAM edge accepted one byte at `$79FF`. A later record spanning
+`$79FF-$7A00`, a record starting at `$7A00`, and a record starting at `$8000`
+each returned `LERR=$02`; each failed stream was drained through valid S9.
+The accepted edge byte remained intact:
+
+```text
+>L
+L S19
+L @79FF
+L OK=0001 ENTRY=3000
+>L
+L S19
+LERR=$02
+>L
+L S19
+LERR=$02
+>L
+L S19
+LERR=$02
+>D 79FE 79FF
+79FE: 00 5A | .Z
+>
+```
+
+Ctrl-C before the first record returned directly to the prompt with no `L OK`.
+Ctrl-C during a partial second record after one accepted S1 also returned
+directly; the accepted `$3020=$44` byte remained intact and the partial line
+caused no mutation.
+
+The published discovery bytes and the final physical-reset path were then
+observed directly:
+
+```text
+>D F00C F00F
+F00C: 53 52 02 03 | SR..
+>STR8
+RUN STR8: BOOTLOADER @F000 K=03 ? Y
+RESET
+
+STR8-N 1.29
+0-2 C W S: S
+I L C W J
+STR8-N>
+
+physical RESET
+RESET
+
+STR8-N 1.29
+0-2 C W S: S
+I L C W J
+STR8-N>C
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0902(1609)
+>
+```
+
+Result: accepted. STR8-N remains the primary reset/board owner and sole S19
+parser owner. HIMON has no private parser fallback; its `L` command consumes
+the live `SR/02` descriptor and retains only its narrower RAM application and
+session policy.
+
+### Artifact-provenance correction: `1609` run rejected
+
+The interpretation immediately above was withdrawn before closing the gate.
+Post-run inspection found that S19 SHA-256
+`47EE6274285A6D8763B356F82E8A3AD10D272DA5C64A8A7EB036CB9892E95265`
+was a stale `1609` artifact: its `$C000-$EFFF` bytes contained neither the
+`JSR $F009` instruction nor the `L_STR8_REQUIRE_SERVICE` signature check. Its
+behavioral results therefore describe the retired private-parser HIMON and do
+not accept the STR8-N-owned parser change. The bytes and transcript remain
+above as rejected historical evidence; they are not the accepted candidate.
+
+### Corrected `1707` parser-client acceptance
+
+The component stream was regenerated from the current linked source. Both
+current `C-E` output names were byte-identical, and direct S19 byte inspection
+found the expected external-service call and compatibility gate:
+
+```text
+ryors-v1.2-himon-bank3-c-e.s19 SHA-256  2C8BE8F649961F6312FAEEF5AA24F75BA4268E52F059B663D3F211839385EBD5
+himon-apv2-bank3-c-e.s19 SHA-256        2C8BE8F649961F6312FAEEF5AA24F75BA4268E52F059B663D3F211839385EBD5
+range / S9                              $C000-$EFFF / $C000
+S1 records / transmitted bytes          384 / 29196
+L_STR8_REQUIRE_SERVICE signature gate   $D0BB
+JSR $F009                               $D0FF
+```
+
+STR8-N 1.29 then replaced the existing Bank-3 `C-E` row through the same
+full-speed, three-sector guarded transaction:
+
+```text
+STR8-N>I
+B0-3: 3
+RANGE: C-E
+I B3 C-E WRITE? Y: Y
+S19
+..COMMIT? Y: Y.
+OK
+STR8-N>C
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0902(1707)
+>
+```
+
+The complete parser-specific card was repeated against `1707`. The live
+discovery face and positive load/explicit-execution path were:
+
+```text
+>D F00C F00F
+F00C: 53 52 02 03 | SR..
+>L
+L S19
+L @3000
+L OK=0004 ENTRY=3000
+>D 3000 3003
+3000: A9 11 60 EA | ..`.
+>G 3000
+GO 3000
+
+#GO# ENTRY=3000
+RET A=11 X=30 Y=30 P=35 S=FD Nv-BdIzC
+>
+```
+
+The checksum-invalid record again returned `LERR=$01`; a later valid S1 in the
+same poisoned stream was suppressed, valid S9 drained it, and `$3010-$3011`
+remained `AA BB`. The upper boundary again accepted `$79FF=$5A`; crossing into
+`$7A00`, starting at `$7A00`, and starting at `$8000` each returned
+`LERR=$02`, with `$79FF` unchanged. Ctrl-C before the first record and during a
+partial second record both returned directly without `L OK`; `$3020=$44`
+remained unchanged by the partial line.
+
+Finally, the operator pressed physical RESET. The corrected image retained the
+primary-owner path and cold entry:
+
+```text
+RESET
+
+STR8-N 1.29
+0-2 C W S: S
+I L C W J
+STR8-N>C
+BOOT COLD
+RAM ZERO OK
+
+HIMON V 00.0902(1707)
+>
+```
+
+Corrected result: accepted. This `1707` run, not the rejected `1609` run,
+closes the board gate for STR8-N-owned HIMON S19 parsing.

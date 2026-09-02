@@ -8,7 +8,7 @@ B3:F, and erases the scratch afterward.
 ## Exact source
 
 ```text
-C:\SRC\R-YORS\RELEASE\ARTIFACTS\SOURCES\str8n-v1.23-bank-maint-menu-2000.a
+C:\SRC\STR8-N\tools\bank-maint\str8n-v1.29-bank-maint-menu-2000.a
 ```
 
 ## Load and run
@@ -63,4 +63,3 @@ M
 Require D3's identity and entry address to be unchanged, its journal to be
 `FCFFFFFF`, and the displayed scratch sector to be erased again. Then use the
 menu's displayed quit key or Enter.
-

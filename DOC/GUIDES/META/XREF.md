@@ -9,6 +9,10 @@ formed/sealed/buried/gone lifecycle terms.
 ## Document Cross-Reference
 
 ```text
+CAPABILITIES.md
+  canonical live STR8-N/HIMON/ASM-F2 command, S19-owner, and public-ABI matrix
+  overrides dated command examples retained in plans, board cards, and story docs
+
 OPERATORS_GUIDE.md
   canonical board-facing guide for current R-YORS, STR8, and HIMON operation
   absorbs the old RTFM-R-YORS.md, RTFM-str8.md, and RTFM-himon.md details
@@ -64,9 +68,8 @@ AP_LINKER_CURRENT_IMAGE_GATES.md
   HARDWARE_TEST_LOG.md
 
 DECISIONS.md
-  records settled naming, hash, STR8, ASM, contract, local-home, and doc-shape calls
-  should be checked before reopening design alternatives
-  overrides looser exploratory notes unless explicitly reopened
+  records current and superseded naming, hash, STR8, ASM, contract, local-home,
+  and doc-shape calls; use CAPABILITIES.md for live command behavior
 
 DOC_FLASH.md
   records short alerts when doc shape, edicts, canonical homes, QCC pages, or

@@ -34,7 +34,7 @@ Bank-0/1/2 payload and owns all sector-F installation/update paths.
 ?              help
 # [token]      list/resolve FNV records
 D start [end]  dump one byte or inclusive range
-M addr         modify protected-range-checked RAM
+M start [end|+count]  modify protected-range-checked RAM
 G addr         execute address
 L              load S0/S1/S9 into RAM; report S9, do not execute
 STR8           confirmed jump to $F000
@@ -46,7 +46,6 @@ APS                        Bank 0-2 carrier/media status
 APS Bn                     list valid carriers in one bank
 APS Bn name|s000           show one validated carrier
 B/N/R/X        breakpoint, step, context, resume
-Q              quiesce
 ```
 
 `L G` and `L F` are not HIMON commands. Use `G` explicitly after HIMON `L`.
@@ -56,12 +55,15 @@ Q              quiesce
 ```text
 I        guarded dense flash-range install
 L        load recovery RAM S19 and execute S9
-H        warm-enter compatible Bank-3 HIMON
+C        cold-enter compatible Bank-3 HIMON
+W        warm-enter compatible Bank-3 HIMON
 J0-J2    enter enrolled Bank 0-2 guest
 J3       use Bank-3 RESET vector
 ```
 
 STR8-N `L` and HIMON `L` deliberately have different execution semantics.
+HIMON delegates record parsing to STR8-N `$F009` `SR/02` and fails closed if
+that service is absent or incompatible.
 
 ## Accepted AP Carrier Inventory
 

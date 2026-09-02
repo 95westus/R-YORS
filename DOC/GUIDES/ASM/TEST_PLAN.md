@@ -1,5 +1,12 @@
 # ASM Test Plan
 
+> [!NOTE]
+> This is a cumulative test/evidence record. Older gates intentionally retain
+> the command surface of the image they tested. For the current board use
+> [the capability matrix](../CAPABILITIES.md): HIMON `L G`/`L F` are retired,
+> HIMON bare `L` calls STR8-N `SR/02`, and persistent installation uses
+> STR8-N `I`.
+
 This is the test plan for ASM proper, the hash-based source-line assembler. It
 does not test HIMON's legacy `A` mini-assembler except where a comparison is
 explicitly useful.
@@ -15674,3 +15681,79 @@ the host `.asm`, emitted `$092C` bytes, FNV `$CEF1F837`, and predicted `$09AD`
 package are unchanged. The corrected retry assembled without error, packaged
 and installed exactly as predicted, survived reset, resolved by name, and
 passed the complete map/B3-restore gate.
+
+## 2026-09-02 STR8-N-Owned HIMON S19 Parser
+
+Host status: implementation and structural/build gates accepted. Board status:
+accepted on COM4 on 2026-09-02.
+
+STR8-N is the primary board owner. HIMON's bare `L` command now requires the
+published `$F009` `SR/02` buffer-parser ABI before printing `L S19`; a missing
+signature, version, or buffer capability returns `LERR=$03` without entering a
+receive session. STR8-N owns S0/S1/S9 syntax, type, count, hex, checksum, and
+record-end validation. HIMON retains its complete-record application policy:
+nonempty S1 spans must end at or below `$7A00`, validation precedes every RAM
+write, the first error poisons the session through S9 or Ctrl-C, accepted byte
+count and address progress remain HIMON-owned, and S9 is reported as `ENTRY`
+without automatic execution.
+
+There is no private-parser fallback. The integration lock pins the exact
+STR8-N top-image hash; the runtime gate checks its published discovery face.
+Absent, incompatible, or otherwise damaged STR8-N is a board fault rather than
+a supported HIMON-only mode.
+
+The authoritative STR8-N generated public contract now includes the complete
+parser request/result card, payload descriptor, kinds, capabilities, and status
+constants from `str8-record-eq.inc`. R-YORS pins that new contract hash. The
+linked HIMON map must contain `L_STR8_REQUIRE_SERVICE`,
+`L_PARSE_RECORD_STR8`, `L_PARSE_RECORD_STR8_COPY`, and
+`L_VALIDATE_RAM_SPAN`; it must not contain `L_PARSE_RECORD`,
+`L_PARSE_HEADER`, `L_SUM_ADD_A`, `L_VERIFY_CHECKSUM_EOL`, or
+`L_PARSE_HEX_BYTE_STRICT`.
+
+Current host measurement:
+
+```text
+CODE                     $28C8 / 10440
+DATA                     $054A /  1354
+resident total           $2E12 / 11794
+_END_DATA                $EE12
+margin to STR8-N $F000   $01EE / 494
+```
+
+Required host gates:
+
+```text
+make -C ../STR8-N all
+make -C SRC str8n-external-check
+make -C SRC himon-str8-record-check
+make -C SRC himon
+make -C SRC himon-banked-ap-check
+make -C SRC asm-test
+git diff --check
+git -C ../STR8-N diff --check
+```
+
+Required board gates use one exact combined STR8-N/HIMON image:
+
+1. Confirm `$F00C-$F00F = 53 52 02 03`, enter bare `L`, send
+   `S1073000A91160EAC4` and `S9033000CC`, and require `L @3000`,
+   `L OK=0004 ENTRY=3000`, and a prompt without execution. Dump `$3000-$3003`,
+   then run `G 3000` explicitly.
+2. Send a checksum-invalid S1 to an unchanged target, require `LERR=$01` and
+   no mutation, then require the loader to consume through valid S9 before the
+   prompt returns.
+3. Accept `S10479FF5A29`; reject crossing `S10579FF11224F` without changing
+   `$79FF`; reject `S1047A005A27` and `S10480005A21` with `LERR=$02`. Complete
+   each failed stream with valid S9 and confirm no tail becomes HIMON commands.
+4. Repeat Ctrl-C before the first record and after one accepted S1. Require an
+   immediate prompt, no mutation from the interrupted line, and no `L OK`.
+5. Append the exact image hashes and terminal transcript to the hardware log.
+   Keep the feature-queue item open until this evidence is captured.
+
+Board result: accepted. STR8-N 1.29 installed the exact `$C000-$EFFF` HIMON
+stream under a new `48/HIMON` row, with SHA-256
+`2C8BE8F649961F6312FAEEF5AA24F75BA4268E52F059B663D3F211839385EBD5`.
+All four cases above passed, `$F00C-$F00F` read `53 52 02 03`, and physical
+RESET returned through STR8-N before cold-entering `HIMON V 00.0902(1707)`.
+The complete transcript is retained in `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`.

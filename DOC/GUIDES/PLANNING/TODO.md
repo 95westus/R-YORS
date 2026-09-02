@@ -6,6 +6,17 @@ Review this checklist before starting any ASM feature implementation. An item
 stays unchecked until its source, regression tests, documentation, resident
 size measurement, and required hardware proof are complete.
 
+### Current pass: STR8-N-owned HIMON S19 parsing
+
+- [x] Route HIMON's bare `L` command through the published STR8-N `SR/02`
+  buffer parser at `$F009`. HIMON retains its `$7A00` destination ceiling,
+  validate-before-copy application, poisoned-session drain, byte accounting,
+  S9 entry report, and no-auto-execute policy. The source, generated public
+  ABI, structural host check, documentation, and resident size measurement are
+  complete. The boundary/error/poison/Ctrl-C card and physical-reset ownership
+  gate passed on COM4 on 2026-09-02; retained evidence is in
+  `DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md`.
+
 ### Next session: AP storage across Banks 0-2
 
 Implementation authority: [AP_STORAGE_BANKS_0_2_PLAN.md](AP_STORAGE_BANKS_0_2_PLAN.md).
@@ -178,7 +189,7 @@ B2/B1/B0 for bank/name commands and `APS`. Flash ASM accepts exactly
 `INSTALL source B0`, `B1`, or `B2`. APMAN validates one carrier per sector,
 rejects duplicate names, protects `$FFF0/$FFF1` roles, lists APC/AP Store/media
 states, and rejects application BODY ranges that would overwrite its live
-`$7000` overlay. STR8-N 1.23 and AP Store V1 media bytes are unchanged.
+`$7000` overlay. STR8-N 1.29 and AP Store V1 media bytes are unchanged.
 
 The proven manager command card currently requires `AP`/`AP L` at column zero,
 although HIMON's command dispatcher accepts leading blanks. Keep the baseline
@@ -386,9 +397,14 @@ RESTORED`; the map extension gate is complete.
   zero-page allocation; reopen them there only for demonstrated size pressure
   or a separate functional need.
 - The standalone STR8-N validated S19 record service is published at stable
-  entry `$F009` as `SR/02`, capabilities `$03`. STR8-N owns its RAM-load and
-  flash-staging use. HIMON `L` deliberately uses its own S0/S1/S9 parser and
-  does not call `$F009`.
+  entry `$F009` as `SR/02`, capabilities `$03`. STR8-N is the primary board
+  owner and owns S0/S1/S9 syntax validation for its RAM-load, flash-staging,
+  and HIMON `L` clients. HIMON verifies the `SR/02` buffer capability before
+  receiving a stream, then applies the validated descriptor under its narrower
+  RAM-only policy; it carries no private S19 parser. STR8-N absence or damage
+  is a board fault, not a mode HIMON recovers from: the integration lock pins
+  the complete top-image hash, while the runtime gate checks the published
+  signature/version/capability face before calling it.
   If another format is scheduled after V1.02, add minimal Intel HEX16 types
   `00`/`01`, then an explicit
   counted binary receiver with expected CRC16. Do not auto-detect raw binary or

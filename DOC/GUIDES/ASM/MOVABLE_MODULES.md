@@ -1,5 +1,12 @@
 # ASM Movable Modules And Flash Object Store
 
+> [!IMPORTANT]
+> **Capability status: superseded/mixed historical record.** Retained commands
+> and examples describe the dated image under discussion, not the current
+> board. Current HIMON accepts bare `L` only and calls STR8-N `$F009` `SR/02`;
+> `L G` and `L F` are invalid. Use STR8-N `I` for persistent flash installation.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 Status: planned next direction after the required ASM board proofs. Do not
 start this before the current onboard expression-math proof and remaining
 required hardware gates are captured.

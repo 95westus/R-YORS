@@ -1,5 +1,10 @@
 # STR8 V1.02 Compact-Image Refresh Board Test
 
+> [!NOTE]
+> Historical image-specific work/proof record. Preserve its exact prompts,
+> versions, and artifacts as evidence; they are not current board instructions.
+> See [the current capability matrix](../CAPABILITIES.md).
+
 This card freezes the hardware-accepted `ee45327281b2` image. Current source
 has a partially hardware-accepted banner/wait/selector presentation successor
 and is not byte-identical; keep the identities, addresses, and transcripts

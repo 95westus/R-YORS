@@ -67,10 +67,10 @@ also requires the locked standalone STR8-N checkout to be clean.
 ```text
 $8000-$BD2A   ASM-F2, entry $800C
 $BD2B-$BFFF   low-flash growth margin
-$C000-$EE78   HIMON
-$EE79-$EFFF   HIMON growth margin
-$F000-$FD54   standalone STR8-N v1.23 resident
-$FD55-$FD5B   available 7-byte growth margin
+$C000-$EE11   HIMON
+$EE12-$EFFF   HIMON growth margin
+$F000-$FD55   standalone STR8-N v1.29 resident
+$FD56-$FD5B   available 6-byte growth margin
 $FD5C-$FFAF   stored unified STR8-N worker, runs at $0200-$0453
 $FFB0-$FFEF   bank directory
 $FFF0-$FFF9   configuration pocket
@@ -89,7 +89,8 @@ The current resident commands are:
 ```text
 I        install a dense payload S19 in a selected legal flash-sector range
 L        load a recovery S19 into RAM and execute its S9 entry
-H        warm-enter compatible Bank-3 HIMON at $C000
+C        cold-enter compatible Bank-3 HIMON at $C000
+W        warm-enter compatible Bank-3 HIMON at $C000
 J0-J2    enter an enrolled Bank 0, 1, or 2 guest
 J3       hand off through the Bank-3 RESET vector
 ```
@@ -108,7 +109,7 @@ when the repositories are sibling folders.
 ?              help
 # [token]      list records, or resolve a token without executing it
 D start [end]  dump one byte or an inclusive address range
-M addr         modify RAM below $7A00
+M start [end|+count]  modify RAM below $7A00
 G addr         execute an address
 STR8           enter resident STR8-N at $F000 after confirmation
 L              load S0/S1/S9 into RAM and report the S9 address
@@ -121,13 +122,14 @@ B C start      clear a breakpoint
 B L            list breakpoints
 N              single-step trapped context
 X              resume trapped context
-Q              quiesce with WAI
 ```
 
 HIMON `L` is deliberately load-only. It does not execute S9. `L G` and `L F`
-are rejected. To run a loaded program, inspect the reported S9 and issue an
-explicit `G address`. HIMON rejects S1 spans at `$7A00` or above and rejects
-flash destinations.
+are rejected. Each record is parsed by STR8-N's checked `$F009` `SR/02`
+service; HIMON has no private S19 parser and fails closed if that owner is
+absent or incompatible. To run a loaded program, inspect the reported S9 and
+issue an explicit `G address`. HIMON rejects S1 spans at `$7A00` or above and
+rejects flash destinations.
 
 If a record is malformed or targets protected/flash space, HIMON prints the
 loader error, poisons that load, and silently consumes the remaining S-records
