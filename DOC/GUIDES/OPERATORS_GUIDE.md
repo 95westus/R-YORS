@@ -175,10 +175,11 @@ sector in Bank 0, 1, or 2, program the envelope, and restore Bank 3. `APS`
 checks discovery after reset; `AP` loads, links, and runs it. `AP L` performs
 the same named load/link without transferring control.
 
-APMAN itself is installed at B2:8 and runs transiently at `$7000`. BANKDUMP is
-installed at B2:9 and supplies read-only header/page/all-sector inspection and
-the full `E/U/A/W/B/P` map. See the
-[APMAN card](ASM/APMAN_V1_BOARD_TEST.md) and
+APMAN itself is installed at B2:8 and runs transiently at `$7000`. You do not
+preload APMAN; HIMON loads the installed APMAN carrier automatically when an
+APMAN-backed command is entered. BANKDUMP is installed at B2:9 and supplies
+read-only header/page/all-sector inspection and the full `E/U/A/W/B/P` map.
+See the [APMAN card](ASM/APMAN_V1_BOARD_TEST.md) and
 [BANKDUMP card](ASM/BANK_DUMP_AP_CARD.md).
 
 An optional checked ASM build spends 651 additional bytes on full AP checking
