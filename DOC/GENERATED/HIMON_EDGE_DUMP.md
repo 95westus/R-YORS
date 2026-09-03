@@ -3,7 +3,7 @@
 Generated-style edge dump for `HIMON/himon.asm`.
 
 For the readable subsystem/capability view, see
-[HIMON_MAP.md](HIMON_MAP.md).
+[HIMON_MAP.md](../GUIDES/HIMON/HIMON_MAP.md).
 
 Scope: direct `JSR target` and `JMP target` edges only. Relative branches, fallthrough, data labels, indirect calls, and computed jumps are not included. Source is the nearest preceding global label.
 

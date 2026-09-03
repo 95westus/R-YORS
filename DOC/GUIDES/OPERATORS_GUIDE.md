@@ -215,5 +215,6 @@ and host artifacts for full-image export and recovery.
 - [Memory Map](MEMORY/MEMORY_MAP.md)
 - [HIMON Map](HIMON/HIMON_MAP.md)
 - [ASM User Guide](ASM/ASM_USER_GUIDE.md)
+- [AP And OIL Guide](AP/AP_OIL_GUIDE.md)
 - [STR8-N integration boundary](STR8/PRODUCT_BOUNDARIES.md)
 - [Hardware test log](LOGS/HARDWARE_TEST_LOG.md)

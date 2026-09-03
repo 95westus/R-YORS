@@ -6,6 +6,9 @@
 > board. Current HIMON accepts bare `L` only and calls STR8-N `$F009` `SR/02`;
 > `L G` and `L F` are invalid. Use STR8-N `I` for persistent flash installation.
 > See [the current capability matrix](../CAPABILITIES.md).
+> Current ASM operation and binary contracts live in
+> [ASM_USER_GUIDE.md](ASM_USER_GUIDE.md) and [ASM_ABI_V1.md](ASM_ABI_V1.md).
+> This file is retained as the design notebook and implementation lineage.
 
 This document captures a possible HIMON direction:
 
@@ -371,7 +374,9 @@ patch sites, origins, banks, and kinds.
 The exploratory what-if belongs in the scratchpad:
 [IDEAS.md](../../IDEAS.md).
 
-The executable test ladder lives in [TEST_PLAN.md](TEST_PLAN.md). It starts
+The completed executable test ladder lives in
+[TEST_HISTORY.md](TEST_HISTORY.md). The current compact gate is
+[TEST_PLAN.md](TEST_PLAN.md). The historical ladder starts
 with host-side checks for `ASMTEST_3000.asm`, then grows layer by layer as ASM
 adds tokenizing, vocabulary lookup, parsing, symbols, expressions, classification,
 emission, fixups, directives, and reports.

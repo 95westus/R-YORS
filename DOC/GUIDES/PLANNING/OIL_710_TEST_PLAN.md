@@ -6,6 +6,8 @@
 > board. Current HIMON accepts bare `L` only and calls STR8-N `$F009` `SR/02`;
 > `L G` and `L F` are invalid. Use STR8-N `I` for persistent flash installation.
 > See [the current capability matrix](../CAPABILITIES.md).
+> For the current AP/APC, OIL, APMAN, carrier, and AP Store model, use the
+> [AP And OIL Guide](../AP/AP_OIL_GUIDE.md).
 
 Release: `.710`
 

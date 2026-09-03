@@ -396,7 +396,7 @@ are intentionally collapsed.
 
 For the readable command/subsystem maps and full HIMON capability map, see
 [HIMON_MAP.md](../HIMON/HIMON_MAP.md). For the direct generated-style edge
-listing, see [HIMON_EDGE_DUMP.md](../HIMON/HIMON_EDGE_DUMP.md).
+listing, see [HIMON_EDGE_DUMP.md](../../GENERATED/HIMON_EDGE_DUMP.md).
 
 ### Reset And Initialization
 

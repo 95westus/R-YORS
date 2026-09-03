@@ -673,7 +673,7 @@ DOC/GUIDES/TECHNICAL_GUIDE.md
 - `DOC/GUIDES` top level is for entry points and stable cross-cutting
   references. Domain, story, planning, compatibility, and working-note material
   belongs one level down in shelves such as `STR8/`, `HIMON/`, `QCC/`,
-  `STORY/`, `MEMORY/`, `CATALOG/`, `ASM/`, `HASH/`, `LOGS/`, `META/`,
+  `STORY/`, `MEMORY/`, `CATALOG/`, `ASM/`, `AP/`, `HASH/`, `LOGS/`, `META/`,
   and `PLANNING/`. Compatibility stubs belong under `META/COMPAT/`.
 - `OPERATORS_GUIDE.md` is the canonical board-facing guide for current R-YORS,
   STR8, and HIMON operation.
@@ -701,9 +701,12 @@ DOC/IDEAS.md
   `DERIVED-SRC` for generated/source-derived evidence; and `UNKNOWN` when the
   origin is not yet known. Provenance tags are truth markers, not legal
   ownership claims.
-- `INDEX.md` answers: what exists?
-- `TOC.md` answers: what order should I read it in?
-- `MAP.md` answers: how do docs and systems relate?
+- `DOC/INDEX.md` is the single documentation front door. It answers what is
+  current, where to start, and where each supporting lane lives.
+- `INDEX.md`, `TOC.md`, and `MAP.md` under `DOC/GUIDES/` are compatibility
+  pointers only; do not rebuild competing indexes in them.
+- `HISTORY.md` classifies current authorities, deep references, evidence,
+  historical design, generated material, and incubator documents.
 - `REF.md` is the quick operational reference.
 - `META/XREF.md` is wiring: docs, source, symbols, module/export rules.
 - `META/PROVENANCE.md` records idea-origin marking rules for the book, docs,
@@ -712,16 +715,17 @@ DOC/IDEAS.md
 - `GLOSSARY.md` defines vocabulary only.
 - `META/BIB.md` records source corpus/provenance only.
 - `HIMON/HIMON_MAP.md` is the readable HIMON edge/capability map.
-- `HIMON/HIMON_EDGE_DUMP.md` is the raw direct-edge evidence.
+- `DOC/GENERATED/HIMON_EDGE_DUMP.md` is the generated raw direct-edge evidence.
 - `STR8/STR8_EDGE_DUMP.md` is the raw STR8 direct-edge evidence.
 - Each concept should have one canonical home. Other documents may give a short
   summary and a link, but should not restate the full explanation.
 - Avoid reader pinball: if document A points to document B as the authority for
   a concept, document B should not require document A to understand that same
   concept. Back-links are for navigation, not required reading loops.
-- When updating docs, update the canonical home first, then indexes, maps, and
-  cross-references. Generated docs should remain evidence or views, not the
-  primary hand-written explanation.
+- When updating docs, update the canonical home first, then `DOC/INDEX.md` only
+  if the main reading path changed, and update `HISTORY.md` if classification
+  changed. Generated docs remain evidence or views, not the primary
+  hand-written explanation.
 - HTML pages under `DOC/HTML` and the root `index.html` redirect are generated,
   ignored, untracked presentation views of Markdown under `DOC`, the root
   README, and repository `README.md` files under `SRC`. Do not hand-edit them

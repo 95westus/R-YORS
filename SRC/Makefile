@@ -345,8 +345,8 @@ EDGE_DOCS_GEN := tools/gen_edge_dump.ps1
 DOCS_WATCH := tools/watch_docs.ps1
 DOCS_HTML_GEN := tools/gen_html_docs.ps1
 DOC_HTML_DIR := ../DOC/HTML
-GUIDE_HIMON_EDGE_DUMP := ../DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md
-EDGE_DOCS := $(GUIDE_HIMON_EDGE_DUMP)
+HIMON_EDGE_DUMP := $(DOC_GENERATED_DIR)/HIMON_EDGE_DUMP.md
+EDGE_DOCS := $(HIMON_EDGE_DUMP)
 HELP_GEN := tools/show_make_help.ps1
 BIN_POLICY := tools/bin_policy.ps1
 BIN_CHECK := tools/check_bin_policy.ps1
@@ -1451,8 +1451,8 @@ $(GENERATED_DOCS): $(CALL_ORDER_SRC) $(DOCS_GEN)
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "New-Item -ItemType Directory -Force -Path '$(DOC_GENERATED_DIR)' | Out-Null"
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(DOCS_GEN) -Src . -OutDir $(DOC_GENERATED_DIR)
 
-$(GUIDE_HIMON_EDGE_DUMP): HIMON/himon.asm $(EDGE_DOCS_GEN)
-	powershell -NoProfile -ExecutionPolicy Bypass -File $(EDGE_DOCS_GEN) -SourcePath "HIMON/himon.asm" -OutPath "$@" -Title "HIMON Edge Dump" -DisplaySource "HIMON/himon.asm" -ReadableMap "[HIMON_MAP.md](HIMON_MAP.md)"
+$(HIMON_EDGE_DUMP): HIMON/himon.asm $(EDGE_DOCS_GEN)
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(EDGE_DOCS_GEN) -SourcePath "HIMON/himon.asm" -OutPath "$@" -Title "HIMON Edge Dump" -DisplaySource "HIMON/himon.asm" -ReadableMap "[HIMON_MAP.md](../GUIDES/HIMON/HIMON_MAP.md)"
 
 artifacts:
 	@echo [ps] sync sidecar artifacts

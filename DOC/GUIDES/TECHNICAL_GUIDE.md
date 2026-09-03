@@ -147,6 +147,10 @@ reset or explicit handoff establishes the next phase.
 
 ## ASM/AP Path
 
+The [AP And OIL Guide](AP/AP_OIL_GUIDE.md) is the current conceptual and
+operator-facing home for AP/APC, OIL, APMAN, carriers, and AP Store. This
+section keeps only the architectural boundary.
+
 ASM-F2 begins at `$800C` and emits normal code or an AP package. AP packages
 can carry body bytes, relocation rows, exports, and resident imports. HIMON's
 AP service validates the envelope, loads the body, resolves RJOIN imports,

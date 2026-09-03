@@ -4,6 +4,13 @@ This file records bench transcripts that prove behavior on real hardware. Keep
 entries short enough to scan, but include enough serial output to reconstruct
 what was actually tested.
 
+Evidence rule: link the applicable current test plan or focused board card
+instead of copying its full procedure here. Retain image identity, executed
+commands, observed output, CRC or byte evidence, deviations, and result.
+Distinct failures, retries, corrections, and acceptance runs are evidence, not
+duplicates. Remove an exact repeated block only when it occurs within the same
+test record and adds no new observation.
+
 ## 2026-07-01 ASM SEAL NEW Board Proof
 
 ### Summary

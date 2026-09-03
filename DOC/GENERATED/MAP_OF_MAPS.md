@@ -11,9 +11,9 @@ Scope: atlas for map-shaped R-YORS documentation. Guide maps are hand-maintained
 
 | Need | Open | Why |
 | --- | --- | --- |
-| Start reading | [DOC/INDEX.md](../INDEX.md), [GUIDES/INDEX.md](../GUIDES/INDEX.md), [GUIDES/TOC.md](../GUIDES/TOC.md) | Entry points and reading order. |
+| Start reading | [DOC/INDEX.md](../INDEX.md) | Single current documentation front door. |
 | Check live component capabilities | [GUIDES/CAPABILITIES.md](../GUIDES/CAPABILITIES.md) | Current STR8-N, HIMON, ASM-F2, S19-owner, and ABI matrix. |
-| See where documents fit | [GUIDES/MAP.md](../GUIDES/MAP.md) | Hand-maintained guide/system map. |
+| Classify documents | [GUIDES/HISTORY.md](../GUIDES/HISTORY.md) | Current authority, evidence, history, generated, and incubator lanes. |
 | Check vocabulary before naming something | [GUIDES/GLOSSARY.md](../GUIDES/GLOSSARY.md) | Project terminology contract. |
 | Read the decision ledger | [GUIDES/DECISIONS.md](../GUIDES/DECISIONS.md) | Mixed current and historical decisions; the capability matrix wins for live behavior. |
 | Explore unsettled design thinking | [GUIDES/QCC.md](../GUIDES/QCC/INDEX.md) | Questions, Comments, Concerns index. |

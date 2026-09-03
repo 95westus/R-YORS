@@ -1,7 +1,7 @@
 # HIMON Map
 
-This is the human map for current HIMON. The raw edge list lives in
-[HIMON_EDGE_DUMP.md](HIMON_EDGE_DUMP.md); this file groups those
+This is the human map for current HIMON. The generated raw edge list lives in
+[HIMON_EDGE_DUMP.md](../../GENERATED/HIMON_EDGE_DUMP.md); this file groups those
 edges into readable subsystems and capability surfaces.
 
 Scope is the current HIMON build path:
@@ -22,7 +22,7 @@ This first view describes the principal control routines in
 `SRC/HIMON/himon.asm` and its active includes. Each node carries a real routine
 label plus its top-level purpose. Arrows summarize the main control and service
 routes; the smaller diagrams below and
-[HIMON_EDGE_DUMP.md](HIMON_EDGE_DUMP.md) provide direct-edge detail.
+[HIMON_EDGE_DUMP.md](../../GENERATED/HIMON_EDGE_DUMP.md) provides direct-edge detail.
 
 ```mermaid
 flowchart TD
@@ -596,7 +596,7 @@ physical-reset ownership gate passed on COM4 on 2026-09-02.
 
 ## Edge Evidence Rules
 
-- Raw edge truth stays in `HIMON_EDGE_DUMP.md`.
+- Raw edge truth stays in `DOC/GENERATED/HIMON_EDGE_DUMP.md`.
 - This map may collapse many repeated print edges into one package edge.
 - Indirect targets such as `CMD_CALL_ADDR` and `G` are intentionally
   shown as indirect because the concrete target is runtime data.

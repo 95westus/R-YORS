@@ -13,6 +13,16 @@ CAPABILITIES.md
   canonical live STR8-N/HIMON/ASM-F2 command, S19-owner, and public-ABI matrix
   overrides dated command examples retained in plans, board cards, and story docs
 
+AP/AP_OIL_GUIDE.md
+  current conceptual and operational home for AP/APC, OIL, APMAN, carriers,
+  AP Store boundaries, loading, linking, and execution
+  points to CAPABILITIES.md for the exact live command and ABI surface
+
+HISTORY.md
+  classifies current authority, deep reference, evidence, historical design,
+  generated material, and incubator documents
+  replaces separate full-index, reading-order, and hand-maintained map roles
+
 OPERATORS_GUIDE.md
   canonical board-facing guide for current R-YORS, STR8, and HIMON operation
   absorbs the old RTFM-R-YORS.md, RTFM-str8.md, and RTFM-himon.md details
@@ -31,14 +41,14 @@ STR8.md
   points to the standalone STR8-N repository for current source-derived maps
 
 STR8_WORK_PROCESS.md
-  records the current process for returning to STR8 work
+  retains the historical process for the completed V0/V1 STR8 work
   records the completed V0 acceptance gates before new update commands or self-update
   relates to OPERATORS_GUIDE.md, TECHNICAL_GUIDE.md, STR8.md,
   STR8_DECISION_REFERENCE.md, STR8_FLASH_UPDATE_PROPOSAL.md, BRINGUP.md,
   TODO.md, and HARDWARE_TEST_LOG.md
 
 STR8_BANK_JUMP_RECORD_BOARD_TEST.md
-  freezes the pending board rail for `$1FFD-$1FFF = 42 4A bank/FF`
+  preserves the accepted board rail for `$1FFD-$1FFF = 42 4A bank/FF`
   requires the combined HIMON/STR8 image because the worker commits the record
   and HIMON preserves it through cold RAM clearing
   relates to STR8.md, STR8_J012_OPAQUE_BANK_PLAN.md, MEMORY_MAP.md,
@@ -172,11 +182,11 @@ DYNAMIC_MEMORY_FIRST_STEPS.md
 HIMON_MAP.md
   readable map over HIMON direct edges and capability surfaces
   groups startup, dispatch, loader/flash, debug, disasm, ASM, and contract maps
-  uses HIMON_EDGE_DUMP.md as raw evidence
+  uses DOC/GENERATED/HIMON_EDGE_DUMP.md as raw evidence
   keeps current command meanings separate from future subforms, such as HIMON
   `M` being current modify and a future fill candidate
 
-HIMON_EDGE_DUMP.md
+DOC/GENERATED/HIMON_EDGE_DUMP.md
   direct `JSR`/`JMP` edge dump for `HIMON/himon.asm`
   keeps raw edge sites separate from the compact SYMBOL_XREF call tree and
   readable HIMON_MAP.md diagrams
@@ -193,6 +203,15 @@ OIL_710_TEST_PLAN.md
   HARDWARE_TEST_LOG.md append-only transcript evidence
   keeps size recommendations for STR8, HIMON, ASM, and R-YORS namespace moves
   separate from the release board transcript
+
+ASM/TEST_PLAN.md
+  compact current ASM-F2 and AP/OIL acceptance requirements
+  points to TEST_HISTORY.md for completed chronology and the hardware log for
+  executed board evidence
+
+ASM/TEST_HISTORY.md
+  preserved cumulative development/test chronology formerly stored in
+  TEST_PLAN.md; its dated command surfaces do not override CAPABILITIES.md
 
 HISTORICAL_CODE_MIGRATION_PLAN.md
   records the active-source boundary and the migration path for retired
@@ -270,5 +289,6 @@ R-YORS images or board-ingested data. Retired code/data belongs under
 
 The older generated source-wide graph has been narrowed because broad scans made
 harnesses and proof apps look like the current subsystem graph. Use
-`HIMON_MAP.md` for the readable current map and `HIMON_EDGE_DUMP.md` for raw
+`HIMON_MAP.md` for the readable current map and
+`DOC/GENERATED/HIMON_EDGE_DUMP.md` for raw
 HIMON direct-edge evidence.

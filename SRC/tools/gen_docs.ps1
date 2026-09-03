@@ -835,7 +835,7 @@ Write-Doc -Name 'ROUTINE_CONTRACTS.md' -Lines $lines
 $lines = @('# R-YORS HIMON Routine Tree') + $header
 $lines += 'Tree scope: current HIMON source only (`HIMON/himon.asm` and HIMON include files).'
 $lines += ''
-$lines += 'The 40 strongest direct edges are shown as a top-down family overview and short detail panels. Use `DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md` for the full edge listing.'
+$lines += 'The 40 strongest direct edges are shown as a top-down family overview and short detail panels. Use `DOC/GENERATED/HIMON_EDGE_DUMP.md` for the full edge listing.'
 $lines += ''
 $routineEdgeFormat = {
     param($edge)
@@ -1045,7 +1045,7 @@ $himonCommandEdges = @(
 )
 
 $lines = @('# R-YORS HIMON Command Map') + $header
-$lines += 'HIMON command/debug/load/ASM call map, limited to direct edges and compacted for readability. The 40 strongest command-surface edges are split into a top-down family overview and short detail panels; use `DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md` for the full edge listing.'
+$lines += 'HIMON command/debug/load/ASM call map, limited to direct edges and compacted for readability. The 40 strongest command-surface edges are split into a top-down family overview and short detail panels; use `DOC/GENERATED/HIMON_EDGE_DUMP.md` for the full edge listing.'
 $lines += ''
 $lines += Get-MermaidBreakdownLines -Rows $himonCommandEdges -OverviewLabel 'HIMON command calls' -GroupKey { param($edge) Get-MapFamily $edge.Source } -FormatEdge $routineEdgeFormat
 Write-Doc -Name 'HIMON_COMMAND_MAP.md' -Lines $lines
@@ -1764,9 +1764,9 @@ $lines += '## Quick Choice'
 $lines += ''
 $lines += '| Need | Open | Why |'
 $lines += '| --- | --- | --- |'
-$lines += '| Start reading | [DOC/INDEX.md](../INDEX.md), [GUIDES/INDEX.md](../GUIDES/INDEX.md), [GUIDES/TOC.md](../GUIDES/TOC.md) | Entry points and reading order. |'
+$lines += '| Start reading | [DOC/INDEX.md](../INDEX.md) | Single current documentation front door. |'
 $lines += '| Check live component capabilities | [GUIDES/CAPABILITIES.md](../GUIDES/CAPABILITIES.md) | Current STR8-N, HIMON, ASM-F2, S19-owner, and ABI matrix. |'
-$lines += '| See where documents fit | [GUIDES/MAP.md](../GUIDES/MAP.md) | Hand-maintained guide/system map. |'
+$lines += '| Classify documents | [GUIDES/HISTORY.md](../GUIDES/HISTORY.md) | Current authority, evidence, history, generated, and incubator lanes. |'
 $lines += '| Check vocabulary before naming something | [GUIDES/GLOSSARY.md](../GUIDES/GLOSSARY.md) | Project terminology contract. |'
 $lines += '| Read the decision ledger | [GUIDES/DECISIONS.md](../GUIDES/DECISIONS.md) | Mixed current and historical decisions; the capability matrix wins for live behavior. |'
 $lines += '| Explore unsettled design thinking | [GUIDES/QCC.md](../GUIDES/QCC/INDEX.md) | Questions, Comments, Concerns index. |'

@@ -5,7 +5,7 @@ Generated: 2026-09-02T17:46-05:00
 
 Scope: operational HIMON source plus ROM support; excludes external STR8-N source, harnesses, proof apps, games, ACIA/PIA, and local generated-language images.
 
-HIMON command/debug/load/ASM call map, limited to direct edges and compacted for readability. The 40 strongest command-surface edges are split into a top-down family overview and short detail panels; use `DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md` for the full edge listing.
+HIMON command/debug/load/ASM call map, limited to direct edges and compacted for readability. The 40 strongest command-surface edges are split into a top-down family overview and short detail panels; use `DOC/GENERATED/HIMON_EDGE_DUMP.md` for the full edge listing.
 
 ## Top-Down Overview
 

@@ -7,7 +7,7 @@ Scope: operational HIMON source plus ROM support; excludes external STR8-N sourc
 
 Tree scope: current HIMON source only (`HIMON/himon.asm` and HIMON include files).
 
-The 40 strongest direct edges are shown as a top-down family overview and short detail panels. Use `DOC/GUIDES/HIMON/HIMON_EDGE_DUMP.md` for the full edge listing.
+The 40 strongest direct edges are shown as a top-down family overview and short detail panels. Use `DOC/GENERATED/HIMON_EDGE_DUMP.md` for the full edge listing.
 
 ## Top-Down Overview
 

@@ -1,88 +1,91 @@
 # R-YORS Documentation
 
-This is the documentation front desk. Start with the small main path, then open
-supporting references only when you need detail.
+This is the single documentation front door. Current authorities come first;
+dated plans, cards, and transcripts are supporting evidence rather than an
+alternate description of the live board.
 
-## Main Path
+## Start Here
 
-```text
-README.md
-DOC/GUIDES/OPERATORS_GUIDE.md
-DOC/GUIDES/CAPABILITIES.md
-DOC/GUIDES/TECHNICAL_GUIDE.md
-```
+1. [Current Capability Matrix](GUIDES/CAPABILITIES.md) — live versions,
+   commands, ownership, S19 behavior, and public ABI.
+2. [Operator's Guide](GUIDES/OPERATORS_GUIDE.md) — current board workflows,
+   safety, recovery, and HIMON use.
+3. [Technical Guide](GUIDES/TECHNICAL_GUIDE.md) — component boundaries,
+   build products, memory, and runtime architecture.
+4. [ASM User Guide](GUIDES/ASM/ASM_USER_GUIDE.md) — source entry, assembly,
+   SEAL, PACKAGE, INSTALL, and AP operation.
+5. [AP And OIL Guide](GUIDES/AP/AP_OIL_GUIDE.md) — AP/APC, OIL, APMAN,
+   carrier storage, linking, and AP Store boundaries.
 
-- [GUIDES/OPERATORS_GUIDE.md](./GUIDES/OPERATORS_GUIDE.md) - board operation: current status, STR8 workflows, HIMON commands, payload updates, recovery.
-- [GUIDES/CAPABILITIES.md](./GUIDES/CAPABILITIES.md) - live STR8-N/HIMON/ASM-F2 command, S19-owner, and ABI matrix.
-- [GUIDES/TECHNICAL_GUIDE.md](./GUIDES/TECHNICAL_GUIDE.md) - architecture: product roles, source layout, memory, flash, IVI, build artifacts.
-- [GUIDES/REF.md](./GUIDES/REF.md) - compact reference sheet.
-- [GUIDES/GLOSSARY.md](./GUIDES/GLOSSARY.md) - vocabulary contract.
-- [GUIDES/DECISIONS.md](./GUIDES/DECISIONS.md) - settled policy.
-- [GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md](./GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md) - accepted `J0`-`J2` opaque-bank implementation and hardware-proof plan.
-- [GUIDES/STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md](./GUIDES/STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md) - historical reset-selector proof record; current selector is `0`-`2`/`C`/`W`/`S`.
-- [GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md](./GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md) - accepted historical development record for the current `$7DFD-$7DFF` Bank Jump Record.
-- [GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md](./GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md) - required per-image handoff, peripheral, vector, CRC, and recovery procedure for unrelated 32K guests.
-- [GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md](./GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md) - retained S19/bank-volume direction and superseded compatible-bank design history.
-- [GUIDES/PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md](./GUIDES/PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md) - accepted, unimplemented `$FFF2` bank-eligibility, RAM-window, search-order, and BANKDUMP-resolution contract.
-- R-YORS II architecture, `#ISH`, name, and release planning moved to the
-  sibling `R-YORS-II` repository; this repository retains current executable
-  implementation and hardware proof.
-- [GUIDES/ASM/BANKED_AP_CARRIER_VS_AP_STORE.md](./GUIDES/ASM/BANKED_AP_CARRIER_VS_AP_STORE.md) - AP carrier versus larger AP Store.
-- [GUIDES/ASM/APMAN_V1_BOARD_TEST.md](./GUIDES/ASM/APMAN_V1_BOARD_TEST.md) - accepted named carrier manager lifecycle.
-- [GUIDES/ASM/APMAN_APC_DISSECTION.md](./GUIDES/ASM/APMAN_APC_DISSECTION.md) - exact APMAN/APC flash, envelope, RAM, and flow maps.
-- [GUIDES/ASM/BANK_DUMP_AP_CARD.md](./GUIDES/ASM/BANK_DUMP_AP_CARD.md) - accepted read-only sector inspector and bank map.
+The capability matrix wins when a dated plan, card, transcript, or story page
+shows an older command or image.
 
-## Current Status
+## Compact Authorities
 
-The current board line is STR8-N `1.29` with HIMON/ASM-F2
-`00.0902(1707)`. HIMON bare `L` uses STR8-N `$F009` `SR/02`, reports S9
-without executing, and rejects the retired `L G`/`L F` forms. The compatible
-fixed `$C000-$EFFF` payload path has hardware proof for HIMON,
-OSI BASIC, and fig-FORTH. That is not opaque 32K `Jn` qualification.
-`J0`-`J2` is hardware-proven on the recorded R-YORS bank images; every
-unrelated guest requires its own H/P/V/CRC record. HIMON RAM-only debug is
-hardware-proven for the current one-shot breakpoint and single-step surface.
-The reset-time `0`/`1`/`2`/`C`/`W`/`S` selector, uppercase interactive echo, and
-Bank Jump Record are hardware-accepted. The current AP-v2 carrier lifecycle is
-also accepted: ASM PACKAGE/INSTALL, reset-time APMAN discovery, named AP/AP L,
-APS status/detail, BANKAUDIT, and BANKDUMP's read-only physical map.
+- [Quick Reference](GUIDES/REF.md)
+- [Memory Map](GUIDES/MEMORY/MEMORY_MAP.md)
+- [Decisions](GUIDES/DECISIONS.md)
+- [Glossary](GUIDES/GLOSSARY.md)
+- [ASM ABI v1](GUIDES/ASM/ASM_ABI_V1.md)
+- [ASM Current Test Plan](GUIDES/ASM/TEST_PLAN.md)
+- [STR8/R-YORS Product Boundaries](GUIDES/STR8/PRODUCT_BOUNDARIES.md)
 
-- [GUIDES/HASH_FLASH.md](./GUIDES/HASH_FLASH.md) - milestone and command alerts.
-- [GUIDES/DOC_FLASH.md](./GUIDES/DOC_FLASH.md) - documentation-shape alerts.
-- [GUIDES/LOGS/HARDWARE_TEST_LOG.md](GUIDES/LOGS/HARDWARE_TEST_LOG.md) - board proof.
-- [GUIDES/STORY/HIMON_STR8_LIVE_UPDATE_LOG.md](GUIDES/STORY/HIMON_STR8_LIVE_UPDATE_LOG.md) - live HIMON update and rollback proof, tracked by `(2312) -> (2317) -> (2312)`.
+## Current Deep References
 
-## Guide Indexes
+- [HIMON Map](GUIDES/HIMON/HIMON_MAP.md) — readable command, lifecycle, and
+  routine map.
+- [HIMON Debug Testing](GUIDES/HIMON/HIMON_DEBUG_TESTING.md) — RAM debug proof
+  process.
+- [ASM Call Map](GUIDES/ASM/ASM_CALL_MAP.md) — assembler routine and phase
+  flow.
+- [ASM Address Practices](GUIDES/ASM/ADDRESS_PRACTICES.md) — address roles and
+  safe placement.
+- [APMAN/APC Dissection](GUIDES/ASM/APMAN_APC_DISSECTION.md) — exact carrier,
+  envelope, RAM overlay, and service maps.
+- [Carrier Versus AP Store](GUIDES/ASM/BANKED_AP_CARRIER_VS_AP_STORE.md) —
+  storage-model comparison.
+- [Catalog](GUIDES/CATALOG/CATALOG.md) and
+  [Hash Map](GUIDES/HASH/HASH_MAP.md) — callable-routine and hash references.
 
-- [GUIDES/INDEX.md](./GUIDES/INDEX.md) - full guide index.
-- [GUIDES/TOC.md](./GUIDES/TOC.md) - recommended reading order.
-- [GUIDES/MAP.md](./GUIDES/MAP.md) - documentation and system map.
-- [GUIDES/META/XREF.md](GUIDES/META/XREF.md) - document/source cross-reference.
-- [GUIDES/META/PROVENANCE.md](GUIDES/META/PROVENANCE.md) - idea-origin and outside-help marking rules.
+## Evidence And History
 
-## Story Lane
+- [History And Evidence Index](GUIDES/HISTORY.md) — status classes and routing
+  for retained material.
+- [Hardware Test Log](GUIDES/LOGS/HARDWARE_TEST_LOG.md) — executed board
+  transcripts and observed results.
+- [ASM Test History](GUIDES/ASM/TEST_HISTORY.md) — completed cumulative test
+  and development chronology.
+- [STR8 Integration Index](GUIDES/STR8/STR8.md) — R-YORS consumer boundary and
+  retained STR8 proof cards.
+- [Story](GUIDES/STORY/BOOK.md) and
+  [Historical Documents](GUIDES/STORY/HISTORICAL_DOCUMENTS.md) — narrative and
+  lineage, outside the operating path.
 
-The story is intentionally outside the main operator/technical path:
+Historical filenames and paths are generally retained because board evidence
+refers to them. A historical card proves its named image; it is not a current
+instruction merely because the underlying mechanism survived.
 
-- [GUIDES/STORY/BOOK.md](GUIDES/STORY/BOOK.md) - manuscript spine.
-- [GUIDES/STORY/HISTORICAL_DOCUMENTS.md](GUIDES/STORY/HISTORICAL_DOCUMENTS.md) - lineage.
-- [IDEAS.md](./IDEAS.md) - scratchpad and special moments.
+## Planning
 
-## Guide Shelves
+- [TODO And ASM Feature Queue](GUIDES/PLANNING/TODO.md)
+- [Future Direction](GUIDES/PLANNING/FUTURE.md)
+- [QCC Incubator](GUIDES/QCC/INDEX.md) — unsettled questions, comments, and
+  concerns.
 
-- [GUIDES/STR8](GUIDES/STR8/STR8.md) - recovery, update, product boundaries, bringup.
-- [GUIDES/HIMON](GUIDES/HIMON/HIMON_MAP.md) - monitor maps, debug, search, stage notes.
-- [GUIDES/MEMORY](GUIDES/MEMORY/MEMORY_MAP.md) - address ownership and allocation direction.
-- [GUIDES/CATALOG](GUIDES/CATALOG/CATALOG.md) - routine catalog and catalog proof notes.
-- [GUIDES/HASH](GUIDES/HASH/HASH_MAP.md) - hash references and map.
-- [GUIDES/ASM](GUIDES/ASM/ASM_USER_GUIDE.md) - current assembler guide, the
-  [hosted-dialect crosswalk](GUIDES/ASM/ASM_DIALECT_CROSSWALK.md), and the
-  [ASM test plan](GUIDES/ASM/TEST_PLAN.md).
-- [GUIDES/QCC](GUIDES/QCC/INDEX.md) - active design questions.
-- [GUIDES/LOGS](GUIDES/LOGS/HARDWARE_TEST_LOG.md) - hardware proof logs.
-- [GUIDES/PLANNING](GUIDES/PLANNING/TODO.md) - TODO and future notes.
-- [GUIDES/PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md](GUIDES/PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md) - plan for moving retired samples, tests, proofs, and demos into
-  `SRC/ARCHIVE/`.
-- [GUIDES/META](GUIDES/META/XREF.md) - bibliography and cross-reference.
+R-YORS II architecture, language, and release planning live in the sibling
+`R-YORS-II` repository. Current STR8-N implementation and source-derived maps
+live in the adjacent standalone STR8-N repository; this repository retains its
+consumer contract and R-YORS hardware proof.
 
-Generated source analysis lives in [GENERATED](./GENERATED).
+## Generated Source Analysis
+
+[Generated maps](GENERATED/MAP_OF_MAPS.md) are source-derived supporting
+views, not hand-maintained authorities. This shelf includes routine, command,
+interrupt, stack, control-deck, and raw HIMON edge maps.
+
+## Maintenance Rule
+
+Add each new document to exactly one authority/status class in
+[History And Evidence](GUIDES/HISTORY.md). Update this front door only when the
+main reading path changes; do not recreate separate full indexes, reading-order
+files, or documentation maps.
