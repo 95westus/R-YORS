@@ -6,15 +6,19 @@ alternate description of the live board.
 
 ## Start Here
 
-1. [Current Capability Matrix](GUIDES/CAPABILITIES.md) — live versions,
-   commands, ownership, S19 behavior, and public ABI.
-2. [Operator's Guide](GUIDES/OPERATORS_GUIDE.md) — current board workflows,
+1. [Current Capability Matrix](GUIDES/CAPABILITIES.md) — what STR8-N, HIMON,
+   ASM-F2, APMAN, and AP Store can do now, what is possible next, what is not
+   supported, and the evidence boundary between those states.
+2. [Installation Flow](GUIDES/INSTALLATION_FLOW.md) — ordered factory
+   WDCMONv2 preservation, STR8-N migration, Bank Maintenance adoption, and
+   optional HIMON/ASM-F2 installation.
+3. [Operator's Guide](GUIDES/OPERATORS_GUIDE.md) — current board workflows,
    safety, recovery, and HIMON use.
-3. [Technical Guide](GUIDES/TECHNICAL_GUIDE.md) — component boundaries,
+4. [Technical Guide](GUIDES/TECHNICAL_GUIDE.md) — component boundaries,
    build products, memory, and runtime architecture.
-4. [ASM User Guide](GUIDES/ASM/ASM_USER_GUIDE.md) — source entry, assembly,
+5. [ASM User Guide](GUIDES/ASM/ASM_USER_GUIDE.md) — source entry, assembly,
    SEAL, PACKAGE, INSTALL, and AP operation.
-5. [AP And OIL Guide](GUIDES/AP/AP_OIL_GUIDE.md) — AP/APC, OIL, APMAN,
+6. [AP And OIL Guide](GUIDES/AP/AP_OIL_GUIDE.md) — AP/APC, OIL, APMAN,
    carrier storage, linking, and AP Store boundaries.
 
 The capability matrix wins when a dated plan, card, transcript, or story page

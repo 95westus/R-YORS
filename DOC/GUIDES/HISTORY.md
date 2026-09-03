@@ -19,6 +19,7 @@ however, define the current command surface.
 ## Current Authority
 
 - [Capabilities](CAPABILITIES.md)
+- [Installation Flow](INSTALLATION_FLOW.md)
 - [Operator's Guide](OPERATORS_GUIDE.md)
 - [Technical Guide](TECHNICAL_GUIDE.md)
 - [Quick Reference](REF.md)

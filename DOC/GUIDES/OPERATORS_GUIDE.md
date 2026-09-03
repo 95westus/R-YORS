@@ -212,6 +212,7 @@ and host artifacts for full-image export and recovery.
 
 ## Further Reference
 
+- [Complete WDCMONv2-to-R-YORS installation flow](INSTALLATION_FLOW.md)
 - [Memory Map](MEMORY/MEMORY_MAP.md)
 - [HIMON Map](HIMON/HIMON_MAP.md)
 - [ASM User Guide](ASM/ASM_USER_GUIDE.md)
