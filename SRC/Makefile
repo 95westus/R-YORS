@@ -36,6 +36,7 @@ ASMTEST_CHECK := tools/check_asmtest_3000.ps1
 ASM_OPCODE_AUDIT := tools/check_asm_opcode_coverage.ps1
 ASM_DC_CHECK := tools/check_asm_dc_contract.ps1
 ASM_TERMINAL_CHECK := tools/check_terminal_exercisers.ps1
+ASM_ERROR_CHECK := tools/check_asm_errors.ps1
 ASM_ABI_CHECK := tools/check_asm_abi_v1.ps1
 ASM_ABI_INC := $(ASM_DIR)/asm-abi-v1.inc
 AP_STORE_V1_CHECK := tools/check_ap_store_v1.ps1
@@ -66,7 +67,7 @@ S3X_HOME ?= $(LOCAL_ROOT)/s3x
 STR8N_HOME ?= ../../STR8-N
 STR8N_MANIFEST := $(STR8N_HOME)/BUILD/str8n-manifest.json
 STR8N_LOCK := INTEGRATION/str8n.lock.json
-STR8N_PUBLIC_CONTRACT := $(STR8N_HOME)/BUILD/v1.29/include/str8n-public.inc
+STR8N_PUBLIC_CONTRACT := $(STR8N_HOME)/BUILD/v1.30/include/str8n-public.inc
 STR8N_IMPORTED_CONTRACT := $(INC_DIR)/str8n-public.inc
 STR8N_RECEIPT := $(BUILD_DIR)/integration/str8n-receipt.json
 STR8N_EXTERNAL_CHECK := tools/check_external_str8n.ps1
@@ -690,12 +691,12 @@ asm-dc-check: $(ASM_DC_CHECK) $(ASM_V1_CORE_SRC) $(HIMON_SRC)
 
 board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(HIMON_ROM_S19) $(HIMON_ROM_INSTALL_S19) $(HIMON_APV2_INSTALL_S19) $(RYORS_V12_ASM_S19) $(RYORS_V12_HIMON_S19) $(RYORS_V12_28K_S19)
 	@make -C "$(STR8N_HOME)" ryors-full-bank RYORS_28K_S19="$(abspath $(RYORS_V12_28K_S19))"
-	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.29/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.30/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
 
 release-files: board-s19-check apman bank-audit bank-dump life pia-led-show rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
-asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show asm-ap-v2-check
+asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show asm-ap-v2-check asm-error-check
 	@echo "ASM v1 smoke checks passed."
 
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
@@ -703,6 +704,11 @@ asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $
 
 asm-terminal-check: $(ASM_TERMINAL_CHECK) ../DOC/GUIDES/ASM/SAMPLES/terminal-answerback-vt100-3000.a ../DOC/GUIDES/ASM/SAMPLES/vt102-exerciser-7000.a ../DOC/GUIDES/ASM/SAMPLES/vt525-exerciser-7000.a
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_TERMINAL_CHECK)
+
+asm-error-check: $(ASM_ERROR_CHECK) tools/check_asm_errors.py $(ASM_V1_FLASH_S19) $(HIMON_ROM_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_ERROR_CHECK) -Python "$(PYTHON)"
+
+.PHONY: asm-error-check
 
 ap-store-v1-check: $(AP_STORE_V1_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_V1_CHECK) -WorkerContractPath "$(AP_STORE_SECTOR_TOOL_INC)"

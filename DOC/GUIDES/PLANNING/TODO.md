@@ -6,7 +6,20 @@ Review this checklist before starting any ASM feature implementation. An item
 stays unchecked until its source, regression tests, documentation, resident
 size measurement, and required hardware proof are complete.
 
-### Current pass: STR8-N-owned HIMON S19 parsing
+### Accepted: ASM-F2 text diagnostics
+
+- [x] Replace interactive numeric errors with compact words, preserving the
+  numeric return ABI. Test all status bytes, context-specific SEAL errors,
+  source rollback, command failures, message addressing, and ROM headroom.
+  Exhaustive native/seal/AP/unknown-status host checks and real-source
+  rollback/exhaustion/workflow checks pass. ROM grows 106 bytes to `$BD95`,
+  with no RAM growth. Full regression and payload identity checks pass with
+  the exact STR8-N 1.30 lock. COM4 diagnostics, exact flash readback, physical
+  RESET through STR8-N/HIMON, and post-reset ASM smoke all pass (2026-09-05).
+  Evidence is tracked in
+  [TEST_PLAN.md](../ASM/TEST_PLAN.md).
+
+### Accepted: STR8-N-owned HIMON S19 parsing
 
 - [x] Route HIMON's bare `L` command through the published STR8-N `SR/02`
   buffer parser at `$F009`. HIMON retains its `$7A00` destination ceiling,

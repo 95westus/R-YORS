@@ -745,7 +745,11 @@ A [addr] [label[:]] MMM [operand] .
 - The flash-resident wrapper keeps accepted source lines quiet but prints the
   current PC in its source prompt as `ASM>$hhhh: `. `SEAL> ` remains the
   post-`END` command prompt, `.P` remains source-mode-only, and rejected source
-  lines still carry `ERR=$ee NAME PC=$hhhh`.
+  lines carry `ERR reason PC=$hhhh` in the accepted text-diagnostic image. The
+  numeric status remains the return ABI; older captures retain their original
+  `ERR=$ee NAME` spelling. SEAL and AP service errors use their own status
+  domains, so `$02` can mean `INVALID` after a seal worker while the ASM
+  parser's `$02` still means `DIRECTIVE`.
 - ASM 2.72 keeps the runtime paste wrapper stricter than the line-at-a-time
   ICO: all failure exits funnel through a quench path. It prints the failure,
   drains RX with `SYS_FLUSH_RX`, then consumes timed input with

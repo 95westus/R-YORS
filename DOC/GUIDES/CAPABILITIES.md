@@ -1,12 +1,13 @@
 # Current Capability Matrix
 
 This is the short authority for the live STR8-N, HIMON, and ASM-F2 command
-surfaces. It describes the source and board image current on 2026-09-02:
+surfaces. The accepted text-diagnostic board tests on 2026-09-05 used these
+identities, including physical RESET and post-reset ASM smoke:
 
 ```text
-STR8-N 1.29
+STR8-N 1.30
 HIMON   00.0902(1707)
-ASM-F2  00.0902(1707)
+ASM-F2  00.0905(2321)
 ```
 
 Historical plans, accepted test cards, transcripts, and story documents may

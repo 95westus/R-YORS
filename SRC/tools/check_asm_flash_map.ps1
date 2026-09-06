@@ -62,6 +62,22 @@ if ($pcLo -ne 0x80 -or $pcHi -ne 0x81 -or
 $messageFirst = Get-Symbol 'MSG_TITLE'
 $messageSplit = Get-Symbol 'MSG_STATUS_BAD_LINE'
 $messageEnd = (Get-Symbol 'ASMF_CMD_RELOCATE') - 1
+if (($messageEnd - $messageFirst + 1) -gt 256) {
+    throw 'ASM flash compact message span exceeds 256 bytes'
+}
+foreach ($name in @($symbols.Keys | Where-Object { $_ -like 'MSG_*' })) {
+    $address = $symbols[$name]
+    if ($address -lt $messageFirst -or $address -gt $messageEnd) { continue }
+    $low = $address -band 255
+    $page = if ($low -ge ($messageFirst -band 255)) {
+        $messageFirst -band 0xFF00
+    } else {
+        $messageSplit -band 0xFF00
+    }
+    if (($page + $low) -ne $address) {
+        throw ('ASM flash compact pointer aliases {0}={1:X4}' -f $name, $address)
+    }
+}
 if (($messageSplit -band 0x00FF) -ge ($messageFirst -band 0x00FF) -or
     ($messageSplit -band 0xFF00) -ne (($messageFirst -band 0xFF00) + 0x0100) -or
     ($messageEnd -band 0xFF00) -ne ($messageSplit -band 0xFF00) -or

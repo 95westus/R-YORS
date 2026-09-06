@@ -25829,3 +25829,26 @@ HIMON V 00.0902(1707)
 
 Corrected result: accepted. This `1707` run, not the rejected `1609` run,
 closes the board gate for STR8-N-owned HIMON S19 parsing.
+
+## 2026-09-05: ASM-F2 text diagnostics on STR8-N 1.30
+
+The full host suite and COM4 diagnostic card passed for ASM-F2
+`00.0905(2321)`. A narrow B3:8-B install passed exact full readback; HIMON
+`00.0902(1707)` and STR8-N 1.30 code were preserved, with only the expected
+D3 installation-journal pair changed. The exact-image dependency is now
+pinned to the conservative 1.30 artifact, without relaxing ABI/hash checks.
+Physical-reset confirmation remains pending. New transcript excerpts,
+artifact hashes, before/after sector CRCs, and owner-local raw evidence are
+recorded in [ASMF2_TEXT_2026-09-05.md](ASMF2_TEXT_2026-09-05.md).
+
+### Follow-up: physical RESET accepted, 23:37-23:39 CDT
+
+The operator pressed physical RESET and confirmed done. Rearmed receive-only
+COM4 capture recorded `RESET`, the complete STR8-N 1.30 selector, default
+`BOOT WARM`, and HIMON `00.0902(1707)` at its prompt, with no TX records.
+Post-reset ASM retained `00.0905(2321)` and its OPERAND text; a fresh session
+passed assembly, SEAL, PACKAGE, LOAD, and `A9 AC 60` readback with a clean
+return. No further flash operation was issued. The pending gate above is now
+closed and the feature queue is accepted. Full trace excerpts and final raw
+evidence hashes are appended in the
+[text-diagnostic record](ASMF2_TEXT_2026-09-05.md#reset-gate-completed-2026-09-05-2337-2339-cdt).

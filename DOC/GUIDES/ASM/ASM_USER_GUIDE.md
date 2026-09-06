@@ -4,8 +4,9 @@ The stable HIMON service-vector/RAM-card and AP v2 package interfaces are
 defined in [ASM_ABI_V1.md](ASM_ABI_V1.md). Internal ASM addresses are not part
 of that ABI.
 
-Status: current operator guide for ASM v1 as of 2026-09-02. The repository and
-accepted integrated board identify as ASM-F2 `00.0902(1707)`. ASM is a young onboard W65C02
+Status: current operator guide for ASM v1 as of 2026-09-05. ASM-F2
+`00.0905(2321)` text diagnostics and physical-reset recovery are accepted.
+ASM is a young onboard W65C02
 workbench, not a hosted toolchain. The hardware proof source of truth remains
 [TEST_PLAN.md](TEST_PLAN.md). For WDC, ca65, and vasm translation, including
 the non-equivalent AP metadata model, see
@@ -141,7 +142,7 @@ erased visible low-flash hole. In a memory dump, the installed package begins
 at the `AP` signature, not at an earlier row boundary such
 as `$BD10`. If that hole is already occupied, `INSTALL pkg` suggests the next
 erased hole, and an explicit install to the occupied address reports
-`INST ERR=$06 BAD RANGE`.
+`INST RANGE`.
 
 ## Return Status
 
@@ -197,7 +198,7 @@ remains `SEAL`, `RELOCATE`, `PACKAGE`, `LOAD`, `INSTALL`, `CHECK` (when built),
 and `NEW`. Source entry at `ASM>$hhhh:` remains case-preserving. The punctuation
 command `.` is unchanged.
 
-For example, `D 3800 FF` at `SEAL>` reports `ERR=$03 BO`; exit with `.` and run
+For example, `D 3800 FF` at `SEAL>` reports `ERR OPERAND`; exit with `.` and run
 the dump at HIMON's `>` prompt.
 
 ## Starting And Leaving
@@ -225,7 +226,7 @@ ASM>$hhhh:
 Accepted source lines are quiet. Rejected source lines print:
 
 ```text
-ERR=$ee NAME PC=$hhhh
+ERR reason PC=$hhhh
 ```
 
 While still in source mode, `.P` prints the current PC without assembling:
@@ -511,7 +512,7 @@ CSTR and PSTR forms may contain at most 254 because their terminator/prefix
 must fit the same 255-byte atomic emission. A semicolon after the closing
 quote starts a comment. Apostrophes cannot currently be escaped inside a
 single-quoted string, so embedded or unterminated quotes fail atomically with
-`ERR=$03`. Single-character expressions such as `DB 'A'` and `LDA #'A'`
+`ERR OPERAND`. Single-character expressions such as `DB 'A'` and `LDA #'A'`
 retain their existing meaning outside `DC`.
 
 `DW` emits each expression as a 16-bit little-endian word. A forward label is
@@ -566,8 +567,8 @@ For a normal AP program, `ENTRY MAIN` is usually the one public row needed.
 ## Instructions
 
 Use ordinary W65C02 mnemonics implemented by the current ASM opcode table.
-Unsupported mnemonics report `BAD MNEM`; unsupported addressing combinations
-report `BAD MODE` or `BAD WIDTH`.
+Unsupported mnemonics report `ERR UNKNOWN OP`; unsupported addressing combinations
+report `ERR ADDR MODE` or `ERR SIZE`.
 
 Bit operations use the base mnemonic plus an explicit bit number:
 
@@ -742,7 +743,7 @@ terminal for the session. `LOAD` validates the complete AP v2 structure and
 BODY FNV before patching. Resident imports are
 linked through RJOIN; missing imports, kind mismatches, non-resident
 dependencies, and unsupported relocation rows fail with
-`LOAD ERR=$09 BAD FIX`. A RAM package may be above or below its destination,
+`LOAD FIXUP`. A RAM package may be above or below its destination,
 but the complete envelope and destination BODY ranges must not overlap.
 
 The one-argument `INSTALL pkg` form is read-only advisory:
@@ -892,7 +893,7 @@ movable `$4000` form remains preferred for stored use. A future optional ASM
 entry may preload `ASMREPORT` at `$7000` before `ASM_BEGIN` and reserve its span
 from that session's output range.
 
-If `PACKAGE ASMREPORT 3000` reports `PKG ERR=$02`, regenerate the reporter source with
+If `PACKAGE ASMREPORT 3000` reports `PKG INVALID`, regenerate the reporter source with
 `make -C SRC asm-session-report`; older generated sources could assemble but
 set bad seal flags by overflowing the AP relocation table.
 
@@ -1069,41 +1070,52 @@ ceilings above are still deliberate constants. If they grow, grow
 fixup/relocation capacity first, then symbol/local capacity, then
 import/export slots.
 
-## Error Codes
+## Error Messages and Return Codes
 
-Common status codes:
+The accepted text-diagnostic image prints `ERR reason PC=$hhhh` for source errors.
+Numeric values remain in the ASM return ABI (`C=0`, `A=status`); older board
+images and retained transcripts still show `ERR=$ee` and abbreviated names.
+See [TEST_PLAN.md](TEST_PLAN.md) for full-suite and board evidence, including
+physical-reset recovery and post-reset ASM smoke.
+
+| Status | Display reason | Meaning |
+| --- | --- | --- |
+| `$00` | `OK` | Success |
+| `$01` | `UNKNOWN OP` | Unknown mnemonic/operation |
+| `$02` | `DIRECTIVE` | Unsupported directive; reserved diagnostic |
+| `$03` | `OPERAND` | Malformed, extra, or missing operand text |
+| `$04` | `ADDR MODE` | Addressing mode unsupported by the mnemonic |
+| `$05` | `SIZE` | Source width does not fit the instruction/context |
+| `$06` | `RANGE` | Value, branch, ORG, or target outside its allowed range |
+| `$07` | `LINE` | Malformed or too-long source line |
+| `$08` | `NAME` | Invalid/duplicate/reserved/out-of-scope symbol, or symbol storage full |
+| `$09` | `FIXUP` | Unresolved/failed fixup or fixup storage full |
+| `$0A` | `LOCAL` | Legacy reserved local-feature status |
+| `$0B` | `SERVICE` | Resident lookup/service setup failed |
+| other | `FAIL` | Unknown status |
+
+`SEAL` and the `RELOCATE`/`PACKAGE` workers interpret `$01` as `NO END` and
+`$02` as `INVALID`. Their operand parsers still use ASM meanings. For example:
 
 ```text
-$00 OK
-$01 BAD MNEM
-$02 BAD DIR
-$03 BAD OPER
-$04 BAD MODE
-$05 BAD WIDTH
-$06 BAD RANGE
-$07 BAD LINE
-$08 BAD SYM
-$09 BAD FIX
-$0A LOCAL NYI
-$0B RJOIN
+ERR OPERAND PC=$2001
+ERR FIXUP PC=$2003
+SEAL NO END FLAGS=$00
+SEAL INVALID FLAGS=$03
+REL RANGE
+PKG INVALID
+LOAD INVALID
+INST RANGE
 ```
 
-How to read them:
+AP services use `$06 RANGE`, `$07 INVALID`, `$09 FIXUP`, and `$0B SERVICE`;
+unrecognized AP statuses display `FAIL`. The optional `CHECK` worker uses this
+same AP mapping. `CHECK` remains disabled in the resident build.
+Read-service failures display `READ FAIL`. If service setup fails before
+console output is available, ASM returns `$0B` silently as before.
+HIMON's generic `EXEC ERR=$hh` and APMAN's own diagnostics are unchanged.
 
-```text
-BAD MNEM    unknown mnemonic
-BAD DIR     unknown/unsupported directive shape
-BAD OPER    malformed operand or extra/missing operand text
-BAD MODE    addressing mode not supported by that mnemonic
-BAD WIDTH   source width does not match the instruction or context
-BAD RANGE   value, branch, ORG, or target address is out of range
-BAD LINE    malformed or too-long source line
-BAD SYM     bad, duplicate, missing, reserved, or out-of-scope symbol
-BAD FIX     unresolved, failed, or table-exhausted fixup
-RJOIN       resident routine lookup/service setup failed
-```
-
-`BAD FIX` at `END` usually means one of:
+`ERR FIXUP` at `END` usually means one of:
 
 - a label was misspelled or never defined
 - a local label was referenced outside its scope
@@ -1118,7 +1130,7 @@ Known limitations:
 - No `ASM I` / `ASM B` split yet; typing and pasting use the same line path.
 - The physical source-line cap remains 63 visible characters. Compact `DC`
   strings reduce DB-heavy source pressure, but long rows must still be split;
-  overlong rows correctly report `ERR=$07 BAD LINE`.
+  overlong rows correctly report `ERR LINE`.
 - No parentheses or precedence in expressions.
 - No forward `EQU` dependency solver.
 - Compact raw/CSTR/HBSTR/PSTR `DC` forms and the older comma/double-quote forms

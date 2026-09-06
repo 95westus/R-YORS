@@ -31,9 +31,16 @@ Run the complete supported suite:
 make -C SRC asm-test
 ```
 
+The text-diagnostic emulator check uses pinned `py65==1.2.0`. Install once
+from the repository root with:
+
+```text
+python -m pip install --target SRC/BUILD/tmp/asm-error-deps py65==1.2.0
+```
+
 That target includes the ASM ABI, AP Store, APMAN, opcode, compact-data,
 terminal, STR8 read-only bank-tool, WDC comparison, runtime, paste, flash,
-session-report, AP-v2, BANKAUDIT, BANKDUMP, and PIA carrier checks declared by
+session-report, AP-v2, BANKAUDIT, BANKDUMP, PIA carrier, and exhaustive error checks declared by
 `SRC/Makefile`.
 
 Useful focused gates are:
@@ -42,6 +49,7 @@ Useful focused gates are:
 make -C SRC asm-abi-check
 make -C SRC asm-opcode-coverage
 make -C SRC asm-dc-check
+make -C SRC asm-error-check
 make -C SRC asm-ap-v2-check
 make -C SRC ap-store-v1-check
 make -C SRC ap-store-inventory-check
@@ -54,6 +62,72 @@ make -C SRC str8-readonly-bank-tools-check
 ```
 
 Run `git diff --check` before accepting documentation or source changes.
+
+## Text Diagnostics Accepted (2026-09-05)
+
+The focused emulator runner `SRC/tools/check_asm_errors.ps1` passes against
+the linked resident ASM image and existing HIMON ROM image. Console I/O and
+service discovery are simulated; ASM instructions, resident FNV/hex/PACK40,
+and AP parse/package services execute from their S19 bytes. Flash writes are
+mocked. This is host execution evidence, not board proof.
+
+- All 256 values pass in four rendering contexts (1,024 checks), including
+  unknown status bounds and exact `A/C/X/Y` failure returns.
+- Native parser versus seal/AP worker routing, SEAL flags, and READ failures
+  pass 2,550 injected command cases; two-address INSTALL adds 255 cases.
+- All 23 prefix/suffix/PC-address checks pass, including shared strings.
+- Real inputs exercise statuses `$01,$03-$09`, addressing/width/range errors,
+  duplicate/reserved/out-of-scope names, symbol rows/name pool/fixup exhaustion,
+  missing END, invalid seals, malformed APs, and atomic partial-line and
+  `$7CFF/$7D00` boundary rollback. `$02` and legacy `$0A` are tested by injection;
+  the current source vocabulary has no producing directive/local-NYI case.
+- Startup/service failure, saved-session refusal, `.P`, sticky session status,
+  NEW, successful assembly/SEAL/RELOCATE/PACKAGE/LOAD (and optional CHECK),
+  and legacy flash-failure mapping pass.
+- The optional CHECK build passes the same tests plus 510 CHECK parser/worker
+  cases. It uses a **host-only** separate CODE `$8000` / DATA `$7080` layout:
+  optional CHECK does not fit the contiguous resident budget and stays disabled.
+  Never install `BUILD/tmp/asm-errors-check/optional.s19` on the board.
+
+Resident measurement: CODE `$3AE0`, DATA `$02B5`, UDATA `$1D6E`;
+`_END_DATA=$BD95`, headroom `$026B` (619 bytes), above the `$0200` reserve.
+Compared with the previous `$BD2B` artifact, this costs `$006A` (106) ROM
+bytes and zero additional RAM. Context decoding accounts for the growth beyond
+the original size-neutral estimate. Every compact message pointer passes the
+map check; the contiguous message span is limited to 256 bytes.
+
+Tested candidate: `ASM-F2 00.0905(2321)`, S19 SHA-256
+`1C69CB555AD6F999661F7339DB475F11FC17F5CADA3E69525F8C41A1CD37F1EA`.
+HIMON ROM S19 used for the emulator services: SHA-256
+`AE8C8E28BD826654144F07EEB8E93DB3EF2C7A51A8A63EA8B7D3DF84E31A97DD`.
+Generated session-report samples were refreshed from the changed helper
+addresses; the reporter continues to expose numeric diagnostic status.
+
+The full `make -C SRC asm-test` gate now passes, including every formerly
+blocked external-contract branch. The exact lock is advanced from 1.29 to
+the conservative STR8-N 1.30 image; the public ABI hash is unchanged. Version,
+ROM hash, ABI hash, layout, and service-address checks remain strict. Negative
+fixtures reject old/future version locks, wrong ROM/ABI hashes, old resident
+end, and a changed record-service address; the clean accepted image passes.
+
+`make -C SRC board-s19-check "HIMON_VISIBLE_STAMP=0905(2321)"` also passes
+all nine payload identity comparisons. Freeze this stamp when reproducing
+the board candidate; ordinary builds deliberately generate a new timestamp.
+With already-built images, run the focused runner from `SRC` directly:
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/check_asm_errors.ps1
+```
+
+The [board card](TEXT_ERRORS_BOARD_TEST.md) passed its diagnostic cases on
+COM4 at 115200 baud, with unchanged HIMON `00.0902(1707)` and STR8-N 1.30.
+Exact 16K ASM readback and preservation of HIMON/STR8 code passed; only the
+expected D3 installation-journal pair changed. Operator-confirmed physical
+RESET passed with a complete receive-only STR8-N 1.30 selector, default warm
+boot, and HIMON prompt trace. Post-reset ASM retained its identity and text
+errors; a fresh session passed assembly/SEAL/PACKAGE/LOAD and exact `A9 AC 60`
+readback. The feature queue is now accepted. Detailed evidence is in
+[the new hardware record](../LOGS/ASMF2_TEXT_2026-09-05.md).
 
 ## Current Board Gate
 
