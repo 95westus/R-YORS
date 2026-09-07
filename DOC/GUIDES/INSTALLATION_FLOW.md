@@ -106,10 +106,10 @@ and verifies the B1:F backup before erasing B3:F.
 
 ```mermaid
 flowchart TD
-    START[Stock WDCMONv2 in Bank 3] --> KIT[Verify and start the STR8-N v1.29 migration kit]
+    START[Stock WDCMONv2 in Bank 3] --> KIT[Verify and start the STR8-N v1.32 migration kit]
     KIT --> COPY[Copy all 32K B3 to erased B0 and verify exactly]
     COPY --> TOP[Receive 4096-byte STR8-N BIN and install only B3:F]
-    TOP --> BOOT[Physical RESET: require STR8-N 1.29]
+    TOP --> BOOT[Physical RESET: require STR8-N 1.32]
     BOOT --> BMLOAD[Select S; STR8-N L; load Bank Maintenance S19]
     BMLOAD --> ADOPT[Bank Maintenance D: adopt B0 as FF WDCV2]
     ADOPT --> MAP[Bank Maintenance M: require COMPLETE D0]
@@ -246,7 +246,7 @@ second transfer. At `STR8-N>`:
 The equivalent artifact in a STR8-N build tree is:
 
 ```text
-BUILD/v1.29/s19/str8n-v1.29-bank-maint-2000.s19
+BUILD/v1.32/s19/str8n-v1.32-bank-maint-2000.s19
 ```
 
 `L` loads and executes a temporary RAM tool. It does not itself write flash.
@@ -375,7 +375,7 @@ S9 `$8000`:
 
 ```text
 RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-asm-bank3-8-b.s19
-../STR8-N/BUILD/v1.29/str8n-v1.29-release/OPTIONAL/HIMON-ASM/
+../STR8-N/BUILD/v1.32/str8n-v1.32-release/OPTIONAL/HIMON-ASM/
   ryors-v1.2-asm-bank3-8-b.s19
 ```
 

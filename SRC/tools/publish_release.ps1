@@ -138,17 +138,17 @@ Publish-File -Source (Join-Path $repo "DOC/GUIDES/ASM/BANK_DUMP_AP_CARD.md") -Re
 
 $str8ComponentArtifacts = @(
     "BUILD/str8n-manifest.json",
-    "BUILD/v1.29/bin/str8n-v1.29-bank3-f000-ffff.bin",
-    "BUILD/v1.29/s19/str8n-v1.29-bank-maint-2000.s19",
-    "BUILD/v1.29/s19/str8n-v1.29-bank-maint-menu-2000.s19",
-    "BUILD/v1.29/s19/str8n-v1.29-directory-refresh-2000.s19",
-    "BUILD/v1.29/s19/str8n-v1.29-f000.s19",
-    "BUILD/v1.29/s19/str8n-v1.29-worker-0200.s19"
+    "BUILD/v1.32/bin/str8n-v1.32-bank3-f000-ffff.bin",
+    "BUILD/v1.32/s19/str8n-v1.32-bank-maint-2000.s19",
+    "BUILD/v1.32/s19/str8n-v1.32-bank-maint-menu-2000.s19",
+    "BUILD/v1.32/s19/str8n-v1.32-directory-refresh-2000.s19",
+    "BUILD/v1.32/s19/str8n-v1.32-f000.s19",
+    "BUILD/v1.32/s19/str8n-v1.32-worker-0200.s19"
 )
 foreach ($relative in $str8ComponentArtifacts) {
     Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/COMPONENT-IMAGES"
 }
-Publish-File -Source (Join-Path $str8n "BUILD/v1.29/s19/str8n-v1.29-console-abi-test-2000.s19") -RelativeDir "ARTIFACTS/ARCHIVE/COMPONENT-IMAGES"
+Publish-File -Source (Join-Path $str8n "BUILD/v1.32/s19/str8n-v1.32-console-abi-test-2000.s19") -RelativeDir "ARTIFACTS/ARCHIVE/COMPONENT-IMAGES"
 
 $str8ArchivedComponentArtifacts = @(
     "BUILD/ARCHIVE/v1.23/bin/str8n-v1.23-bank3-f000-ffff.bin",
@@ -164,8 +164,8 @@ foreach ($relative in $str8ArchivedComponentArtifacts) {
     Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/ARCHIVE/COMPONENT-IMAGES"
 }
 Publish-File -Source (Join-Path $str8n "BUILD/ARCHIVE/v1.23/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19") -Name "ryors-v1.2-str8n-v1.23-himon-asm-bank0-2-8-f.s19" -RelativeDir "ARTIFACTS/ARCHIVE/COMPONENT-IMAGES"
-Publish-File -Source (Join-Path $str8n "BUILD/v1.29/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19")
-Publish-File -Source (Join-Path $str8n "BUILD/v1.29/s19/str8n-v1.29-top-update-2000.s19")
+Publish-File -Source (Join-Path $str8n "BUILD/v1.32/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19")
+Publish-File -Source (Join-Path $str8n "BUILD/v1.32/s19/str8n-v1.32-top-update-2000.s19")
 
 $sourceRoots = @(
     (Join-Path $repo "SRC/ASM"),
@@ -180,13 +180,12 @@ foreach ($sourceRoot in $sourceRoots) {
 
 $str8Sources = @(
     "src/str8.asm",
-    "src/str8-worker.asm",
-    "src/util-delay.asm"
+    "src/str8-worker.asm"
 )
 foreach ($relative in $str8Sources) {
     Publish-File -Source (Join-Path $str8n $relative) -RelativeDir "ARTIFACTS/SOURCES"
 }
-Publish-File -Source (Join-Path $str8n "tools/bank-maint/str8n-v1.29-bank-maint-menu-2000.a") -RelativeDir "ARTIFACTS/SOURCES"
+Publish-File -Source (Join-Path $str8n "tools/bank-maint/str8n-v1.32-bank-maint-menu-2000.a") -RelativeDir "ARTIFACTS/SOURCES"
 
 $str8ArchivedSources = @(
     "tools/bank-maint/str8n-v1.23-bank-maint-2000.asm",
@@ -274,7 +273,7 @@ Bank-3 sectors 8-E update, without protected sector F:
 
 Guarded Bank-3 sector-F update, retaining a verified B1:F backup:
 
-- str8n-v1.29-top-update-2000.s19
+- str8n-v1.32-top-update-2000.s19
 
 Board-use artifacts:
 
@@ -285,9 +284,9 @@ Board-use artifacts:
 - ARTIFACTS/COMPONENT-IMAGES/apman-v1.ap - exact AP v2 APMAN envelope
 - ARTIFACTS/AP-STORE/ap-store-v1-chain-install-tool-package-4000.s19
 - ARTIFACTS/AP-STORE/ap-store-v1-slice6-catalog-tool-package-4000.s19
-- ARTIFACTS/SOURCES/str8n-v1.29-bank-maint-menu-2000.a - onboard `ASM NEW`
+- ARTIFACTS/SOURCES/str8n-v1.32-bank-maint-menu-2000.a - onboard `ASM NEW`
   source for banked AP put, guarded directory rename, and directory reclaim
-- ARTIFACTS/COMPONENT-IMAGES/str8n-v1.29-bank-maint-menu-2000.s19 - direct
+- ARTIFACTS/COMPONENT-IMAGES/str8n-v1.32-bank-maint-menu-2000.s19 - direct
   loader form of the same maintenance menu
 - ARTIFACTS/COMPONENT-IMAGES - component, diagnostic, and recovery images
 - ARTIFACTS/SOURCES - source snapshots and onboard sample sources
@@ -300,9 +299,9 @@ Archived artifacts:
 
 - ARTIFACTS/ARCHIVE/AP-STORE - superseded AP Store transit variants
 - ARTIFACTS/ARCHIVE/COMPONENT-IMAGES - superseded and proof/test component images,
-  including every retained pre-v1.29 STR8-N image, `fnv1a-hbstr-6000.s19`,
+  including retained historical STR8-N images, `fnv1a-hbstr-6000.s19`,
   the current console ABI test, and `rom-append-calc-b804.s19`
-- ARTIFACTS/ARCHIVE/SOURCES - pre-v1.29 STR8-N sources and AP v1/v2 proof
+- ARTIFACTS/ARCHIVE/SOURCES - historical STR8-N sources and AP v1/v2 proof
   fixtures retained for regression
 
 The canonical source remains under `SRC/` and the adjacent `STR8-N`

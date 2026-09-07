@@ -42,12 +42,14 @@
                         XREF            SYS_READ_CHAR_ECHO
                         XREF            SYS_READ_CHAR_COOKED_ECHO
                         XREF            SYS_GET_CTRL_C
+                        XREF            SYS_CHECK_ENUMERATED
                         XREF            UTL_HEX_ASCII_TO_NIBBLE
 
                         INCLUDE         "ASM/asm-abi-v1.inc"
                         INCLUDE         "ASM/ap-store-v1.inc"
                         INCLUDE         "ASM/apman-v1.inc"
                         INCLUDE         "HIMON/himon-image-eq.inc"
+                        INCLUDE         "HIMON/himon-led-eq.inc"
                         INCLUDE         "HIMON/himon-shared-eq.inc"
 ; Verified external STR8-N public contract, imported into BUILD/inc by the
 ; integration gate before HIMON is assembled.
@@ -326,10 +328,10 @@ HIM_SVC_BOOT_TABLE:
                         DB              HIM_SVC_SIG0_VAL,HIM_SVC_SIG1_VAL
                         DB              HIM_SVC_VERSION_1,HIM_SVC_VECTOR_COUNT
                         DW              THE_JOIN_EXEC_XY
-                        DW              BIO_FTDI_WRITE_BYTE_BLOCK
-                        DW              SYS_WRITE_CSTRING
-                        DW              SYS_WRITE_HEX_BYTE
-                        DW              SYS_WRITE_CRLF
+                        DW              HIM_IO_WRITE_BYTE_ACTIVITY
+                        DW              HIM_IO_WRITE_CSTRING_ACTIVITY
+                        DW              HIM_IO_WRITE_HEX_BYTE_ACTIVITY
+                        DW              HIM_IO_WRITE_CRLF_ACTIVITY
                         DW              HIM_READ_LINE_ECHO
                         DW              UTL_HEX_ASCII_TO_NIBBLE
                         DW              FNV1A_INIT
@@ -388,6 +390,17 @@ CMD_UNKNOWN:
                         JSR             HIM_WRITE_HBSTRING
                         JSR             SYS_WRITE_CRLF
                         JMP             MAIN_LOOP
+
+; Enter STR8-N as a cooperating software restart. Clear the commit byte first,
+; publish the signature, commit last, and do not execute intervening code.
+CMD_STR8_SOFT_RESET:
+                        SEI
+                        STZ             STR8_SOFT_RESET_SIG1
+                        LDA             #STR8_SOFT_RESET_SIG0_VALUE
+                        STA             STR8_SOFT_RESET_SIG0
+                        LDA             #STR8_SOFT_RESET_SIG1_VALUE
+                        STA             STR8_SOFT_RESET_SIG1
+                        JMP             $F000
 
 CMD_HELP_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$8E,$B0,$0C,$3A,CMD_HASH_KIND_EXEC ; ? $3A0CB08E EXEC
@@ -944,7 +957,7 @@ HIM_APS_CLASSIFY_HEADER:
                         ENDIF
 
 ; ----------------------------------------------------------------------------
-; L  (HIMON-owned RAM S19 loader: S1 data, S9 terminator; S0 skipped)
+; L  (STR8-N-parsed RAM S19 loader: S1 data, S9 terminator; S0 skipped)
 ; Ctrl-C cancels the receive session. A fatal record error poisons the load,
 ; suppresses later S1 writes, and quenches input through S9 or Ctrl-C.
 ; Completed S1 writes remain in RAM and S9 execution is always absent.
@@ -966,6 +979,14 @@ CMD_L_ARGS_OK:
                         STZ             LOAD_HAVE_DATA
                         STZ             LOAD_LAST_LO
                         STZ             LOAD_LAST_HI
+                        JSR             L_STR8_REQUIRE_SERVICE
+                        BCS             CMD_L_SERVICE_OK
+                        LDA             #LOAD_FAIL_SERVICE
+                        STA             LOAD_FAIL_CODE
+                        JSR             CMD_L_PRINT_FAIL
+                        CLC
+                        RTS
+CMD_L_SERVICE_OK:
                         LDX             #<MSG_L_READY
                         LDY             #>MSG_L_READY
                         JSR             HIM_WRITE_HBSTRING
@@ -1002,7 +1023,7 @@ CMD_L_HAVE_LINE:
                         CMP             #'L'
                         BEQ             CMD_L_READ_LOOP
 
-                        JSR             L_PARSE_RECORD
+                        JSR             L_PARSE_RECORD_STR8
                         BCS             CMD_L_PARSE_OK
                         JSR             CMD_L_PRINT_FAIL
                         BRA             CMD_L_READ_LOOP
@@ -1239,6 +1260,9 @@ HIM_READ_LINE_SET_MODE:
                         STX             CMDP_PTR_LO
                         STY             CMDP_PTR_HI
                         STZ             CMDP_REMAIN
+; HIMON now owns the display.  A later accepted byte remains latched as RX
+; activity while this editor blocks for the next byte.
+                        JSR             HIM_IO_PUBLISH_INPUT_WAIT
 HIM_READ_LINE_LOOP:
                         JSR             HIM_READ_BYTE_BLOCK
                         CMP             #$03
@@ -1295,14 +1319,14 @@ HIM_READ_LINE_DONE:
                         STA             (CMDP_PTR_LO),Y
                         LDA             CMD_IO_TMP
                         BEQ             HIM_READ_LINE_DONE_STATUS
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_IO_WRITE_CRLF_ACTIVITY
 HIM_READ_LINE_DONE_STATUS:
                         LDA             CMDP_REMAIN
                         SEC
                         RTS
 
 HIM_READ_LINE_ABORT:
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_IO_WRITE_CRLF_ACTIVITY
                         LDA             CMD_FLAGS
                         AND             #CMD_FLAG_TOP_INPUT
                         BEQ             HIM_READ_LINE_ABORT_LINE
@@ -1321,10 +1345,52 @@ HIM_READ_BYTE_BLOCK:
                         BEQ             HIM_READ_BYTE_HW
                         STZ             HIM_RX_HAVE
                         LDA             HIM_RX_BYTE
+                        BRA             HIM_IO_RX_ACTIVITY_A
+HIM_READ_BYTE_HW:
+                        JSR             BIO_FTDI_READ_BYTE_BLOCK
+HIM_IO_RX_ACTIVITY_A:
+                        PHA
+                        LDA             #HIM_LED_STATUS_RX_ACTIVITY
+                        STA             HIM_LED_PIA_PORTA
+                        PLA
                         SEC
                         RTS
-HIM_READ_BYTE_HW:
-                        JMP             BIO_FTDI_READ_BYTE_BLOCK
+
+HIM_IO_PUBLISH_INPUT_WAIT:
+                        JSR             SYS_CHECK_ENUMERATED
+                        BCC             HIM_IO_PUBLISH_NO_HOST_WAIT
+                        LDA             #HIM_LED_STATUS_HOST_INPUT_WAIT
+                        BRA             HIM_IO_PUBLISH_WAIT
+HIM_IO_PUBLISH_NO_HOST_WAIT:
+                        LDA             #HIM_LED_STATUS_NO_HOST_WAIT
+HIM_IO_PUBLISH_WAIT:
+                        STA             HIM_LED_PIA_PORTA
+                        RTS
+
+; Private HIMON/ASM-F2 console veneers.  The shared raw FTDI services retain
+; their existing no-LED contract for applications that own the display.
+HIM_IO_TX_ACTIVITY_A:
+                        PHA
+                        LDA             #HIM_LED_STATUS_TX_ACTIVITY
+                        STA             HIM_LED_PIA_PORTA
+                        PLA
+                        RTS
+
+HIM_IO_WRITE_BYTE_ACTIVITY:
+                        JSR             HIM_IO_TX_ACTIVITY_A
+                        JMP             BIO_FTDI_WRITE_BYTE_BLOCK
+
+HIM_IO_WRITE_CSTRING_ACTIVITY:
+                        JSR             HIM_IO_TX_ACTIVITY_A
+                        JMP             SYS_WRITE_CSTRING
+
+HIM_IO_WRITE_HEX_BYTE_ACTIVITY:
+                        JSR             HIM_IO_TX_ACTIVITY_A
+                        JMP             SYS_WRITE_HEX_BYTE
+
+HIM_IO_WRITE_CRLF_ACTIVITY:
+                        JSR             HIM_IO_TX_ACTIVITY_A
+                        JMP             SYS_WRITE_CRLF
 
 HIM_CHAR_TO_UPPER:
                         CMP             #'a'
@@ -1337,6 +1403,7 @@ HIM_CHAR_TO_UPPER_DONE:
                         RTS
 
 HIM_WRITE_HBSTRING:
+                        JSR             HIM_IO_TX_ACTIVITY_A
                         STX             CMDP_PTR_LO
                         STY             CMDP_PTR_HI
                         LDY             #$00
@@ -1861,6 +1928,7 @@ HIM_CHECK_CTRL_C:
                         BNE             HIM_CHECK_CTRL_C_NO
                         JSR             BIO_FTDI_READ_BYTE_NONBLOCK
                         BCC             HIM_CHECK_CTRL_C_NO
+                        JSR             HIM_IO_RX_ACTIVITY_A
                         CMP             #$03
                         BEQ             HIM_CHECK_CTRL_C_YES
                         STA             HIM_RX_BYTE
@@ -2069,145 +2137,133 @@ CMD_PARSE_RANGE_FAIL:
                         RTS
 
 ; ----------------------------------------------------------------------------
-; HIMON-private S19 parser. A complete S1 is decoded into FREE_BUF and its
-; checksum and destination span are validated before any target RAM changes.
+; STR8-N owns S19 syntax, type, count, hex, checksum, and end-of-line parsing.
+; HIMON retains its RAM destination policy, accounting, progress, poisoned
+; session behavior, and explicit-G-only execution policy around the validated
+; record descriptor.
 ; ----------------------------------------------------------------------------
-L_PARSE_RECORD:
-                        STZ             LOAD_REC_KIND
-                        JSR             CMD_PEEK
-                        CMP             #'S'
-                        BEQ             L_PARSE_RECORD_HAVE_S
-                        JMP             L_PARSE_FAIL
-L_PARSE_RECORD_HAVE_S:
-                        JSR             CMD_ADV_PTR
-                        JSR             CMD_PEEK
-                        CMP             #'0'
-                        BEQ             L_PARSE_RECORD_S0
-                        CMP             #'1'
-                        BEQ             L_PARSE_RECORD_S1
-                        CMP             #'9'
-                        BNE             L_PARSE_RECORD_BAD_KIND
-                        JMP             L_PARSE_RECORD_S9
-L_PARSE_RECORD_BAD_KIND:
-                        JMP             L_PARSE_FAIL
+L_STR8_REQUIRE_SERVICE:
+                        LDA             STR8_REC_SIG0_ADDR
+                        CMP             #STR8_REC_SIG0_VALUE
+                        BNE             L_STR8_REQUIRE_SERVICE_FAIL
+                        LDA             STR8_REC_SIG1_ADDR
+                        CMP             #STR8_REC_SIG1_VALUE
+                        BNE             L_STR8_REQUIRE_SERVICE_FAIL
+                        LDA             STR8_REC_VERSION_ADDR
+                        CMP             #STR8_REC_VERSION_VALUE
+                        BNE             L_STR8_REQUIRE_SERVICE_FAIL
+                        LDA             STR8_REC_CAPS_ADDR
+                        AND             #STR8_REC_CAP_BUFFER
+                        CMP             #STR8_REC_CAP_BUFFER
+                        BNE             L_STR8_REQUIRE_SERVICE_FAIL
+                        SEC
+                        RTS
+L_STR8_REQUIRE_SERVICE_FAIL:
+                        CLC
+                        RTS
 
-L_PARSE_RECORD_S0:
-                        JSR             CMD_ADV_PTR
-                        JSR             L_PARSE_HEADER
-                        BCC             L_PARSE_S0_FAIL
-L_PARSE_S0_SKIP:
-                        LDA             LOAD_DATA_LEN
-                        BEQ             L_PARSE_S0_CHECK
-                        JSR             L_PARSE_HEX_BYTE_STRICT
-                        BCC             L_PARSE_S0_FAIL
-                        JSR             L_SUM_ADD_A
-                        DEC             LOAD_DATA_LEN
-                        BRA             L_PARSE_S0_SKIP
-L_PARSE_S0_CHECK:
-                        JSR             L_VERIFY_CHECKSUM_EOL
-                        BCC             L_PARSE_S0_FAIL
+L_PARSE_RECORD_STR8:
+                        STZ             LOAD_REC_KIND
+                        LDA             #STR8_REC_OP_PARSE
+                        STA             STR8_REC_OP
+                        LDA             #STR8_REC_FORMAT_S19
+                        STA             STR8_REC_FORMAT
+                        LDA             #STR8_REC_SOURCE_BUFFER
+                        STA             STR8_REC_SOURCE
+                        LDA             #<CMD_BUF
+                        STA             STR8_REC_SRC_LO
+                        LDA             #>CMD_BUF
+                        STA             STR8_REC_SRC_HI
+                        LDA             CMD_LEN
+                        STA             STR8_REC_SRC_LEN
+                        JSR             STR8_RECORD_SERVICE
+                        BCC             L_PARSE_RECORD_STR8_FAIL
+
+                        LDA             STR8_REC_KIND
+                        CMP             #STR8_REC_KIND_DATA
+                        BEQ             L_PARSE_RECORD_STR8_DATA
+                        CMP             #STR8_REC_KIND_END
+                        BEQ             L_PARSE_RECORD_STR8_END
+                        CMP             #STR8_REC_KIND_METADATA
+                        BNE             L_PARSE_RECORD_STR8_SERVICE_FAIL
                         LDA             #LOAD_REC_KIND_SKIP
                         STA             LOAD_REC_KIND
                         SEC
                         RTS
-L_PARSE_S0_FAIL:
-                        JMP             L_PARSE_FAIL
 
-L_PARSE_RECORD_S1:
-                        JSR             CMD_ADV_PTR
-                        JSR             L_PARSE_HEADER
-                        BCC             L_PARSE_S1_FAIL
-                        LDX             #$00
-L_PARSE_S1_DATA:
-                        CPX             LOAD_DATA_LEN
-                        BCS             L_PARSE_S1_CHECK
-                        JSR             L_PARSE_HEX_BYTE_STRICT
-                        BCC             L_PARSE_S1_FAIL
-                        STA             FREE_BUF,X
-                        JSR             L_SUM_ADD_A
-                        INX
-                        BRA             L_PARSE_S1_DATA
-L_PARSE_S1_CHECK:
-                        JSR             L_VERIFY_CHECKSUM_EOL
-                        BCC             L_PARSE_S1_FAIL
-                        LDA             LOAD_DATA_LEN
-                        BEQ             L_PARSE_S1_DONE
-                        LDA             LOAD_FAIL_CODE
-                        BNE             L_PARSE_S1_DONE
-                        JSR             L_VALIDATE_RAM_SPAN
-                        BCC             L_PARSE_S1_FAIL
-                        JSR             L_NOTE_S1_ADDR
-                        LDA             LOAD_DST_LO
-                        STA             CMDP_ADDR_LO
-                        LDA             LOAD_DST_HI
-                        STA             CMDP_ADDR_HI
-                        LDX             LOAD_DATA_LEN
-                        LDY             #$00
-L_PARSE_S1_COPY:
-                        LDA             FREE_BUF,Y
-                        STA             (CMDP_ADDR_LO),Y
-                        INY
-                        DEX
-                        BNE             L_PARSE_S1_COPY
-                        LDA             LOAD_TMP_LO
-                        STA             LOAD_LAST_LO
-                        LDA             LOAD_TMP_HI
-                        STA             LOAD_LAST_HI
-                        LDA             LOAD_DATA_LEN
-                        CLC
-                        ADC             LOAD_TOTAL_LO
-                        STA             LOAD_TOTAL_LO
-                        BCC             L_PARSE_S1_DONE
-                        INC             LOAD_TOTAL_HI
-L_PARSE_S1_DONE:
-                        LDA             #LOAD_REC_KIND_DATA
-                        STA             LOAD_REC_KIND
-                        SEC
-                        RTS
-L_PARSE_S1_FAIL:
-                        JMP             L_PARSE_FAIL
-
-L_PARSE_RECORD_S9:
-                        JSR             CMD_ADV_PTR
-                        JSR             L_PARSE_HEADER
-                        BCC             L_PARSE_S9_FAIL
-                        LDA             LOAD_DATA_LEN
-                        BNE             L_PARSE_S9_FAIL
-                        JSR             L_VERIFY_CHECKSUM_EOL
-                        BCC             L_PARSE_S9_FAIL
-                        LDA             LOAD_DST_LO
+L_PARSE_RECORD_STR8_END:
+                        LDA             STR8_REC_ENTRY_LO
                         STA             LOAD_GO_LO
-                        LDA             LOAD_DST_HI
+                        LDA             STR8_REC_ENTRY_HI
                         STA             LOAD_GO_HI
                         LDA             #LOAD_REC_KIND_TERM
                         STA             LOAD_REC_KIND
                         SEC
                         RTS
-L_PARSE_S9_FAIL:
-                        JMP             L_PARSE_FAIL
 
-L_PARSE_HEADER:
-                        STZ             LOAD_SUM
-                        JSR             L_PARSE_HEX_BYTE_STRICT
-                        BCC             L_PARSE_HEADER_FAIL
-                        STA             LOAD_COUNT
-                        JSR             L_SUM_ADD_A
-                        JSR             L_PARSE_HEX_BYTE_STRICT
-                        BCC             L_PARSE_HEADER_FAIL
-                        STA             LOAD_DST_HI
-                        JSR             L_SUM_ADD_A
-                        JSR             L_PARSE_HEX_BYTE_STRICT
-                        BCC             L_PARSE_HEADER_FAIL
+L_PARSE_RECORD_STR8_FAIL:
+                        LDA             STR8_REC_STATUS
+                        CMP             #STR8_REC_BAD_START
+                        BCC             L_PARSE_RECORD_STR8_SERVICE_FAIL
+                        CMP             #(STR8_REC_BAD_END+1)
+                        BCS             L_PARSE_RECORD_STR8_SERVICE_FAIL
+                        LDA             #LOAD_FAIL_PARSE
+                        BRA             L_PARSE_RECORD_STR8_FAIL_A
+L_PARSE_RECORD_STR8_SERVICE_FAIL:
+                        LDA             #LOAD_FAIL_SERVICE
+L_PARSE_RECORD_STR8_FAIL_A:
+                        TAX
+                        LDA             LOAD_FAIL_CODE
+                        BNE             L_PARSE_RECORD_STR8_FAIL_RETURN
+                        STX             LOAD_FAIL_CODE
+L_PARSE_RECORD_STR8_FAIL_RETURN:
+                        CLC
+                        RTS
+
+L_PARSE_RECORD_STR8_DATA:
+                        LDA             STR8_REC_ADDR_LO
                         STA             LOAD_DST_LO
-                        JSR             L_SUM_ADD_A
-                        LDA             LOAD_COUNT
-                        CMP             #$03
-                        BCC             L_PARSE_HEADER_FAIL
-                        SBC             #$03
-                        STA             LOAD_DATA_LEN
+                        LDA             STR8_REC_ADDR_HI
+                        STA             LOAD_DST_HI
+                        LDA             STR8_REC_DATA_LEN
+                        BEQ             L_PARSE_RECORD_STR8_DATA_DONE
+                        LDA             LOAD_FAIL_CODE
+                        BNE             L_PARSE_RECORD_STR8_DATA_DONE
+                        JSR             L_VALIDATE_RAM_SPAN
+                        BCC             L_PARSE_RECORD_STR8_DATA_FAIL
+                        JSR             L_NOTE_S1_ADDR
+                        LDA             LOAD_DST_LO
+                        STA             CMDP_ADDR_LO
+                        LDA             LOAD_DST_HI
+                        STA             CMDP_ADDR_HI
+                        LDA             STR8_REC_DATA_LO
+                        STA             CMDP_PTR_LO
+                        LDA             STR8_REC_DATA_HI
+                        STA             CMDP_PTR_HI
+                        LDX             STR8_REC_DATA_LEN
+                        LDY             #$00
+L_PARSE_RECORD_STR8_COPY:
+                        LDA             (CMDP_PTR_LO),Y
+                        STA             (CMDP_ADDR_LO),Y
+                        INY
+                        DEX
+                        BNE             L_PARSE_RECORD_STR8_COPY
+                        LDA             LOAD_TMP_LO
+                        STA             LOAD_LAST_LO
+                        LDA             LOAD_TMP_HI
+                        STA             LOAD_LAST_HI
+                        LDA             STR8_REC_DATA_LEN
+                        CLC
+                        ADC             LOAD_TOTAL_LO
+                        STA             LOAD_TOTAL_LO
+                        BCC             L_PARSE_RECORD_STR8_DATA_DONE
+                        INC             LOAD_TOTAL_HI
+L_PARSE_RECORD_STR8_DATA_DONE:
+                        LDA             #LOAD_REC_KIND_DATA
+                        STA             LOAD_REC_KIND
                         SEC
                         RTS
-L_PARSE_HEADER_FAIL:
+L_PARSE_RECORD_STR8_DATA_FAIL:
                         CLC
                         RTS
 
@@ -2218,7 +2274,7 @@ L_VALIDATE_RAM_SPAN:
                         BCS             L_VALIDATE_RAM_SPAN_START_FAIL
                         LDA             LOAD_DST_LO
                         CLC
-                        ADC             LOAD_DATA_LEN
+                        ADC             STR8_REC_DATA_LEN
                         STA             LOAD_TMP_LO
                         LDA             LOAD_DST_HI
                         ADC             #$00
@@ -2245,58 +2301,6 @@ L_VALIDATE_RAM_SPAN_CROSS_FAIL:
 L_VALIDATE_RAM_SPAN_FAIL:
                         LDA             #LOAD_FAIL_PROTECT
                         STA             LOAD_FAIL_CODE
-                        CLC
-                        RTS
-
-L_SUM_ADD_A:
-                        CLC
-                        ADC             LOAD_SUM
-                        STA             LOAD_SUM
-                        RTS
-
-L_VERIFY_CHECKSUM_EOL:
-                        JSR             L_PARSE_HEX_BYTE_STRICT
-                        BCC             L_VERIFY_CHECKSUM_EOL_FAIL
-                        CLC
-                        ADC             LOAD_SUM
-                        CMP             #$FF
-                        BNE             L_VERIFY_CHECKSUM_EOL_FAIL
-                        JSR             CMD_PEEK
-                        BEQ             L_VERIFY_CHECKSUM_EOL_OK
-L_VERIFY_CHECKSUM_EOL_FAIL:
-                        CLC
-                        RTS
-L_VERIFY_CHECKSUM_EOL_OK:
-                        SEC
-                        RTS
-
-L_PARSE_HEX_BYTE_STRICT:
-                        JSR             CMD_PEEK
-                        JSR             CMD_HEX_ASCII_TO_NIBBLE
-                        BCC             L_PARSE_HEX_BYTE_STRICT_FAIL
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        STA             CMDP_NIB_HI
-                        JSR             CMD_ADV_PTR
-                        JSR             CMD_PEEK
-                        JSR             CMD_HEX_ASCII_TO_NIBBLE
-                        BCC             L_PARSE_HEX_BYTE_STRICT_FAIL
-                        ORA             CMDP_NIB_HI
-                        JSR             CMD_ADV_PTR
-                        SEC
-                        RTS
-L_PARSE_HEX_BYTE_STRICT_FAIL:
-                        CLC
-                        RTS
-
-L_PARSE_FAIL:
-                        LDA             LOAD_FAIL_CODE
-                        BNE             L_PARSE_FAIL_HAVE_CODE
-                        LDA             #LOAD_FAIL_PARSE
-                        STA             LOAD_FAIL_CODE
-L_PARSE_FAIL_HAVE_CODE:
                         CLC
                         RTS
 
@@ -4928,7 +4932,7 @@ SYS_READ_CSTRING_ECHO_UPPER_FNV:
 
 BIO_FTDI_PUT_CSTR_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$42,$0F,$FA,$AE,CMD_HASH_KIND_EXEC_TEXT ; BIO_FTDI_PUT_CSTR $AEFA0F42 EXEC+TEXT
-                        DW              SYS_WRITE_CSTRING
+                        DW              HIM_IO_WRITE_CSTRING_ACTIVITY
                         DW              TXT_BIO_FTDI_PUT_CSTR
 
 HIMON_VERSION_FNV:
@@ -4938,7 +4942,7 @@ HIMON_VERSION_FNV:
 
 CMD_STR8_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$18,$0E,$AD,$A2,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; STR8 $A2AD0E18 EXEC+CONFIRM+TEXT
-                        DW              $F000
+                        DW              CMD_STR8_SOFT_RESET
                         DW              TXT_STR8
 
 MSG_BANNER:              DB              $0D,$0A

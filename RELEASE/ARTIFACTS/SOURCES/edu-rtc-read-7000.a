@@ -1,0 +1,353 @@
+; EDU-RTC-READ-7000.A
+; RAM-ONLY MCP79411 DATE/TIME READER FOR W65C02SXB + W65C02EDU.
+;
+; AUTHORSHIP AND PROVENANCE:
+; - OPENAI CODEX, AN AI SYSTEM, WROTE THIS ENTIRE .A FILE.
+; - THIS IS AN ORIGINAL IMPLEMENTATION DERIVED ONLY FROM THE
+;   PUBLIC DATA SHEETS LISTED BELOW.
+; - NO VENDOR EXAMPLE CODE OR OTHER SOURCE CODE WAS COPIED.
+; - INITIAL BOARD TESTING WAS BLOCKED BECAUSE TERA TERM HELD
+;   COM4. THE CLEAN COLD-BOOT PROOF SUPERSEDES THE EARLIER
+;   DUPLICATE CAPTURES. SEE DOC/GUIDES/LOGS/
+;   EDU_RTC_READ_BOARD_TEST_2026-09-07.MD.
+;
+; PUBLIC DATA SHEETS USED:
+; WDC W65C02EDU DATASHEET:
+; https://www.wdc65xx.com/wdc/documentation/W65C02EDU.pdf
+; WDC W65C02SXB DATASHEET:
+; https://www.wdc65xx.com/wdc/documentation/W65C02SXB.pdf
+; WDC W65C22 DATASHEET:
+; https://www.wdc65xx.com/wdc/documentation/w65c22.pdf
+; MICROCHIP MCP79410/11/12 DATASHEET:
+;https://ww1.microchip.com/downloads/en/devicedoc/20002266h.pdf
+;
+; FACTS USED: PA0=SCL, PA7=SDA, VIA BASE=$7FC0,
+; ORA-NO-HANDSHAKE=$0F, DDRA=$03, RTCC ADDRESS=$6F,
+; RANDOM/SEQUENTIAL READ, AND BCD REGISTERS $00-$06.
+;
+; THE RTC USES I2C, NOT SPI. THE EDU BOARD BIT-BANGS BOTH BUSES
+; THROUGH THE VIA. SPI USES SEPARATE PORT-B PINS.
+;
+; THIS PROGRAM ONLY READS THE RTC; IT DOES NOT MODIFY IT.
+; IT SAVES AND RESTORES VIA PORT A, USES NO ZERO PAGE, AND
+; RESTORES INTERRUPT ENABLE STATE AS IT FOUND IT.
+;
+; WITH CURRENT HIMON AND ASM-F2 RESIDENT:
+;   >ASM NEW
+;   PASTE THIS WHOLE FILE
+;   AT SEAL> TYPE .
+;   >G 7000
+;
+; EXAMPLE OUTPUT:
+;   DATE YY-MM-DD 26-09-07  TIME 14:35:09
+;
+; THE TWO-DIGIT YEAR HAS NO CENTURY IN THE CHIP.
+; 12-HOUR MODE GETS AM/PM. A STOPPED OSCILLATOR OR
+; LATCHED POWER-FAIL CONDITION IS REPORTED AFTER THE DATE/TIME.
+;
+; RETURN: A=$00/C=1 SUCCESS; A=$01/C=0 BUS BUSY;
+;         A=$02/C=0 RTC NACK; A=$E1/C=0 WRONG HIMON ABI.
+
+        ORG $7000
+
+VORA    EQU $7FCF
+VDDR    EQU $7FC3
+SCL     EQU $01
+SDA     EQU $80
+
+START   LDA $7E02
+        CMP #'R'
+        BNE BADABI
+        LDA $7E03
+        CMP #'Y'
+        BNE BADABI
+        LDA $7E04
+        CMP #$01
+        BNE BADABI
+        LDA $7E05
+        CMP #$05
+        BCC BADABI
+
+        PHP
+        SEI
+        JSR I2INIT
+        BCC IOFAIL
+        JSR RTREAD
+        BCC IOFAIL
+        JSR I2REST
+        PLP
+        JSR SHOW
+        LDA #$00
+        SEC
+        RTS
+
+IOFAIL  STA ERROR
+        JSR I2REST
+        PLP
+        LDX #<IOMSG
+        LDY #>IOMSG
+        JSR PUTS
+        LDA ERROR
+        JSR HEX
+        JSR CRLF
+        LDA ERROR
+        CLC
+        RTS
+
+BADABI  LDA #$E1
+        CLC
+        RTS
+
+; SAVE VIA STATE, LATCH LOWS, THEN RELEASE THE BUS LINES.
+I2INIT  LDA VORA
+        STA SAVEORA
+        LDA VDDR
+        STA SAVEDDR
+        LDA VORA
+        AND #$7E
+        STA VORA
+        LDA VDDR
+        AND #$7E
+        STA VDDR
+        NOP
+        NOP
+        LDA VORA
+        AND #$81
+        CMP #$81
+        BEQ I2GOOD
+        LDA #$01
+        CLC
+        RTS
+I2GOOD  SEC
+        RTS
+
+I2REST  LDA SAVEORA
+        STA VORA
+        LDA SAVEDDR
+        STA VDDR
+        RTS
+
+; MCP79411 BUFFERED SEQUENTIAL READ OF $00-$06.
+RTREAD  JSR I2START
+        LDA #$DE
+        JSR I2WRITE
+        BCC RTNACK
+        LDA #$00
+        JSR I2WRITE
+        BCC RTNACK
+        JSR I2START
+        LDA #$DF
+        JSR I2WRITE
+        BCC RTNACK
+        LDX #$00
+RTLOOP  LDY #$00
+        CPX #$06
+        BNE RTACK
+        LDY #$01
+RTACK   JSR I2READ
+        STA RTCBUF,X
+        INX
+        CPX #$07
+        BNE RTLOOP
+        JSR I2STOP
+        SEC
+        RTS
+RTNACK  JSR I2STOP
+        LDA #$02
+        CLC
+        RTS
+
+; START AND STOP CONDITIONS. LINES ARE NEVER DRIVEN HIGH.
+I2START JSR SDAREL
+        JSR SCLREL
+        JSR SDALOW
+        JMP SCLLOW
+
+I2STOP  JSR SDALOW
+        JSR SCLREL
+        JMP SDAREL
+
+; WRITE A BYTE MSB FIRST; C=1 FOR SLAVE ACK, C=0 FOR NACK.
+I2WRITE STA I2BYTE
+        PHX
+        LDX #$08
+IWLOOP  ASL I2BYTE
+        BCC IWZERO
+        JSR SDAREL
+        BRA IWCLOCK
+IWZERO  JSR SDALOW
+IWCLOCK JSR SCLREL
+        JSR SCLLOW
+        DEX
+        BNE IWLOOP
+        JSR SDAREL
+        JSR SCLREL
+        LDA VORA
+        AND #SDA
+        STA I2ACK
+        JSR SCLLOW
+        PLX
+        LDA I2ACK
+        BNE IWNACK
+        SEC
+        RTS
+IWNACK  CLC
+        RTS
+
+; READ A BYTE MSB FIRST. Y=0 SENDS ACK; Y<>0 SENDS FINAL NACK.
+I2READ  PHX
+        STZ I2BYTE
+        JSR SDAREL
+        LDX #$08
+IRLOOP  JSR SCLREL
+        LDA VORA
+        AND #SDA
+        BEQ IRZERO
+        SEC
+        BRA IRROLL
+IRZERO  CLC
+IRROLL  ROL I2BYTE
+        JSR SCLLOW
+        DEX
+        BNE IRLOOP
+        CPY #$00
+        BNE IRNACK
+        JSR SDALOW
+        BRA IRPULSE
+IRNACK  JSR SDAREL
+IRPULSE JSR SCLREL
+        JSR SCLLOW
+        JSR SDAREL
+        PLX
+        LDA I2BYTE
+        RTS
+
+; DDRA=0 RELEASES A PIN TO THE BOARD PULL-UP; DDRA=1 DRIVES
+; THE LOW ORA LATCH. DELAYS KEEP THE BUS BELOW 400 KHZ.
+SDAREL  LDA VDDR
+        AND #$7F
+        STA VDDR
+        NOP
+        NOP
+        RTS
+SDALOW  LDA VDDR
+        ORA #SDA
+        STA VDDR
+        NOP
+        NOP
+        RTS
+SCLREL  LDA VDDR
+        AND #$FE
+        STA VDDR
+        NOP
+        NOP
+        RTS
+SCLLOW  LDA VDDR
+        ORA #SCL
+        STA VDDR
+        NOP
+        NOP
+        RTS
+
+SHOW    LDX #<DATEMSG
+        LDY #>DATEMSG
+        JSR PUTS
+        LDA RTCBUF+6
+        JSR BCD
+        LDA #'-'
+        JSR OUT
+        LDA RTCBUF+5
+        AND #$1F
+        JSR BCD
+        LDA #'-'
+        JSR OUT
+        LDA RTCBUF+4
+        AND #$3F
+        JSR BCD
+        LDX #<TIMEMSG
+        LDY #>TIMEMSG
+        JSR PUTS
+        LDA RTCBUF+2
+        PHA
+        AND #$40
+        BNE SHOW12
+        PLA
+        AND #$3F
+        JSR BCD
+        BRA SHOWMIN
+SHOW12  PLA
+        AND #$1F
+        JSR BCD
+SHOWMIN LDA #':'
+        JSR OUT
+        LDA RTCBUF+1
+        AND #$7F
+        JSR BCD
+        LDA #':'
+        JSR OUT
+        LDA RTCBUF
+        AND #$7F
+        JSR BCD
+        LDA RTCBUF+2
+        AND #$40
+        BEQ SHOWEOL
+        LDA #' '
+        JSR OUT
+        LDA RTCBUF+2
+        AND #$20
+        BEQ SHOWAM
+        LDA #'P'
+        BRA SHOWAP
+SHOWAM  LDA #'A'
+SHOWAP  JSR OUT
+        LDA #'M'
+        JSR OUT
+SHOWEOL JSR CRLF
+        LDA RTCBUF+3
+        AND #$20
+        BNE SHOWPWR
+        LDX #<STOPMSG
+        LDY #>STOPMSG
+        JSR PUTS
+        JSR CRLF
+SHOWPWR LDA RTCBUF+3
+        AND #$10
+        BEQ SHOWEND
+        LDX #<PWRMSG
+        LDY #>PWRMSG
+        JSR PUTS
+        JSR CRLF
+SHOWEND RTS
+
+; PRINT ONE PACKED-BCD BYTE AS TWO ASCII DIGITS.
+BCD     PHA
+        LSR A
+        LSR A
+        LSR A
+        LSR A
+        ORA #'0'
+        JSR OUT
+        PLA
+        AND #$0F
+        ORA #'0'
+        JMP OUT
+
+OUT     JMP ($7E08)
+PUTS    JMP ($7E0A)
+HEX     JMP ($7E0C)
+CRLF    JMP ($7E0E)
+
+DATEMSG DC C'DATE YY-MM-DD '
+TIMEMSG DC C'  TIME '
+IOMSG   DC C'RTC I2C ERROR $'
+STOPMSG DC C'WARNING: RTC OSCILLATOR IS NOT RUNNING'
+PWRMSG  DC C'NOTICE: RTC POWER-FAIL FLAG IS SET'
+
+SAVEORA DB $00
+SAVEDDR DB $00
+I2BYTE  DB $00
+I2ACK   DB $00
+ERROR   DB $00
+RTCBUF  DB $00,$00,$00,$00,$00,$00,$00
+
+        END

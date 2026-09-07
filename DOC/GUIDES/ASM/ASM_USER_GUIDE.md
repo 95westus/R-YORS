@@ -821,7 +821,7 @@ reuses that low RAM, so run `asm-session-report` before staging if symbol and
 fixup names from the current session are required.
 
 For a current STR8-N top-sector update, load the standalone repository's
-`BUILD/v1.29/s19/str8n-v1.29-top-update-2000.s19` through STR8-N `L`. It embeds
+`BUILD/v1.32/s19/str8n-v1.32-top-update-2000.s19` through STR8-N `L`. It embeds
 the exact manifest-checked top image, verifies a full B1:F backup, preserves
 the live directory/configuration pocket, and requires exact confirmations
 before B3:F erase. The former ASM transient writers are archived under

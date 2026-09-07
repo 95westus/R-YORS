@@ -241,7 +241,7 @@ ASM BYE
 >STR8
   confirm entry to STR8-N
 STR8-N>L
-  send STR8-N/BUILD/v1.29/s19/str8n-v1.29-bank-maint-menu-2000.s19
+  send STR8-N/BUILD/v1.32/s19/str8n-v1.32-bank-maint-menu-2000.s19
   STR8-N executes its validated S9=$2000 entry
 BM> P
 TYPE PUT BnS000 (n=0-2,S=8-F)> PUT B28000

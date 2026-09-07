@@ -1,53 +1,57 @@
 ﻿{
     "schema":  3,
     "project":  "STR8-N",
-    "version":  "1.29",
+    "version":  "1.32",
     "repository":  "https://github.com/95westus/STR8-N.git",
-    "commit":  "a4e041423abf2020fc9aaad98932d89a43e25c09",
+    "commit":  "325d8c2cde87e695501239c648bd0f73fe058a59",
     "dirty":  false,
     "artifacts":  {
                       "topSector":  {
-                                        "file":  "BUILD/v1.29/bin/str8n-v1.29-bank3-f000-ffff.bin",
+                                        "file":  "BUILD/v1.32/bin/str8n-v1.32-bank3-f000-ffff.bin",
                                         "size":  4096,
                                         "cpuStart":  "F000",
                                         "cpuEnd":  "FFFF",
-                                        "sha256":  "C52CBE162B23147657406AC4709D8908639351FBEF97FDCD016EE77FF32B0682"
+                                        "sha256":  "5447E9F197ED8FE7AB90FEEEBF25318FBBDCA721612356050F600CDE2268425E",
+                                        "hardwareStatus":  "v1.32 guarded update plus RST H/S and HIMON cold/warm integration passed on COM4; 2026-09-07",
+                                        "validationReport":  "docs/STR8N_V1_32_RESET_SOURCE_BOARD_TEST_2026-09-07.md"
                                     },
                       "workerS19":  {
-                                        "file":  "BUILD/v1.29/s19/str8n-v1.29-worker-0200.s19",
-                                        "size":  596,
+                                        "file":  "BUILD/v1.32/s19/str8n-v1.32-worker-0200.s19",
+                                        "size":  608,
                                         "runStart":  "0200",
-                                        "runEnd":  "0453",
-                                        "storeStart":  "FD5C",
-                                        "sha256":  "04F46E258924F07510FB113EDB00C788EBA129EAB98B25C284D6AB15C306E69C"
+                                        "runEnd":  "045F",
+                                        "storeStart":  "FD50",
+                                        "sha256":  "CBD477AD62A0FF7FC14DE22F3575C7B05834C973A5DF622A6678DEF6C4577713"
                                     },
                       "bankMaintenanceS19":  {
-                                                 "file":  "BUILD/v1.29/s19/str8n-v1.29-bank-maint-2000.s19",
+                                                 "file":  "BUILD/v1.32/s19/str8n-v1.32-bank-maint-2000.s19",
                                                  "ramStart":  "2000",
                                                  "ramEnd":  "39B2",
                                                  "entry":  "2000",
                                                  "privateWorkerStore":  "3400",
-                                                 "sha256":  "189AE461D1EB48A93299E6E70A325FE81E60A2BB8DFB6FBA87C9622085681032"
+                                                 "sha256":  "26EC6E7A75275EC2036E29AA983FBC0EB7FF39939C359FA3C9E91AE5324221F4"
                                              },
                       "consoleAbiTestS19":  {
-                                                "file":  "BUILD/v1.29/s19/str8n-v1.29-console-abi-test-2000.s19",
+                                                "file":  "BUILD/v1.32/s19/str8n-v1.32-console-abi-test-2000.s19",
                                                 "ramStart":  "2000",
-                                                "ramEnd":  "2371",
+                                                "ramEnd":  "2428",
                                                 "entry":  "2000",
-                                                "sha256":  "8E957772912BB59F94AD3DDB2C7C23B54F496C17D57FCDDCC2F1A9BC9A8530A1"
+                                                "sha256":  "57956A36E3AB83BA63A857071B202D13BE683E3280147AC8FDFABF9B925DACA5"
                                             },
                       "topUpdateS19":  {
-                                           "file":  "BUILD/v1.29/s19/str8n-v1.29-top-update-2000.s19",
+                                           "file":  "BUILD/v1.32/s19/str8n-v1.32-top-update-2000.s19",
                                            "ramStart":  "2000",
                                            "ramEnd":  "4FFF",
                                            "candidateStart":  "4000",
                                            "candidateEnd":  "4FFF",
                                            "entry":  "2000",
                                            "backup":  "Bank 1 CPU F000-FFFF / physical 0F000-0FFFF",
-                                           "sha256":  "DF50CCCC8542D8AB40F73F55A1811CDC8B3B6273BA49D2683FF5FFD63243BE7B"
+                                           "hardwareEvidence":  "docs/STR8N_V1_32_RESET_SOURCE_BOARD_TEST_2026-09-07.md: guarded v1.32 install/verify and reset-source integration; COM4, 2026-09-07",
+                                           "historicalCanonicalTopSha256":  "60B7FE19E42766AACFCDEF8320A35D9D5AB7C5F91F0FE3130041F2CFF4799734",
+                                           "sha256":  "B961C3CAC05511E4390F1A8A6887BDC840535297FACD39197D57F2C9BA92A266"
                                        },
                       "directoryRefreshS19":  {
-                                                  "file":  "BUILD/v1.29/s19/str8n-v1.29-directory-refresh-2000.s19",
+                                                  "file":  "BUILD/v1.32/s19/str8n-v1.32-directory-refresh-2000.s19",
                                                   "ramStart":  "2000",
                                                   "ramEnd":  "4FFF",
                                                   "candidateStart":  "4000",
@@ -56,10 +60,10 @@
                                                   "backup":  "Bank 1 CPU F000-FFFF / physical 0F000-0FFFF",
                                                   "clears":  "Bank 3 CPU FFB0-FFEF / physical 1FFB0-1FFEF",
                                                   "installs":  "Bank 3 CPU FFF0=1E (B1:E WORK); FFF1=1F (B1:F protected B3:F backup); FFF2-FFF9 erased",
-                                                  "sha256":  "E46F0F46F38B28F175C9E90FF19508ADBED08040A133B9943AEF3944BB0891B0"
+                                                  "sha256":  "422B8EE56FB950FC72DD574877B3D67738EF21D57BE8E27A4988D2D301DF052E"
                                               },
                       "wdcmonv2ArchiveS19":  {
-                                                 "file":  "BUILD/v1.29/s19/str8n-v1.29-wdcmonv2-archive-2000.s19",
+                                                 "file":  "BUILD/v1.32/s19/str8n-v1.32-wdcmonv2-archive-2000.s19",
                                                  "ramStart":  "2000",
                                                  "ramEnd":  "250E",
                                                  "entry":  "2000",
@@ -68,28 +72,28 @@
                                                  "sha256":  "5E0811701830821022EDE13B7B8E5FA26392F0CAF42D3FB8993C7CDFA5698F5C"
                                              },
                       "wdcmonv2InstallS19":  {
-                                                 "file":  "BUILD/v1.29/s19/str8n-v1.29-wdcmonv2-install-2000.s19",
+                                                 "file":  "BUILD/v1.32/s19/str8n-v1.32-wdcmonv2-install-2000.s19",
                                                  "ramStart":  "2000",
-                                                 "ramEnd":  "296F",
+                                                 "ramEnd":  "2983",
                                                  "entry":  "2000",
                                                  "receiveBufferStart":  "4000",
                                                  "receiveBufferEnd":  "4FFF",
                                                  "externalCandidate":  "exact canonical 4096-byte top BIN; directory empty; FFF0=1E WORK; FFF1=1F top backup",
                                                  "destinationPolicy":  "B0 erased or byte-identical to B3; B1/B2 untouched; B3:F last",
-                                                 "hardwareStatus":  "v1.29 factory migration and EDU quiet-start board-accepted",
-                                                 "candidateTopBin":  "BUILD/v1.29/bin/str8n-v1.29-bank3-f000-ffff.bin",
-                                                 "candidateTopSha256":  "C52CBE162B23147657406AC4709D8908639351FBEF97FDCD016EE77FF32B0682",
-                                                 "sha256":  "16D18D44970704D7BF16F0C572264584C43DBBE4B0654B87587B1327CE72AF0B"
+                                                 "hardwareStatus":  "v1.32 host-verified; factory migration hardware proof operator-deferred",
+                                                 "candidateTopBin":  "BUILD/v1.32/bin/str8n-v1.32-bank3-f000-ffff.bin",
+                                                 "candidateTopSha256":  "5447E9F197ED8FE7AB90FEEEBF25318FBBDCA721612356050F600CDE2268425E",
+                                                 "sha256":  "CF365611CCED90AA149FC1EB5BEDA3219780C1FAB0978CA9886E8CAEB37AABFC"
                                              },
                       "publicContract":  {
-                                             "file":  "BUILD/v1.29/include/str8n-public.inc",
-                                             "sha256":  "A10B4B02446F8DF5D508589AD5AE63B78B4CB2CF9CF451A746C613804A71B77D"
+                                             "file":  "BUILD/v1.32/include/str8n-public.inc",
+                                             "sha256":  "599CBC6E5EBF7C68DD7680FDB298C4F12A967A084D4188B00631EDC47317CEFF"
                                          }
                   },
     "layout":  {
                    "residentStart":  "F000",
-                   "residentEnd":  "FD55",
-                   "unusedMargin":  6,
+                   "residentEnd":  "FD45",
+                   "unusedMargin":  10,
                    "directoryStart":  "FFB0",
                    "directoryEnd":  "FFEF",
                    "configurationStart":  "FFF0",
@@ -113,8 +117,10 @@
                 "highToolEnd":  "7DBF",
                 "himonApLinkStart":  "7DC0",
                 "himonApLinkEnd":  "7DC7",
-                "str8StateStart":  "7DE9",
+                "str8StateStart":  "7DE7",
                 "str8StateEnd":  "7DFF",
+                "softResetRecordStart":  "7DE7",
+                "softResetRecordEnd":  "7DE8",
                 "bankJumpRecordStart":  "7DFD",
                 "bankJumpRecordEnd":  "7DFF",
                 "bankJumpSig0":  "7DFD",

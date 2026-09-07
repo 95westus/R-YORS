@@ -25918,3 +25918,30 @@ The operator corrected a few initially reported `$0B`/`$83` observations to
 evidence. Result: accepted for HIMON and ASM-F2 wait/RX/TX indication. Raw FTDI
 records remain LED-neutral by linked-byte host proof, preserving application
 ownership of Port A.
+
+## 2026-09-07: APMAN install and packaged BANKAUDIT retry
+
+On COM4, STR8-N 1.32 installed the released APMAN carrier at `B2:8` and
+enrolled D2 as `A2 APC02`. The corrected manager identified as
+`AP B2 8000 L0B40`; HIMON `APS` resolved `APMAN L=0B40 @7000`, and its
+self-load guard returned the required `$DB`.
+
+ASM-F2 `00.0907(0920)` assembled the current `bank-audit-2000.a`, SEAL built
+the exact `$0299` package, and APMAN installed it at the first safe Bank-1
+slot, `B1:8`. Both the named AP run and a HIMON-visible rerun printed all 32
+sector CRCs and `BANKAUDIT OK; B3 RESTORED`; the latter returned `A=$AC` with
+carry set. Existing Bank-1 sector F and Bank-3 code sectors were preserved.
+The exact artifact hashes, CRC table, flash scope, and append-only transcript
+hash are recorded in [APMAN_BANKAUDIT_2026-09-07.md](APMAN_BANKAUDIT_2026-09-07.md).
+
+### Final republished-image confirmation, 10:01 CDT
+
+After STR8-N was committed as `325d8c2`, its clean manifest was regenerated
+and R-YORS was republished. That rebuild restamped HIMON/ASM-F2 to
+`00.0907(0959)`, so the exact final Bank-3 8-E S19 was installed again rather
+than relying on the earlier `0920` proof. STR8-N's guarded transaction
+reported `. OK`; warm boot and ASM entry both showed `0959`. The installed
+BANKAUDIT package again printed all 32 CRCs, restored Bank 3, and returned
+`A=$AC` with carry set. Exact hashes and the new append-only transcript are
+recorded in
+[FINAL_RELEASE_BOARD_TEST_2026-09-07.md](FINAL_RELEASE_BOARD_TEST_2026-09-07.md).

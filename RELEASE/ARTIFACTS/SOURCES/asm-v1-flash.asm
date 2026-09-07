@@ -173,7 +173,7 @@ ASMF_READ_RETURN:
 
                         STA             ASMF_RESULT
                         LDA             #<MSG_READ
-                        JSR             ASMF_PRINT_STATUS_LINE
+                        JSR             ASMF_WRITE_MSG_LINE
                         JMP             ASMF_RETURN_RESULT
 
 ASMF_READ_OK:
@@ -282,9 +282,7 @@ ASMF_SEAL_CMD:
                         BCS             ASMF_SEAL_OK
                         STA             ASMF_RESULT
                         LDA             #<MSG_SEAL_ERR
-                        JSR             ASMF_WRITE_MSG
-                        LDA             ASMF_RESULT
-                        JSR             ASM_RJ_WRITE_HEX_BYTE
+                        JSR             ASMF_PRINT_SEAL_STATUS_TEXT
                         JSR             ASMF_PRINT_SEAL_FLAGS_TAIL
                         JMP             ASMF_LOOP
 ASMF_SEAL_OK:
@@ -293,11 +291,15 @@ ASMF_SEAL_OK:
                         JMP             ASMF_LOOP
 
 ASMF_RELOCATE_CMD:
-; Parser and worker both return the status in A.  Share one failure tail.
+; The parser returns ASM statuses; the worker also returns seal statuses 1/2.
                         JSR             ASMF_PARSE_RELOCATE_ARG
                         BCC             ASMF_RELOCATE_FAIL_A
                         JSR             ASM_SEAL_RELOCATE
                         BCS             ASMF_RELOCATE_OK
+                        STA             ASMF_RESULT
+                        LDA             #<MSG_RELOCATE_ERR
+                        JSR             ASMF_PRINT_SEAL_STATUS_LINE
+                        JMP             ASMF_LOOP
 ASMF_RELOCATE_FAIL_A:
                         STA             ASMF_RESULT
                         LDA             #<MSG_RELOCATE_ERR
@@ -349,7 +351,11 @@ ASMF_PACKAGE_BAD_ARG:
                         JMP             ASMF_LOOP
 ASMF_PACKAGE_HAVE_ARG:
                         JSR             ASM_SEAL_PACKAGE
-                        BCC             ASMF_PACKAGE_BAD_ARG
+                        BCS             ASMF_PACKAGE_OK
+                        STA             ASMF_RESULT
+                        LDA             #<MSG_PACKAGE_ERR
+                        JSR             ASMF_PRINT_SEAL_STATUS_LINE
+                        JMP             ASMF_LOOP
 ASMF_PACKAGE_OK:
                         LDA             #<MSG_PACKAGE_OK
                         JSR             ASMF_WRITE_MSG
@@ -366,7 +372,7 @@ ASMF_PRINT_PACKAGE_LEN_LOOP:
                         JMP             ASMF_LOOP
 
 ASMF_LOAD_CMD:
-; Parse and resident-load failures use the same named-status tail.
+; Parse failures use ASM names; resident-load status 7 names an invalid AP.
                         JSR             ASMF_PARSE_TWO_ARGS
                         BCS             ASMF_LOAD_HAVE_ARGS
 ASMF_LOAD_FAIL_A:
@@ -382,7 +388,11 @@ ASMF_LOAD_HAVE_ARGS:
                         LDX             ASMF_ARG0_LO
                         LDY             ASMF_ARG0_HI
                         JSR             ASM_PACKAGE_LOAD
-                        BCC             ASMF_LOAD_FAIL_A
+                        BCS             ASMF_LOAD_OK
+                        STA             ASMF_RESULT
+                        LDA             #<MSG_LOAD_ERR
+                        JSR             ASMF_PRINT_AP_STATUS_LINE
+                        JMP             ASMF_LOOP
 ASMF_LOAD_OK:
                         LDA             #<MSG_LOAD_OK
                         JSR             ASMF_WRITE_MSG
@@ -397,7 +407,7 @@ ASMF_LOAD_OK:
                         JMP             ASMF_PRINT_RELOCATE_COUNT_LOOP
 
 ASMF_INSTALL_CMD:
-; All install forms preserve the failure status in A for one common tail.
+; Preserve the returned status; use the AP decoder after package services.
                         JSR             ASMF_PARSE_INSTALL_BANK
                         BCC             ASMF_INSTALL_NOT_BANK
                         JMP             ASMF_INSTALL_BANK
@@ -429,7 +439,7 @@ ASMF_INSTALL_HAVE_TWO_ARGS:
                         LDX             ASMF_ARG0_LO
                         LDY             ASMF_ARG0_HI
                         JSR             ASM_PACKAGE_PARSE_MIN
-                        BCC             ASMF_INSTALL_FAIL_A
+                        BCC             ASMF_INSTALL_AP_FAIL_A
                         LDA             ASM_PACKAGE_BASE_LO
                         STA             HIM_FLASH_SRC_LO
                         LDA             ASM_PACKAGE_BASE_HI
@@ -448,7 +458,12 @@ ASMF_INSTALL_BAD_RANGE:
                         BRA             ASMF_INSTALL_FAIL_A
 ASMF_INSTALL_HAVE_ARG:
                         JSR             ASM_PACKAGE_INSTALL_SUGGEST
-                        BCC             ASMF_INSTALL_FAIL_A
+                        BCS             ASMF_INSTALL_OK
+ASMF_INSTALL_AP_FAIL_A:
+                        STA             ASMF_RESULT
+                        LDA             #<MSG_INSTALL_ERR
+                        JSR             ASMF_PRINT_AP_STATUS_LINE
+                        JMP             ASMF_LOOP
 ASMF_INSTALL_OK:
                         LDA             #<MSG_INSTALL_OK
                         JSR             ASMF_WRITE_MSG
@@ -483,19 +498,30 @@ ASMF_CHECK_CMD:
                         BCS             ASMF_CHECK_HAVE_ARG
 ASMF_CHECK_FAIL_A:
                         STA             ASMF_RESULT
-                        LDA             #<MSG_CHECK_ERR
-                        JSR             ASMF_PRINT_STATUS_LINE
+                        JSR             ASMF_PRINT_CHECK_PREFIX
+                        JSR             ASMF_PRINT_STATUS_NAME
+                        JSR             ASM_RJ_PRINT_CRLF
                         JMP             ASMF_LOOP
 ASMF_CHECK_HAVE_ARG:
                         JSR             ASM_SEAL_CHECK_PACKAGE
-                        BCC             ASMF_CHECK_FAIL_A
+                        BCS             ASMF_CHECK_OK
+                        STA             ASMF_RESULT
+                        JSR             ASMF_PRINT_CHECK_PREFIX
+                        JSR             ASMF_PRINT_AP_REASON_LINE
+                        JMP             ASMF_LOOP
 ASMF_CHECK_OK:
-                        LDA             #<MSG_CHECK_OK
-                        JSR             ASMF_WRITE_MSG
+                        LDX             #<MSG_CHECK_OK
+                        LDY             #>MSG_CHECK_OK
+                        JSR             ASM_RJ_WRITE_HBSTRING
                         LDA             ASM_PACKAGE_BASE_HI
                         LDX             ASM_PACKAGE_BASE_LO
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         JMP             ASMF_PRINT_PACKAGE_LEN_LOOP
+; Optional CHECK strings use full pointers outside the compact message block.
+ASMF_PRINT_CHECK_PREFIX:
+                        LDX             #<MSG_CHECK_ERR
+                        LDY             #>MSG_CHECK_ERR
+                        JMP             ASM_RJ_WRITE_HBSTRING
                         ENDIF
 
 ASMF_NEW_CMD:
@@ -536,17 +562,12 @@ ASMF_PRINT_FAIL:
                         JMP             ASMF_PRINT_STATUS_LINE
 
 ASMF_PRINT_STATUS_LINE:
-                        JSR             ASMF_PRINT_STATUS_VALUE
-                        JMP             ASM_RJ_PRINT_CRLF
-
 ASMF_PRINT_STATUS_NAMED_LINE:
-                        JSR             ASMF_PRINT_STATUS_VALUE
-                        JSR             ASMF_PRINT_STATUS_NAME
+                        JSR             ASMF_PRINT_STATUS_TEXT
                         JMP             ASM_RJ_PRINT_CRLF
 
 ASMF_PRINT_STATUS_PC_LINE:
-                        JSR             ASMF_PRINT_STATUS_VALUE
-                        JSR             ASMF_PRINT_STATUS_NAME
+                        JSR             ASMF_PRINT_STATUS_TEXT
                         LDA             #<MSG_PC
 
 ASMF_PRINT_PC_TAIL:
@@ -556,10 +577,43 @@ ASMF_PRINT_PC_TAIL:
                         JSR             ASM_RJ_WRITE_HEX_WORD_AX
                         JMP             ASM_RJ_PRINT_CRLF
 
-ASMF_PRINT_STATUS_VALUE:
+ASMF_PRINT_STATUS_TEXT:
+                        JSR             ASMF_WRITE_MSG
+                        JMP             ASMF_PRINT_STATUS_NAME
+
+; AP has its own status domain. Unknown service codes stay FAIL, even when
+; the same number happens to name an ASM parser error. Status 7 is INVALID.
+ASMF_PRINT_AP_STATUS_LINE:
+                        JSR             ASMF_WRITE_MSG
+ASMF_PRINT_AP_REASON_LINE:
+                        LDA             ASMF_RESULT
+                        CMP             #ASMF_STATUS_NAME_UNKNOWN
+                        BCC             ASMF_PRINT_AP_HAVE_INDEX
+                        LDA             #ASMF_STATUS_NAME_UNKNOWN
+                        BRA             ASMF_PRINT_AP_INDEX
+ASMF_PRINT_AP_HAVE_INDEX:
+                        TAX
+                        LDA             ASMF_AP_STATUS_INDEX,X
+ASMF_PRINT_AP_INDEX:
+                        JSR             ASMF_STATUS_NAME_INDEX
+                        JMP             ASM_RJ_PRINT_CRLF
+
+; Only SEAL and the RELOCATE/PACKAGE workers use seal status 1/2.
+; Parser failures still use ordinary ASM statuses. Never change ASMF_RESULT:
+; the presentation index is private and A/C on return remain the original ABI.
+ASMF_PRINT_SEAL_STATUS_LINE:
+                        JSR             ASMF_PRINT_SEAL_STATUS_TEXT
+                        JMP             ASM_RJ_PRINT_CRLF
+ASMF_PRINT_SEAL_STATUS_TEXT:
                         JSR             ASMF_WRITE_MSG
                         LDA             ASMF_RESULT
-                        JMP             ASM_RJ_WRITE_HEX_BYTE
+                        CMP             #$01
+                        BCC             ASMF_PRINT_STATUS_NAME
+                        CMP             #$03
+                        BCS             ASMF_PRINT_STATUS_NAME
+                        CLC
+                        ADC             #ASMF_STATUS_NAME_UNKNOWN
+                        BRA             ASMF_STATUS_NAME_INDEX
 
 ASMF_PRINT_SEAL_FLAGS_TAIL:
                         LDA             #<MSG_FLAGS
@@ -591,6 +645,7 @@ ASMF_PRINT_STATUS_NAME:
                         BCC             ASMF_STATUS_NAME_HAVE_INDEX
                         LDA             #ASMF_STATUS_NAME_UNKNOWN
 ASMF_STATUS_NAME_HAVE_INDEX:
+ASMF_STATUS_NAME_INDEX:
                         TAX
                         LDA             ASMF_STATUS_NAME_LO,X
                         JMP             ASMF_WRITE_MSG
@@ -880,42 +935,40 @@ ASMF_IS_END_TAIL:
 MSG_PROMPT:             DB              "ASM>",('$'+$80)
 MSG_PROMPT_TAIL:        DB              ":",(' '+$80)
 MSG_SEAL_PROMPT:        DB              "SEAL>",(' '+$80)
-MSG_READ:               DB              "READ=",('$'+$80)
-MSG_FAIL:               DB              "BEGIN=",('$'+$80)
+MSG_FAIL:               DB              "BEGI",('N'+$80)
 MSG_PC:                 DB              " PC=",('$'+$80)
-MSG_SEAL_ERR:           DB              "SEAL ERR=",('$'+$80)
+MSG_SEAL_ERR:           DB              "SEA",('L'+$80)
 MSG_SEAL_OK:            DB              "SEAL O",('K'+$80)
-MSG_RELOCATE_ERR:       DB              "REL ERR=",('$'+$80)
+MSG_RELOCATE_ERR:       DB              "RE",('L'+$80)
 MSG_RELOCATE_OK:        DB              "REL OK BASE=",('$'+$80)
 MSG_RELOCATE_COUNT:     DB              " C=",('$'+$80)
-MSG_PACKAGE_ERR:        DB              "PKG ERR=",('$'+$80)
+MSG_PACKAGE_ERR:        DB              "PK",('G'+$80)
 MSG_PACKAGE_OK:         DB              "PKG OK @=",('$'+$80)
 MSG_PACKAGE_LEN:        DB              " L=",('$'+$80)
-MSG_LOAD_ERR:           DB              "LOAD ERR=",('$'+$80)
+MSG_LOAD_ERR:           DB              "LOA",('D'+$80)
 MSG_LOAD_OK:            DB              "LOAD OK=",('$'+$80)
-MSG_INSTALL_ERR:        DB              "INST "
-MSG_ERR:                DB              "ERR=",('$'+$80)
+MSG_INSTALL_ERR:        DB              "INS",('T'+$80)
+MSG_ERR:                DB              "ER",('R'+$80)
 MSG_INSTALL_OK:         DB              "INST @=",('$'+$80)
-                        IF              ASM_PACKAGE_CHECK_ENABLED
-MSG_CHECK_ERR:          DB              "CHECK ERR=",('$'+$80)
-MSG_CHECK_OK:           DB              "CHECK OK @=",('$'+$80)
-                        ENDIF
 MSG_FLAGS:              DB              " FLAGS=",('$'+$80)
 MSG_DONE:               DB              "ASM"
 MSG_STATUS_OK:          DB              " O",('K'+$80)
-MSG_STATUS_BAD_MNEM:    DB              " B",('M'+$80)
-MSG_STATUS_BAD_DIR:     DB              " B",('D'+$80)
-MSG_STATUS_BAD_OPER:    DB              " B",('O'+$80)
-MSG_STATUS_BAD_MODE:    DB              " BM",('O'+$80)
-MSG_STATUS_BAD_WIDTH:   DB              " B",('W'+$80)
-MSG_STATUS_BAD_RANGE:   DB              " BAD RANG",('E'+$80)
-; First message beginning on the second compact-pointer page.
-MSG_STATUS_BAD_LINE:    DB              " B",('L'+$80)
-MSG_STATUS_BAD_SYM:     DB              " B",('S'+$80)
-MSG_STATUS_BAD_FIX:     DB              " BAD FI",('X'+$80)
-MSG_STATUS_LOCAL_NYI:   DB              " NY",('I'+$80)
-MSG_STATUS_RJOIN:       DB              " R",('J'+$80)
-MSG_STATUS_UNKNOWN:     DB              " ",('?'+$80)
+MSG_STATUS_BAD_MNEM:    DB              " UNKNOWN O",('P'+$80)
+MSG_STATUS_BAD_DIR:     DB              " DIRECTIV",('E'+$80)
+MSG_STATUS_BAD_OPER:    DB              " OPERAN",('D'+$80)
+MSG_STATUS_BAD_MODE:    DB              " ADDR MOD",('E'+$80)
+MSG_STATUS_BAD_WIDTH:   DB              " SIZ",('E'+$80)
+MSG_STATUS_BAD_RANGE:   DB              " RANG",('E'+$80)
+MSG_STATUS_BAD_LINE:    DB              " LIN",('E'+$80)
+MSG_STATUS_BAD_SYM:     DB              " NAM",('E'+$80)
+MSG_STATUS_BAD_FIX:     DB              " FIXU",('P'+$80)
+MSG_STATUS_LOCAL_NYI:   DB              " LOCA",('L'+$80)
+MSG_STATUS_RJOIN:       DB              " SERVIC",('E'+$80)
+; READ falls through into the shared failure suffix (five bytes saved).
+MSG_READ:               DB              "READ"
+MSG_STATUS_UNKNOWN:     DB              " FAI",('L'+$80)
+MSG_STATUS_NO_END:      DB              " NO EN",('D'+$80)
+MSG_STATUS_INVALID:     DB              " INVALI",('D'+$80)
 MSG_BYE:                DB              "ASM BY",('E'+$80)
 ASMF_CMD_RELOCATE:      DB              "RELOCATE",0
 
@@ -935,7 +988,16 @@ ASMF_STATUS_NAME_LO:
                         DB              <MSG_STATUS_LOCAL_NYI
                         DB              <MSG_STATUS_RJOIN
                         DB              <MSG_STATUS_UNKNOWN
+                        DB              <MSG_STATUS_NO_END
+                        DB              <MSG_STATUS_INVALID
+; Presentation indexes, not new ABI statuses: OK/RANGE/INVALID/FIXUP/SERVICE.
+ASMF_AP_STATUS_INDEX:   DB              $00,$0C,$0C,$0C,$0C,$0C
+                        DB              $06,$0E,$0C,$09,$0C,$0B
 ASMF_TEXT:              DB              "ASM V",('1'+$80)
+                        IF              ASM_PACKAGE_CHECK_ENABLED
+MSG_CHECK_ERR:          DB              "CHEC",('K'+$80)
+MSG_CHECK_OK:           DB              "CHECK OK @=",('$'+$80)
+                        ENDIF
 ASMF_CMD_INSTALL:       DB              "INSTALL",0
                         IF              ASM_PACKAGE_CHECK_ENABLED
 ASMF_CMD_CHECK:         DB              "CHECK",0

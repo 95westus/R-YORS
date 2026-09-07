@@ -79,7 +79,7 @@ needed.
 At HIMON enter `L` and send this complete file:
 
 ```text
-C:\SRC\STR8-N\BUILD\v1.29\s19\str8n-v1.29-bank-maint-menu-2000.s19
+C:\SRC\STR8-N\BUILD\v1.32\s19\str8n-v1.32-bank-maint-menu-2000.s19
 ```
 
 Then enter:
