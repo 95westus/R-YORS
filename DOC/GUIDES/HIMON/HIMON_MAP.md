@@ -623,6 +623,20 @@ partial-line receive activity in both programs, `$0B` from an ASM program using
 the `$7E08` output vector, and physical-reset recovery to the same HIMON
 identity and `$43` prompt.
 
+### Future heartbeat ownership
+
+The future heartbeat overlay is specified in the adjacent STR8-N repository's
+`docs/LED_STATUS_PROPOSAL.md`. A periodic interrupt would pulse Port A bit 7
+over HIMON's base status: `$21/$A1`, `$43/$C3`, `$07/$87`, or `$0B/$8B`.
+`$F0` remains solid during flash mutation, and `$00` disables the overlay.
+
+HIMON must keep a private base-status shadow and an explicit ownership flag.
+It disables the heartbeat before `G` or another application handoff, then
+reclaims it only if the program returns. ASM-F2 remains inside HIMON ownership
+and inherits the overlay. Raw FTDI records stay LED-neutral, so a user program
+may continue to control all eight Port A bits. No heartbeat code or periodic
+interrupt source is implemented or board-accepted yet.
+
 ## Edge Evidence Rules
 
 - Raw edge truth stays in `DOC/GENERATED/HIMON_EDGE_DUMP.md`.
