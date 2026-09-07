@@ -58,10 +58,40 @@ make -C SRC ap-store-chain-tool-check
 make -C SRC ap-store-slice6-tool-check
 make -C SRC himon-banked-ap-check
 make -C SRC himon-str8-record-check
+make -C SRC himon-io-led-check
 make -C SRC str8-readonly-bank-tools-check
 ```
 
 Run `git diff --check` before accepting documentation or source changes.
+
+## HIMON I/O LED Acceptance (2026-09-06)
+
+ASM-F2 requires no private LED code. Its input routines resolve to HIMON's
+resident `SYS_READ_CSTRING*` records, and its output shims use the fixed `RY`
+service-vector block. HIMON now publishes `$21`/`$43` before a line wait,
+latches `$07` after receive, and publishes `$0B` before output at those shared
+boundaries. The service-vector addresses, order, count, signature, checksum
+shape, and ABI version remain unchanged.
+
+The raw `BIO_FTDI_READ_BYTE_BLOCK` and `BIO_FTDI_WRITE_BYTE_BLOCK` FNV records
+still point directly to their LED-neutral entries. A user application that
+wants all eight Port A bits can use those raw services or STR8-N's public raw
+console ABI; calling the HIMON service vector opts into HIMON's display policy.
+
+The focused `himon-io-led-check` validates the exact linked PIA stores, wrapper
+targets, service-vector words, raw FNV pointers, and `$F000` margin. The full
+ASM host suite passes with flash ASM unchanged at `_END_DATA=$BD95`. The COM4
+board run accepted:
+
+1. `$43` at the HIMON prompt with the FTDI host present;
+2. `$07` after a partial HIMON line and after a partial ASM-F2 source line;
+3. `$0B` latched by an ASM-F2 program that emits through the `$7E08` HIMON
+   service vector and then loops; and
+4. physical RESET recovery to STR8-N 1.31, HIMON, and `$43`.
+
+The focused [HIMON I/O LED board card](../HIMON/HIMON_IO_LED_BOARD_TEST_2026-09-06.md)
+records the installed identity, transfer hash, transcript summary, and observed
+LED values. The detailed observations are appended to the hardware log.
 
 ## Text Diagnostics Accepted (2026-09-05)
 

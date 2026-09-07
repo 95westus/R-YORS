@@ -88,8 +88,8 @@ foreach ($entry in $addressPairs.GetEnumerator()) {
     if ($actual -ne $expected[$entry.Value]) { Fail "$($entry.Key) moved" }
 }
 
-$bootOrder = @('THE_JOIN_EXEC_XY','BIO_FTDI_WRITE_BYTE_BLOCK','SYS_WRITE_CSTRING',
-    'SYS_WRITE_HEX_BYTE','SYS_WRITE_CRLF','HIM_READ_LINE_ECHO',
+$bootOrder = @('THE_JOIN_EXEC_XY','HIM_IO_WRITE_BYTE_ACTIVITY','HIM_IO_WRITE_CSTRING_ACTIVITY',
+    'HIM_IO_WRITE_HEX_BYTE_ACTIVITY','HIM_IO_WRITE_CRLF_ACTIVITY','HIM_READ_LINE_ECHO',
     'UTL_HEX_ASCII_TO_NIBBLE','FNV1A_INIT','FNV1A_UPDATE_A_FAST',
     'HIM_CHAR_TO_UPPER','HIM_WRITE_HBSTRING')
 $boot = [regex]::Match($himon, 'HIM_SVC_BOOT_TABLE:(.*?)HIM_SVC_BOOT_TABLE_END:', 'Singleline').Groups[1].Value

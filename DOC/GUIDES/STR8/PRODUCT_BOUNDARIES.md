@@ -25,8 +25,8 @@ R-YORS consumes only:
 
 ```text
 STR8-N/BUILD/str8n-manifest.json
-STR8-N/BUILD/v1.30/include/str8n-public.inc
-STR8-N/BUILD/v1.30/bin/str8n-v1.30-bank3-f000-ffff.bin
+STR8-N/BUILD/v1.31/include/str8n-public.inc
+STR8-N/BUILD/v1.31/bin/str8n-v1.31-bank3-f000-ffff.bin
 ```
 
 `SRC/INTEGRATION/str8n.lock.json` pins the accepted top image, public ABI
@@ -34,10 +34,12 @@ artifact, fixed layout, and service addresses. The normal build verifies the
 external manifest before assembling HIMON. Release builds additionally reject
 a dirty STR8-N worktree.
 
-This is an exact image lock, not a minimum-version check. The accepted 1.30
-conservative resident image retains the byte-identical 1.29 public contract;
-its changed ROM hash, resident end `$FCED`, and 110-byte margin are pinned
-explicitly. Future versions or different binaries require another review.
+This is an exact image lock, not a minimum-version check. The accepted 1.31
+resident ends at `$FD27` with a 40-byte margin before its stored RAM worker.
+Its private loader paths publish the shared PIA LED status vocabulary while
+the public raw console services remain LED-neutral. The top-sector and public
+contract hashes are pinned explicitly. Future versions or different binaries
+require another review.
 
 ## Image Boundary
 

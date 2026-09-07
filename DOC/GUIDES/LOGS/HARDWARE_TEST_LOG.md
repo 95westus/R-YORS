@@ -25852,3 +25852,69 @@ return. No further flash operation was issued. The pending gate above is now
 closed and the feature queue is accepted. Full trace excerpts and final raw
 evidence hashes are appended in the
 [text-diagnostic record](ASMF2_TEXT_2026-09-05.md#reset-gate-completed-2026-09-05-2337-2339-cdt).
+
+## 2026-09-06: HIMON/ASM-F2 I/O activity LEDs
+
+The reviewed dense Bank-3 C-E transfer was installed through STR8-N 1.31:
+
+```text
+HIMON candidate                  00.0906(1935)
+transfer                         SRC/BUILD/s19/himon-apv2-bank3-c-e.s19
+transfer SHA-256                 EA4F6153332710E571A2A9385DC2C8B9BD08E5D7952F6049CA7BBB8E309B9537
+range / S9                       $C000-$EFFF / $C000
+resident end / margin            $EE72 / $018E
+```
+
+Physical RESET first escaped an earlier RAM TX loop. The operator observed
+`$01`, `$0B`, then `$00`. At the live STR8-N prompt the display was `$43`.
+Entering `I` produced `$07` on receive and `$0B` on prompt output. Bank 3 range
+C-E was selected. At `S19`, receive showed `$07`; two visible `$F0` periods
+matched programming of sectors C and D before final commit. The completed
+transaction returned to `STR8-N>` at `$43`.
+
+Cold HIMON entry then produced:
+
+```text
+HIMON V 00.0906(1935)
+>
+```
+
+The prompt settled at `$43`. A partial `X` without Enter latched `$07`.
+Ctrl+C showed brief `$0B` output activity and returned to `>` at `$43`.
+
+ASM-F2 inherited the same policy without a new ASM image:
+
+```text
+>ASM
+ASM-F2 00.0905(2321)
+ASM>$2000:
+```
+
+The ASM prompt settled at `$43`; one partial source character latched `$07`,
+and Ctrl+C restored `$43`. The operator assembled the service-vector probe:
+
+```text
+ASM>$2000: ORG $3000
+ASM>$3000: LDA #'T'
+ASM>$3002: JSR OUT
+ASM>$3005: LOOP BRA LOOP
+ASM>$3007: OUT JMP ($7E08)
+ASM>$300A: END
+ASM OK
+SEAL> .
+ASM BYE
+>
+```
+
+`G 3000` printed `T` and left `$0B` latched while the program looped. Final
+physical RESET showed `$01`, `$0B`, then `$43`, booted
+`HIMON V 00.0906(1935)`, and left `$43` at the prompt.
+
+As an additional direct HIMON output check, `D 0 FFFF` held `$0B` throughout
+the complete dump and restored `$43` when the next command wait began.
+
+The operator corrected a few initially reported `$0B`/`$83` observations to
+`$43` after re-reading the display. The corrected values above are the accepted
+evidence. Result: accepted for HIMON and ASM-F2 wait/RX/TX indication. Raw FTDI
+records remain LED-neutral by linked-byte host proof, preserving application
+ownership of Port A.

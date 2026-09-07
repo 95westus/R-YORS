@@ -22,6 +22,7 @@ $rows = @(
     [pscustomobject]@{ Target = "himon-rom-bin"; Category = "monitor"; Description = "Build 32K 8000-FFFF bank image with HIMON at C000: BUILD/bin/himon-rom-c000.bin." }
     [pscustomobject]@{ Target = "himon-banked-ap-check"; Category = "monitor"; Description = "Emulate HIMON's RAM-resident `$F010/`$0203 banked AP sector staging and restore paths." }
     [pscustomobject]@{ Target = "himon-str8-record-check"; Category = "monitor"; Description = "Verify HIMON L uses the published STR8-N SR/02 parser and retains its RAM safety adapter." }
+    [pscustomobject]@{ Target = "himon-io-led-check"; Category = "monitor"; Description = "Verify HIMON and ASM-F2 console veneers publish the shared PIA LED wait/RX/TX states while raw FTDI entries remain neutral." }
     [pscustomobject]@{ Target = "str8n-external-artifacts"; Category = "integration"; Description = "Ask the adjacent authoritative STR8-N checkout to publish its manifest and public ABI." }
     [pscustomobject]@{ Target = "str8n-external-check"; Category = "integration"; Description = "Verify locked STR8-N hashes/layout and import its public ABI into BUILD/inc." }
     [pscustomobject]@{ Target = "str8n-external-release-check"; Category = "integration"; Description = "Run the external STR8-N check and reject a dirty authoritative checkout." }

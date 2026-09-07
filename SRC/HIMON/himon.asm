@@ -42,12 +42,14 @@
                         XREF            SYS_READ_CHAR_ECHO
                         XREF            SYS_READ_CHAR_COOKED_ECHO
                         XREF            SYS_GET_CTRL_C
+                        XREF            SYS_CHECK_ENUMERATED
                         XREF            UTL_HEX_ASCII_TO_NIBBLE
 
                         INCLUDE         "ASM/asm-abi-v1.inc"
                         INCLUDE         "ASM/ap-store-v1.inc"
                         INCLUDE         "ASM/apman-v1.inc"
                         INCLUDE         "HIMON/himon-image-eq.inc"
+                        INCLUDE         "HIMON/himon-led-eq.inc"
                         INCLUDE         "HIMON/himon-shared-eq.inc"
 ; Verified external STR8-N public contract, imported into BUILD/inc by the
 ; integration gate before HIMON is assembled.
@@ -326,10 +328,10 @@ HIM_SVC_BOOT_TABLE:
                         DB              HIM_SVC_SIG0_VAL,HIM_SVC_SIG1_VAL
                         DB              HIM_SVC_VERSION_1,HIM_SVC_VECTOR_COUNT
                         DW              THE_JOIN_EXEC_XY
-                        DW              BIO_FTDI_WRITE_BYTE_BLOCK
-                        DW              SYS_WRITE_CSTRING
-                        DW              SYS_WRITE_HEX_BYTE
-                        DW              SYS_WRITE_CRLF
+                        DW              HIM_IO_WRITE_BYTE_ACTIVITY
+                        DW              HIM_IO_WRITE_CSTRING_ACTIVITY
+                        DW              HIM_IO_WRITE_HEX_BYTE_ACTIVITY
+                        DW              HIM_IO_WRITE_CRLF_ACTIVITY
                         DW              HIM_READ_LINE_ECHO
                         DW              UTL_HEX_ASCII_TO_NIBBLE
                         DW              FNV1A_INIT
@@ -1247,6 +1249,9 @@ HIM_READ_LINE_SET_MODE:
                         STX             CMDP_PTR_LO
                         STY             CMDP_PTR_HI
                         STZ             CMDP_REMAIN
+; HIMON now owns the display.  A later accepted byte remains latched as RX
+; activity while this editor blocks for the next byte.
+                        JSR             HIM_IO_PUBLISH_INPUT_WAIT
 HIM_READ_LINE_LOOP:
                         JSR             HIM_READ_BYTE_BLOCK
                         CMP             #$03
@@ -1303,14 +1308,14 @@ HIM_READ_LINE_DONE:
                         STA             (CMDP_PTR_LO),Y
                         LDA             CMD_IO_TMP
                         BEQ             HIM_READ_LINE_DONE_STATUS
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_IO_WRITE_CRLF_ACTIVITY
 HIM_READ_LINE_DONE_STATUS:
                         LDA             CMDP_REMAIN
                         SEC
                         RTS
 
 HIM_READ_LINE_ABORT:
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_IO_WRITE_CRLF_ACTIVITY
                         LDA             CMD_FLAGS
                         AND             #CMD_FLAG_TOP_INPUT
                         BEQ             HIM_READ_LINE_ABORT_LINE
@@ -1329,10 +1334,52 @@ HIM_READ_BYTE_BLOCK:
                         BEQ             HIM_READ_BYTE_HW
                         STZ             HIM_RX_HAVE
                         LDA             HIM_RX_BYTE
+                        BRA             HIM_IO_RX_ACTIVITY_A
+HIM_READ_BYTE_HW:
+                        JSR             BIO_FTDI_READ_BYTE_BLOCK
+HIM_IO_RX_ACTIVITY_A:
+                        PHA
+                        LDA             #HIM_LED_STATUS_RX_ACTIVITY
+                        STA             HIM_LED_PIA_PORTA
+                        PLA
                         SEC
                         RTS
-HIM_READ_BYTE_HW:
-                        JMP             BIO_FTDI_READ_BYTE_BLOCK
+
+HIM_IO_PUBLISH_INPUT_WAIT:
+                        JSR             SYS_CHECK_ENUMERATED
+                        BCC             HIM_IO_PUBLISH_NO_HOST_WAIT
+                        LDA             #HIM_LED_STATUS_HOST_INPUT_WAIT
+                        BRA             HIM_IO_PUBLISH_WAIT
+HIM_IO_PUBLISH_NO_HOST_WAIT:
+                        LDA             #HIM_LED_STATUS_NO_HOST_WAIT
+HIM_IO_PUBLISH_WAIT:
+                        STA             HIM_LED_PIA_PORTA
+                        RTS
+
+; Private HIMON/ASM-F2 console veneers.  The shared raw FTDI services retain
+; their existing no-LED contract for applications that own the display.
+HIM_IO_TX_ACTIVITY_A:
+                        PHA
+                        LDA             #HIM_LED_STATUS_TX_ACTIVITY
+                        STA             HIM_LED_PIA_PORTA
+                        PLA
+                        RTS
+
+HIM_IO_WRITE_BYTE_ACTIVITY:
+                        JSR             HIM_IO_TX_ACTIVITY_A
+                        JMP             BIO_FTDI_WRITE_BYTE_BLOCK
+
+HIM_IO_WRITE_CSTRING_ACTIVITY:
+                        JSR             HIM_IO_TX_ACTIVITY_A
+                        JMP             SYS_WRITE_CSTRING
+
+HIM_IO_WRITE_HEX_BYTE_ACTIVITY:
+                        JSR             HIM_IO_TX_ACTIVITY_A
+                        JMP             SYS_WRITE_HEX_BYTE
+
+HIM_IO_WRITE_CRLF_ACTIVITY:
+                        JSR             HIM_IO_TX_ACTIVITY_A
+                        JMP             SYS_WRITE_CRLF
 
 HIM_CHAR_TO_UPPER:
                         CMP             #'a'
@@ -1345,6 +1392,7 @@ HIM_CHAR_TO_UPPER_DONE:
                         RTS
 
 HIM_WRITE_HBSTRING:
+                        JSR             HIM_IO_TX_ACTIVITY_A
                         STX             CMDP_PTR_LO
                         STY             CMDP_PTR_HI
                         LDY             #$00
@@ -1869,6 +1917,7 @@ HIM_CHECK_CTRL_C:
                         BNE             HIM_CHECK_CTRL_C_NO
                         JSR             BIO_FTDI_READ_BYTE_NONBLOCK
                         BCC             HIM_CHECK_CTRL_C_NO
+                        JSR             HIM_IO_RX_ACTIVITY_A
                         CMP             #$03
                         BEQ             HIM_CHECK_CTRL_C_YES
                         STA             HIM_RX_BYTE
@@ -4872,7 +4921,7 @@ SYS_READ_CSTRING_ECHO_UPPER_FNV:
 
 BIO_FTDI_PUT_CSTR_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$42,$0F,$FA,$AE,CMD_HASH_KIND_EXEC_TEXT ; BIO_FTDI_PUT_CSTR $AEFA0F42 EXEC+TEXT
-                        DW              SYS_WRITE_CSTRING
+                        DW              HIM_IO_WRITE_CSTRING_ACTIVITY
                         DW              TXT_BIO_FTDI_PUT_CSTR
 
 HIMON_VERSION_FNV:

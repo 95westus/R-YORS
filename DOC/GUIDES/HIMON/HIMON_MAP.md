@@ -10,6 +10,7 @@ Scope is the current HIMON build path:
 HIMON/himon.asm
 HIMON/himon-debug.inc
 HIMON/himon-disasm.inc
+HIMON/himon-led-eq.inc
 HIMON/himon-shared-eq.inc
 ```
 
@@ -336,12 +337,15 @@ debug register dumps.
 
 ```mermaid
 flowchart TD
-    HIMON[HIMON] --> SYS[SYS_INIT / SYS_FLUSH_RX / SYS_WRITE_* / SYS_VEC_SET_*]
-    HIMON --> BIO[BIO_FTDI_*]
+    HIMON[HIMON] --> HIMIO[HIM_IO_* private console veneers]
+    ASM[ASM-F2] --> SVC[HIMON resident service vectors]
+    SVC --> HIMIO
+    HIMIO --> SYS[SYS_INIT / SYS_FLUSH_RX / SYS_WRITE_* / SYS_VEC_SET_*]
+    HIMIO --> BIO[BIO_FTDI_*]
     HIMON --> FLASH[FLASH_WRITE_BYTE_AXY]
     HIMON --> STR8REC[STR8-N SR/02 record parser at $F009]
     HIMON --> DBGEXT[DBG_HANDLE_BRK in debug include]
-    APP[loaded-language bridge] -.map-patched calls.-> BIO
+    APP[application owning Port A] -.raw LED-neutral calls.-> BIO
     APP -.optional re-entry.-> START[START at $8000]
 ```
 
@@ -367,8 +371,8 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Boot/re-enter monitor | reset, trap return, `$8000` handoff | `START`, `MON_REENTER`, `MON_START_INIT` | Owns hardware stack on entry, initializes system I/O, installs active vectors, enters prompt. | This is the normal HIMON path today. STR8 hands normal boot here. |
 | Cold RAM clear | reset path | `MON_COLD_RESET`, `MON_CLEAR_RAM` | Clears RAM through `SYS_RAM_END` (`$7EFF`), then sets reset signature and starts monitor. | `SYS_IO_BASE` (`$7F00`) is the hard stop before memory-mapped I/O. |
 | Vector/trap install | boot-time | `SYS_VEC_SET_NMI_XY`, `SYS_VEC_SET_IRQ_BRK_XY`, `SYS_VEC_SET_IRQ_NONBRK_XY` | Installs HIMON NMI, BRK, and IRQ handlers through system vector helpers. | STR8 should own physical vectors later, with HIMON installing active RAM vectors. |
-| Line input | prompt, loaders, and ASM service vector | `HIM_READ_LINE_ECHO`, `HIM_READ_LINE_ECHO_UPPER`, `HIM_READ_LINE_UPPER` | Blocking FTDI read with exact-case echoed or uppercase modes, backspace, Ctrl-C abort, and NUL termination. | HIMON commands and `L` retain uppercase input; the ASM-facing vector uses exact-case echo so quoted source bytes survive. |
-| Hi-bit string output | all command messages | `HIM_WRITE_HBSTRING` | Writes high-bit terminated strings through FTDI. | Current compact text format for monitor messages. |
+| Line input | prompt, loaders, and ASM service vector | `HIM_READ_LINE_ECHO`, `HIM_READ_LINE_ECHO_UPPER`, `HIM_READ_LINE_UPPER`, `HIM_IO_PUBLISH_INPUT_WAIT`, `HIM_IO_RX_ACTIVITY_A` | Blocking FTDI read with exact-case echoed or uppercase modes, backspace, Ctrl-C abort, NUL termination, and latched `$21`/`$43` wait then `$07` RX status. | HIMON commands and `L` retain uppercase input; the ASM-facing vector uses exact-case echo so quoted source bytes survive. Activity stays latched while the editor waits for the next byte. |
+| Console output | HIMON messages, ASM service vectors, and `BIO_FTDI_PUT_CSTR` | `HIM_IO_TX_ACTIVITY_A`, `HIM_IO_WRITE_*_ACTIVITY`, `HIM_WRITE_HBSTRING` | Publishes `$0B` before entering the raw blocking FTDI output path. | The raw `BIO_FTDI_READ_BYTE_BLOCK` and `BIO_FTDI_WRITE_BYTE_BLOCK` records remain LED-neutral so an application can own all eight Port A bits. |
 | FNV-era command hashing | every command token | `CMD_HASH_TOKEN`, `FNV1A_*`, `MATH_*` | Computes the current HIMON command hash and saves it in command exec state. | FNV32 remains the public command/export identity hash; CRC16 is for compact local/scoped tables and checks. |
 | Catalog scan/dispatch | command execution | `CMD_DISPATCH_HASH`, `CMD_HASH_SCAN_*`, `CMD_HASH_RECORD_*`, `CMD_EXEC_ADDR` | Scans `$8000` through vector boundary for `FN(V\|$80)` records, matches hash, requires executable kind, calls entry. | Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer. |
 | Catalog inspection | `#`, `# token` | `CMD_HASH_INFO`, `CMD_HASH_LIST`, `CMD_HASH_FIND`, `CMD_HASH_PRINT_*` | Lists catalog records or shows one token hash/entry/kind. | This is the master runtime catalog view. |
@@ -593,6 +597,31 @@ This leaves `$01EE` bytes below STR8-N at `$F000`. A private S19 parser is
 absent; HIMON calls the checked `SR/02` buffer service and retains only its
 RAM-span/copy/session adapter. Host gates pass; the complete board card and
 physical-reset ownership gate passed on COM4 on 2026-09-02.
+
+2026-09-06 board-accepted HIMON/ASM-F2 I/O LED slice:
+
+```text
+CODE     $2928 / 10536
+DATA     $054A /  1354
+TOTAL    $2E72 / 11890
+_END_DATA = $EE72
+HIM_IO_PUBLISH_INPUT_WAIT = $CB9E
+HIM_IO_RX_ACTIVITY_A = $CB95
+HIM_IO_TX_ACTIVITY_A = $CBAD
+HIM_IO_WRITE_BYTE_ACTIVITY = $CBB5
+```
+
+This leaves `$018E` bytes below STR8-N at `$F000`. HIMON samples PWE# at the
+start of each line and publishes `$21` without a host or `$43` with a host.
+An accepted byte latches `$07`; private HIMON output and all four ASM-F2
+resident output vectors publish `$0B`. The service-vector addresses and ABI
+version do not move. The raw BIO FTDI FNV records still resolve directly to
+their LED-neutral entries, so standalone applications can own Port A. The
+focused linked-byte check and full ASM-F2 host regression pass. The COM4 board
+run accepted the guarded Bank-3 C-E install, `$43` HIMON and ASM waits, `$07`
+partial-line receive activity in both programs, `$0B` from an ASM program using
+the `$7E08` output vector, and physical-reset recovery to the same HIMON
+identity and `$43` prompt.
 
 ## Edge Evidence Rules
 

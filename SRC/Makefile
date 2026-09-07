@@ -67,7 +67,7 @@ S3X_HOME ?= $(LOCAL_ROOT)/s3x
 STR8N_HOME ?= ../../STR8-N
 STR8N_MANIFEST := $(STR8N_HOME)/BUILD/str8n-manifest.json
 STR8N_LOCK := INTEGRATION/str8n.lock.json
-STR8N_PUBLIC_CONTRACT := $(STR8N_HOME)/BUILD/v1.30/include/str8n-public.inc
+STR8N_PUBLIC_CONTRACT := $(STR8N_HOME)/BUILD/v1.31/include/str8n-public.inc
 STR8N_IMPORTED_CONTRACT := $(INC_DIR)/str8n-public.inc
 STR8N_RECEIPT := $(BUILD_DIR)/integration/str8n-receipt.json
 STR8N_EXTERNAL_CHECK := tools/check_external_str8n.ps1
@@ -91,6 +91,7 @@ HIMON_ROM_LINKFLAGS := -g -s -t -cC000 -hm19 -j -o
 HIMON_ROM_BIN := $(BIN_DIR)/himon-rom-c000.bin
 HIMON_BANKED_AP_CHECK := tools/check_himon_banked_ap.ps1
 HIMON_STR8_RECORD_CHECK := tools/check_himon_str8_record_client.ps1
+HIMON_IO_LED_CHECK := tools/check_himon_io_led.ps1
 AP_V2_PACKAGE_CHECK := tools/check_ap_v2_package.ps1
 HIMON_ROM_INSTALL_S19 := $(S19_DIR)/himon-rom-c000-install-8000.s19
 HIMON_APV2_INSTALL_S19 := $(S19_DIR)/himon-apv2-bank3-c-e.s19
@@ -479,7 +480,7 @@ str8n-external-check: $(STR8N_IMPORTED_CONTRACT)
 str8n-external-release-check: str8n-external-artifacts $(STR8N_LOCK) $(STR8N_EXTERNAL_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(STR8N_EXTERNAL_CHECK) -Str8nHome "$(STR8N_HOME)" -ManifestPath "$(STR8N_MANIFEST)" -LockPath "$(STR8N_LOCK)" -ImportedContractPath "$(STR8N_IMPORTED_CONTRACT)" -ReceiptPath "$(STR8N_RECEIPT)" -RequireClean
 
-himon: $(ROM_LIB) $(HIMON_S19) himon-rom-bin himon-str8-record-check
+himon: $(ROM_LIB) $(HIMON_S19) himon-rom-bin himon-str8-record-check himon-io-led-check
 	@echo "Built $(HIMON_S19)."
 	@$(MAKE) artifacts
 
@@ -492,6 +493,9 @@ himon-banked-ap-check: $(HIMON_ROM_S19) $(HIMON_BANKED_AP_CHECK) $(STR8N_IMPORTE
 
 himon-str8-record-check: $(HIMON_ROM_S19) $(HIMON_STR8_RECORD_CHECK) $(STR8N_IMPORTED_CONTRACT)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_STR8_RECORD_CHECK) -HimonSourcePath "$(HIMON_SRC)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map" -PublicContractPath "$(STR8N_IMPORTED_CONTRACT)"
+
+himon-io-led-check: $(HIMON_ROM_S19) $(HIMON_IO_LED_CHECK) $(HIM_SUBDIR)/himon-led-eq.inc
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_IO_LED_CHECK) -HimonSourcePath "$(HIMON_SRC)" -LedContractPath "$(HIM_SUBDIR)/himon-led-eq.inc" -HimonS19Path "$(HIMON_ROM_S19)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map"
 
 himon-rom-bin: $(HIMON_ROM_BIN)
 	@echo "Built $(HIMON_ROM_BIN)."
@@ -691,7 +695,7 @@ asm-dc-check: $(ASM_DC_CHECK) $(ASM_V1_CORE_SRC) $(HIMON_SRC)
 
 board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(HIMON_ROM_S19) $(HIMON_ROM_INSTALL_S19) $(HIMON_APV2_INSTALL_S19) $(RYORS_V12_ASM_S19) $(RYORS_V12_HIMON_S19) $(RYORS_V12_28K_S19)
 	@make -C "$(STR8N_HOME)" ryors-full-bank RYORS_28K_S19="$(abspath $(RYORS_V12_28K_S19))"
-	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.30/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.31/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
 
 release-files: board-s19-check apman bank-audit bank-dump life pia-led-show rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
@@ -1490,7 +1494,7 @@ endif
 
 .PHONY: \
 	all firmware lab everything proofs apps tests help release release-local release-files \
-	himon himon-rom himon-rom-bin himon-banked-ap-check himon-str8-record-check \
+	himon himon-rom himon-rom-bin himon-banked-ap-check himon-str8-record-check himon-io-led-check \
 	str8n-external-artifacts str8n-external-check str8n-external-release-check ryors-v1.2 \
 	str8-readonly-bank-tools-check himon-rom-install-s19 himon-apv2-install-s19 rom-install-s19 \
 	basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr \

@@ -1,6 +1,6 @@
 # STR8-N Integration Index
 
-STR8-N v1.30 is maintained in the adjacent standalone `STR8-N` repository.
+STR8-N v1.31 is maintained in the adjacent standalone `STR8-N` repository.
 R-YORS owns no live STR8-N implementation source.
 
 For current work:
@@ -23,12 +23,11 @@ and physical-reset recovery. The observed non-R-YORS payload is called the
 **factory onboard firmware** unless later artifact provenance identifies it
 more specifically; operator directory labels beginning with `WDC` are not
 identity proof. It is retained only as historical evidence. The current lock
-pins the conservative 1.30 image, whose guarded update/readback, cold-power
-startup, boot paths, and console ABI passed on COM4 on 2026-09-05; see the
-standalone `docs/STR8N_CONSERVATIVE_RESIDENT_PASS.md`. Factory migration for
-1.30 remains operator-deferred; the 1.29 migration proof remains historical.
-The integrated HIMON `00.0902(1707)` loader calls the unchanged `$F009`
-`SR/02` record parser directly.
+pins the 1.31 LED-status image. Its guarded update, reset/warm handoff, host
+presence states, private `$07` RX and `$0B` TX activity, and LED-neutral public
+console ABI passed on COM4 on 2026-09-06. Factory migration for 1.31 remains
+operator-deferred; the 1.29 migration proof remains historical. The integrated
+HIMON loader calls the unchanged `$F009` `SR/02` record parser directly.
 
 Files in this directory other than the boundary/index pages are retained
 hardware proof and historical board procedures. Their artifact names,
@@ -38,7 +37,7 @@ time; they are intentionally not rewritten as current instructions.
 The external ABI is imported from:
 
 ```text
-STR8-N/BUILD/v1.30/include/str8n-public.inc
+STR8-N/BUILD/v1.31/include/str8n-public.inc
 ```
 
 and locked by:

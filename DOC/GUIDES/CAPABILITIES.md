@@ -1,12 +1,12 @@
 # Current Capability Matrix
 
 This is the short authority for the live STR8-N, HIMON, and ASM-F2 command
-surfaces. The accepted text-diagnostic board tests on 2026-09-05 used these
-identities, including physical RESET and post-reset ASM smoke:
+surfaces. The board currently has these accepted identities; HIMON was updated
+and checked with the retained STR8-N 1.31 and ASM-F2 image on 2026-09-06:
 
 ```text
-STR8-N 1.30
-HIMON   00.0902(1707)
+STR8-N 1.31
+HIMON   00.0906(1935)
 ASM-F2  00.0905(2321)
 ```
 
@@ -42,9 +42,11 @@ that transcript.
 | Capability | Owner | Status now | Important boundary |
 | --- | --- | --- | --- |
 | Reset supervision and return to the stable Bank-3 system | STR8-N | Current; hardware-accepted | A healthy STR8-N top sector is required |
+| Visible run, host, I/O, and flash-mutation status | STR8-N | Current; hardware-accepted | Private STR8 paths own the LEDs; public raw console calls remain LED-neutral |
 | Select and launch qualified Bank 0-2 guest images | STR8-N | Current; hardware-accepted | Each guest image needs its own qualification; reset-vector plausibility is not full compatibility proof |
 | Install dense S19 payloads into selected flash sectors | STR8-N | Current; hardware-accepted | Selected range must agree with the stream; Bank-3 sector F remains protected |
 | Load a recovery S19 into RAM and run its S9 entry | STR8-N | Current; hardware-accepted | RAM `$2000-$7AFF`; this is intentionally load-and-run |
+| Visible host wait and console activity in HIMON/ASM-F2 | HIMON | Current; hardware-accepted | HIMON private veneers and service-vector callers opt in; raw FTDI records remain LED-neutral for applications |
 | Inspect/modify RAM, call addresses, and inspect trapped CPU context | HIMON | Current | RAM and I/O protection rules still apply |
 | One-shot breakpoints and instruction stepping | HIMON | Current; hardware-accepted | User RAM only; breakpoints are not persistent |
 | Load S19 into RAM without running it | HIMON + STR8-N parser | Current; hardware-accepted | Bare `L` only; RAM below `$7A00`; explicit `G` is required afterward |
@@ -105,6 +107,9 @@ HIMON is the current Bank-3 monitor and integration host. It can:
   context, and resume it;
 - receive S0/S1/S9 through STR8-N's `SR/02` parser, apply its narrower RAM-only
   policy, and report rather than execute the S9 entry;
+- publish `$21`/`$43` host-wait, `$07` receive, and `$0B` transmit status for
+  its private console paths and ASM-F2 service-vector clients while retaining
+  LED-neutral raw FTDI records for applications;
 - load, validate, relocate, and link AP v2 packages, including typed resident
   imports;
 - discover APMAN, inspect Bank 0-2 AP status, and load or run a named or
