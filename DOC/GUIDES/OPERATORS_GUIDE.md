@@ -69,9 +69,9 @@ $8000-$BD2A   ASM-F2, entry $800C
 $BD2B-$BFFF   low-flash growth margin
 $C000-$EE11   HIMON
 $EE12-$EFFF   HIMON growth margin
-$F000-$FD55   standalone STR8-N v1.29 resident
-$FD56-$FD5B   available 6-byte growth margin
-$FD5C-$FFAF   stored unified STR8-N worker, runs at $0200-$0453
+$F000-$FD45   standalone STR8-N v1.32 resident
+$FD46-$FD4F   available 10-byte growth margin
+$FD50-$FFAF   stored unified STR8-N worker, runs at $0200-$045F
 $FFB0-$FFEF   bank directory
 $FFF0-$FFF9   configuration pocket
 $FFFA-$FFFF   STR8-N-owned hardware vectors
@@ -84,6 +84,9 @@ validated target is known.
 
 At physical RESET, STR8-N offers its attach/selection interval and then starts
 compatible Bank-3 HIMON unless the operator selects STR8-N or another guest.
+It emits a leading CR/LF followed by `RST H` for hardware or unmarked reset
+entry. A cooperating software path emits `RST S` by committing the one-shot
+`RS` record at `$7DE7-$7DE8`; STR8-N consumes that record on entry.
 The current resident commands are:
 
 ```text

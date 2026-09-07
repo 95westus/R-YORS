@@ -1,17 +1,17 @@
 {
   "schema": 1,
   "project": "STR8-N",
-  "version": "1.31",
+  "version": "1.32",
   "repository": "https://github.com/95westus/STR8-N.git",
   "manifestSchema": 3,
   "artifacts": {
-    "topSectorSha256": "9CA8573C48F7FEE34FA9A83A7D61672DCA77ECC2CA91A611C76EFADDE54E6C2E",
-    "publicContractSha256": "AF80EFF1E63697522690B0E4C5FE3451D66D65D65726C14C9FBC78E0E0155B11"
+    "topSectorSha256": "5447E9F197ED8FE7AB90FEEEBF25318FBBDCA721612356050F600CDE2268425E",
+    "publicContractSha256": "599CBC6E5EBF7C68DD7680FDB298C4F12A967A084D4188B00631EDC47317CEFF"
   },
   "layout": {
     "residentStart": "F000",
-    "residentEnd": "FD27",
-    "unusedMargin": 40,
+    "residentEnd": "FD45",
+    "unusedMargin": 10,
     "directoryStart": "FFB0",
     "directoryEnd": "FFEF",
     "configurationStart": "FFF0",
@@ -31,6 +31,10 @@
     "ramVersion": 18,
     "himonApLinkStart": "7DC0",
     "himonApLinkEnd": "7DC7",
+    "str8StateStart": "7DE7",
+    "str8StateEnd": "7DFF",
+    "softResetRecordStart": "7DE7",
+    "softResetRecordEnd": "7DE8",
     "bankJumpSig0": "7DFD",
     "bankJumpSig1": "7DFE",
     "bankLastJump": "7DFF",

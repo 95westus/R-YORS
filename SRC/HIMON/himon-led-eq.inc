@@ -1,7 +1,7 @@
 ; ----------------------------------------------------------------------------
 ; HIMON PIA LED status contract.
 ;
-; Values match the STR8-N v1.31 display vocabulary.  HIMON applies them only
+; Values match the STR8-N v1.32 display vocabulary.  HIMON applies them only
 ; at its private console/service veneers; raw BIO_FTDI entry points remain
 ; LED-neutral for programs that own Port A.
 ; ----------------------------------------------------------------------------

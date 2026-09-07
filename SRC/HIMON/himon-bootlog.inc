@@ -1,5 +1,6 @@
 ; ----------------------------------------------------------------------------
-; Reset boot telemetry.
+; Reset boot telemetry. BOOT COLD is emitted only after the RAM-clear path
+; completes; BOOT WARM means user RAM was preserved.
 ; Keep this include removable: one caller, one flag, local strings only.
 ; ----------------------------------------------------------------------------
 
@@ -15,9 +16,6 @@ MON_BOOTLOG_HAVE_REASON:
                         BEQ             MON_BOOTLOG_WARM
                         LDX             #<MSG_BOOTLOG_COLD
                         LDY             #>MSG_BOOTLOG_COLD
-                        JSR             MON_BOOTLOG_LINE_XY
-                        LDX             #<MSG_BOOTLOG_RAM
-                        LDY             #>MSG_BOOTLOG_RAM
                         JMP             MON_BOOTLOG_LINE_XY
 MON_BOOTLOG_WARM:
                         LDX             #<MSG_BOOTLOG_WARM
@@ -31,4 +29,3 @@ MON_BOOTLOG_LINE_XY:
                         DATA
 MSG_BOOTLOG_COLD:       DB              "BOOT COL",('D'+$80)
 MSG_BOOTLOG_WARM:       DB              "BOOT WAR",('M'+$80)
-MSG_BOOTLOG_RAM:        DB              "RAM ZERO O",('K'+$80)

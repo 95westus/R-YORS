@@ -58,7 +58,7 @@ Assert-Equal $manifest.artifacts.topSector.cpuEnd 'FFFF' 'top-sector end'
 foreach ($name in @('residentStart','residentEnd','unusedMargin','directoryStart','directoryEnd','configurationStart','configurationEnd','workSectorAddress','workSector','workSectorPacked','topBackupSectorAddress','topBackupSector','topBackupSectorPacked','reservedConfigurationStart','reservedConfigurationEnd','vectorsStart','vectorsEnd')) {
     Assert-Equal $manifest.layout.$name $lock.layout.$name "layout.$name"
 }
-foreach ($name in @('ramVersion','himonApLinkStart','himonApLinkEnd','bankJumpSig0','bankJumpSig1','bankLastJump','bankJumpSignature','bankCount','bankNone','bankSelectService','selectorEntry','selectorEnd','recordService','recordVersion','recordCapabilities','residentVersion','residentCapabilities')) {
+foreach ($name in @('ramVersion','himonApLinkStart','himonApLinkEnd','str8StateStart','str8StateEnd','softResetRecordStart','softResetRecordEnd','bankJumpSig0','bankJumpSig1','bankLastJump','bankJumpSignature','bankCount','bankNone','bankSelectService','selectorEntry','selectorEnd','recordService','recordVersion','recordCapabilities','residentVersion','residentCapabilities')) {
     Assert-Equal $manifest.abi.$name $lock.abi.$name "abi.$name"
 }
 

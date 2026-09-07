@@ -391,6 +391,17 @@ CMD_UNKNOWN:
                         JSR             SYS_WRITE_CRLF
                         JMP             MAIN_LOOP
 
+; Enter STR8-N as a cooperating software restart. Clear the commit byte first,
+; publish the signature, commit last, and do not execute intervening code.
+CMD_STR8_SOFT_RESET:
+                        SEI
+                        STZ             STR8_SOFT_RESET_SIG1
+                        LDA             #STR8_SOFT_RESET_SIG0_VALUE
+                        STA             STR8_SOFT_RESET_SIG0
+                        LDA             #STR8_SOFT_RESET_SIG1_VALUE
+                        STA             STR8_SOFT_RESET_SIG1
+                        JMP             $F000
+
 CMD_HELP_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$8E,$B0,$0C,$3A,CMD_HASH_KIND_EXEC ; ? $3A0CB08E EXEC
 CMD_HELP:
@@ -4931,7 +4942,7 @@ HIMON_VERSION_FNV:
 
 CMD_STR8_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$18,$0E,$AD,$A2,CMD_HASH_KIND_EXEC_CONFIRM_TEXT ; STR8 $A2AD0E18 EXEC+CONFIRM+TEXT
-                        DW              $F000
+                        DW              CMD_STR8_SOFT_RESET
                         DW              TXT_STR8
 
 MSG_BANNER:              DB              $0D,$0A

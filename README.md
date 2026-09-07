@@ -46,6 +46,12 @@ physical RESET -> Bank 3 STR8-N -- timeout --> Bank 3 HIMON/ASM
 | OIL | Runtime path for AP validation, loading, relocation, resident imports, and execution |
 | APMAN | Banked carrier discovery, installation, status, and load/run manager |
 
+HIMON's boot telemetry states the RAM policy: `BOOT COLD` is printed only
+after the RAM-clear path completes, while `BOOT WARM` means user RAM was
+preserved. There is no separate RAM-clear success line. HIMON's confirmed
+`STR8` command commits STR8-N's one-shot software-reset record, so the following
+reset-source face is `RST S`.
+
 The exact live release, commands, ownership, installation shapes, and accepted
 evidence boundary are maintained in the
 [Current Capability Matrix](DOC/GUIDES/CAPABILITIES.md). Dated cards and

@@ -35,7 +35,7 @@ milestone promises a particular reduction before the code audit.
 
 Reference points examined for this plan:
 
-- [Current capabilities](../CAPABILITIES.md): accepted STR8-N 1.31,
+- [Current capabilities](../CAPABILITIES.md): accepted STR8-N 1.32,
   HIMON `00.0906(1935)`, ASM-F2 `00.0905(2321)`.
 - [Product boundary](../STR8/PRODUCT_BOUNDARIES.md) and
   [exact STR8-N lock](../../../SRC/INTEGRATION/str8n.lock.json).
@@ -98,7 +98,7 @@ Preserve these contracts in the first release:
   behavior, command syntax, AP-v2 serialized bytes, and APMAN `AM01` identity.
 - HIMON entry `$C000`, warm identity marker, resident FNV records, public
   service-vector initialization, and current cold/warm return behavior.
-- Exact STR8-N 1.31 lock and generated public contract. `$F006` is the current
+- Exact STR8-N 1.32 lock and generated public contract. `$F006` is the current
   version/capability query; old source comments about an AP-link doorway are
   historical, not authority for a new call.
 

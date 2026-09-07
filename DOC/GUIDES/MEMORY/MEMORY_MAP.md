@@ -7,7 +7,7 @@ For the bench-facing names and layered diagrams of the active control areas,
 see [Control Deck Map](../../GENERATED/CONTROL_DECK_MAP.md). The formal ranges
 in this file remain authoritative.
 
-The standalone HIMON map and the split STR8-N v1.29 integration map are listed
+The standalone HIMON map and the split STR8-N v1.32 integration map are listed
 separately below. R-YORS builds `$8000-$EFFF`; the adjacent STR8-N repository
 owns `$F000-$FFFF` and composes the optional full-bank payload.
 
@@ -82,9 +82,9 @@ $8000-$BD2A   ASM-F2 low-flash image, entry $800C
 $BD2B-$BFFF   current low-flash growth margin; no carrier storage in Bank 3
 $C000-$EE11   HIMON body, including resident AP-v2 linker/APMAN bootstrap
 $EE12-$EFFF   current image gap inside the E sector
-$F000-$FD55   STR8-N v1.29 resident supervisor, installer, loader, and services
-$FD56-$FD5B   currently available resident growth, 6 bytes
-$FD5C-$FFAF   stored unified STR8-N RAM worker, copied to $0200-$0453
+$F000-$FD45   STR8-N v1.32 resident supervisor, installer, loader, and services
+$FD46-$FD4F   currently available resident growth, 10 bytes
+$FD50-$FFAF   stored unified STR8-N RAM worker, copied to $0200-$045F
 $FFB0-$FFEF   fixed V1 directory, erased in a new primary image
 $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
@@ -266,7 +266,8 @@ $7B00-$7BFB   RPT: validated-record decoded payload tray (252 bytes)
 $7BFC-$7BFF   VOD: remaining volatile monitor scratch
 $7C00-$7DBF   HTO: foreground High Tool Overlay, single owner
 $7DC0-$7DC7   HIMON AP-link scratch
-$7DC8-$7DE8   reserved
+$7DC8-$7DE6   reserved
+$7DE7-$7DE8   STR8-N one-shot software-reset record (`RS`)
 $7DE9-$7DFF   RSC: STR8 worker/update state
 $7E00-$7E01   HIMON-published RJOIN addr16 (`THE_JOIN_EXEC_XY`)
 $7E02-$7E1C   HIMON resident service vector block + checksum
@@ -492,7 +493,7 @@ HIMON/himon-shared-eq.inc
 
 The standalone STR8-N image owns Bank 3's `$F000-$FFFF` top sector and hardware
 vectors. HIMON starts at `$C000`. The fixed directory remains `$FFB0-$FFEF`,
-and the unified worker is stored at `$FD5C-$FFAF` and runs at `$0200-$0453`.
+and the unified worker is stored at `$FD50-$FFAF` and runs at `$0200-$045F`.
 
 The physical erase unit and protected STR8-N allocation are both 4K:
 

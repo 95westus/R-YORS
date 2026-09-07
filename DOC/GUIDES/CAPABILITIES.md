@@ -1,12 +1,12 @@
 # Current Capability Matrix
 
 This is the short authority for the live STR8-N, HIMON, and ASM-F2 command
-surfaces. The board currently has these accepted identities; HIMON was updated
-and checked with the retained STR8-N 1.31 and ASM-F2 image on 2026-09-06:
+surfaces. The board currently has these accepted identities; STR8-N and HIMON
+were updated and checked together on COM4 on 2026-09-07:
 
 ```text
-STR8-N 1.31
-HIMON   00.0906(1935)
+STR8-N 1.32
+HIMON   00.0907(0637)
 ASM-F2  00.0905(2321)
 ```
 

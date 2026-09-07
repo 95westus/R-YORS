@@ -78,7 +78,7 @@ first enrollment or replacement of the normal `$C000` Bank-3 entry.
 
 ## Runtime Public Interface
 
-HIMON includes only the generated external contract. The fixed v1.29 services
+HIMON includes only the generated external contract. The fixed v1.32 services
 used or checked by R-YORS are:
 
 ```text
@@ -90,12 +90,17 @@ $F013   blocking character input
 $F019   blocking character output
 $F03E   non-consuming character-ready query
 $0203   return-capable RAM bank selector
+$7DE7-$7DE8   one-shot software-reset record, "RS"
 $7DFD-$7DFF   Bank Jump Record, "BJ" plus bank/FF
 ```
 
-The full unified STR8-N worker runs at `$0200-$0453`; the selector needed by
+The full unified STR8-N worker runs at `$0200-$045F`; the selector needed by
 HIMON ends at `$0228`. HIMON's banked-AP helper starts at `$0500`, and the
 build rejects overlap if the external contract moves.
+
+Before its confirmed `STR8` command enters `$F000`, HIMON disables interrupts,
+clears the reset-record commit byte, writes `R`, and commits `S` last. STR8-N
+therefore reports `RST S`; physical or legacy unmarked entry reports `RST H`.
 
 Private STR8-N worker modes, internal maps, resident labels, and directory
 implementation details are not R-YORS interfaces.

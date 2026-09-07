@@ -70,6 +70,8 @@ $expectedContract = [ordered]@{
     STR8_REC_KIND_END = 0x03
     STR8_REC_BAD_START = 0x04
     STR8_REC_BAD_END = 0x09
+    STR8_SOFT_RESET_SIG0 = 0x7DE7
+    STR8_SOFT_RESET_SIG1 = 0x7DE8
 }
 
 foreach ($entry in $expectedContract.GetEnumerator()) {
@@ -88,6 +90,9 @@ Require-Match $source '(?m)^L_VALIDATE_RAM_SPAN:' 'HIMON RAM-span policy'
 Require-Match $source '(?m)^\s+CMP\s+#\$7A\s*$' 'HIMON $7A00 protection ceiling'
 Require-Match $source '(?m)^\s+LDA\s+\(CMDP_PTR_LO\),Y\s*$' 'validated descriptor-buffer copy'
 Require-Match $source '(?m)^\s+LDA\s+#LOAD_FAIL_SERVICE\s*$' 'service failure mapping'
+Require-Match $source '(?m)^CMD_STR8_SOFT_RESET:' 'STR8 software-reset wrapper'
+Require-Match $source '(?ms)^CMD_STR8_SOFT_RESET:\s+SEI\s+STZ\s+STR8_SOFT_RESET_SIG1\s+LDA\s+#STR8_SOFT_RESET_SIG0_VALUE\s+STA\s+STR8_SOFT_RESET_SIG0\s+LDA\s+#STR8_SOFT_RESET_SIG1_VALUE\s+STA\s+STR8_SOFT_RESET_SIG1\s+JMP\s+\$F000\s*$' 'ordered RS commit and immediate STR8 transfer'
+Require-Match $source '(?ms)^CMD_STR8_FNV:.*?DW\s+CMD_STR8_SOFT_RESET\s+DW\s+TXT_STR8\s*$' 'STR8 command binding to the software-reset wrapper'
 
 foreach ($retired in @(
     'L_PARSE_RECORD', 'L_PARSE_HEADER', 'L_SUM_ADD_A',
@@ -111,4 +116,4 @@ if ($endData -gt 0xF000) {
     Fail-Check ('HIMON end ${0:X4} overlaps STR8-N at $F000' -f $endData)
 }
 
-Write-Host ('HIMON STR8 record client = PASS; SR/02 buffer parser; end=${0:X4}; margin=${1:X4}' -f $endData, (0xF000 - $endData))
+Write-Host ('HIMON STR8 client = PASS; SR/02 parser + ordered RS reset marker; end=${0:X4}; margin=${1:X4}' -f $endData, (0xF000 - $endData))
