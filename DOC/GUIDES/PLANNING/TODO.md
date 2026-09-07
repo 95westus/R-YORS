@@ -140,6 +140,14 @@ B1:F backup, and `Q` rejection through `HSH_NF!`.
 
 ### Next major pass: consolidated AP tooling
 
+- [ ] Modularize STR8-N / AP handling / HIMON / ASM using
+  [FOUR_MODULE_PLAN.md](FOUR_MODULE_PLAN.md). Start with a reproducible byte
+  and interface baseline, then extract resident AP routines in place. Preserve
+  the current ABI and memory layout; count flash savings only after linked
+  measurements. Banked relocation and independent installation are separate
+  later decisions. This item does not mark the AP Store consolidation or
+  scoped FNV-search gates complete.
+
 - [x] Add the simple carrier path `SEAL> INSTALL package Bn` for Banks 0-2.
   The proven implementation finds the first completely erased and unreserved 4K
   sector, keeps exactly one complete AP v2 envelope there, treats `Bn` as the
