@@ -100,6 +100,44 @@ an evolutionary R-YORS II architecture, not a clean-sheet rewrite.
   whether entry preserves RAM, borrows it temporarily, or revokes it for
   recovery before making the transition.
 
+## SPI SRAM Direction
+
+- Treat the W65C02EDU 23LCV1024 as an optional 128 KiB serial range/block
+  provider with battery-backup support. Current hardware and software do not
+  claim it present or proven until a bounded diagnostic observes the installed
+  part.
+- Keep it outside the W65C02 address-space fiction. It is slower VIA-driven SPI
+  storage through `PIN_SPI_*`, `BIO_BLOCK`/range, and later `MEM_*`; code must
+  be copied and, where required, relocated into ordinary RAM before execution.
+- Let capability discovery report presence, size, operations, transfer bounds,
+  timeout/result behavior, and retention status when observable. Automatic
+  discovery is read-only. Pattern tests write only an explicitly declared
+  disposable range.
+- Prefer variable allocation/ownership records over permanent partitions. The
+  strongest likely consumers are:
+  - ASM source/token cache and symbol/fixup spill;
+  - FSEDIT file windows, line indexes, multiple buffers, and undo;
+  - AP/overlay receive, verification, and load staging;
+  - link/image tables, sector plans, and build intermediates;
+  - RPG/RYVM work records and explicit guest backing pages;
+  - TERMIO, transcript, printer, and device spools; and
+  - test vectors, traces, comparisons, and captured failure contexts.
+- Use battery retention only for reconstructable warm state such as editor
+  recovery, interrupted-build journals, pending candidates, crash records, and
+  spool checkpoints. Give each retained record a typed/versioned header,
+  complete-record integrity, and commit-last handling. Battery-backed does not
+  mean durable, authoritative, or trusted.
+- Keep WORK and SPI-SRAM formats provider-neutral where practical so a source,
+  editor, compiler, or loader can move between host, ordinary RAM, SPI SRAM,
+  flash WORK, and later SD storage without changing language semantics.
+- Permit public keys/certificates, signatures, ciphertext, digests, and staged
+  images in SPI SRAM. Private keys and long-lived shared secrets belong only in
+  a qualified secure element. The focused ATECC608 direction lives in the
+  sibling R-YORS II architecture repository.
+- Add SPI SRAM after a real editor/build/staging consumer needs it. It enlarges
+  useful workloads; it does not block the first self-building proof or weaken
+  operation when the device is absent or its retained contents fail validation.
+
 ## BIO RX Lookahead Direction
 
 - Treat the current FTDI input path as stable until a deliberate BIO lookahead

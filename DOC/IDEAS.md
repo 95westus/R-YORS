@@ -296,6 +296,48 @@ to a STR8 heap; any later general allocation service belongs in `MEM_*`.
 The promoted architecture direction is recorded in
 `DOC/GUIDES/PLANNING/FUTURE.md`.
 
+## Good Far Out: Battery-Backed SPI SRAM Work Store
+
+Bucket: `good far out`
+
+The unpopulated W65C02EDU position can accept a 23LCV1024: 128 KiB of SPI SRAM
+with battery-backup support. That is large beside ordinary W65C02 RAM, but it
+is a serial device rather than directly addressed executable memory.
+
+Possible uses worth preserving:
+
+```text
+ASM source/token cache and symbol/fixup spill
+FSEDIT file window, line index, multiple buffers, and undo
+AP/overlay receive and verification staging
+link/image plans and compiler/RYVM work records
+TERMIO/transcript/printer/device spools
+large test vectors, trace rings, and failure captures
+warm editor/build/crash recovery records
+```
+
+The useful mental model is an explicit range/block work store:
+
+```text
+PIN_SPI -> BIO_RANGE/BLOCK -> MEM/FILE CAPABILITY -> CONSUMER
+```
+
+Do not call it another 128 KiB of main RAM. Code cannot execute there, random
+byte access pays serial-transfer overhead, and an absent part must not change
+the meaning of a small build or job. Do not make a fixed partition map before
+real consumers and transfer sizes are measured.
+
+Battery-backed also does not mean authoritative. Retained bytes may be stale,
+corrupt, or deliberately modified. Warm-state records need a typed version,
+complete-record integrity, and commit-last handling; authoritative source and
+accepted images remain recoverable elsewhere. A future qualified ATECC608 may
+authenticate a retained record, but private keys never belong in SPI SRAM.
+
+This idea is promoted into `DOC/GUIDES/PLANNING/FUTURE.md` as optional hardware
+direction. It remains unimplemented until presence, size, sequential/range
+transfers, timeouts, destructive-range testing, power loss, battery retention,
+ordinary-RAM use, code size, and board behavior have evidence.
+
 ## Word Find: THE
 
 Bucket: `word find`
