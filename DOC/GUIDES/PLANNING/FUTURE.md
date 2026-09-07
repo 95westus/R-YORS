@@ -235,6 +235,21 @@ an evolutionary R-YORS II architecture, not a clean-sheet rewrite.
 
 ## Board Onboarding Direction
 
+- Possible future enhancement (idea only): give the RAM-based STR8-iN/65
+  WDC-to-STR8-N tool one entry point that detects the environment and selects
+  the appropriate migration or update routines. The host loader would identify
+  the active monitor to choose WDC binary RAM loading or STR8-N `L`/S19 loading;
+  the RAM tool would independently identify the installed Bank-3 image before
+  choosing a flash procedure. Running preserved WDC from B0 must not be
+  mistaken for a factory WDC installation in B3.
+  Recognized WDC in B3 would use the guarded factory preservation/migration
+  path; supported STR8-N in B3 would use the guarded top-update path, backing
+  up B3:F and preserving the live directory and factory B0 copy. Unknown,
+  damaged, or unsupported images would report findings and stop before
+  erase/program operations. Require positive identity and compatibility
+  checks, retain separate write confirmations, and compose the paths from
+  small shared routines. This is not an implemented or board-proven feature;
+  any implementation belongs in the standalone STR8-N repository.
 - The first standalone bridge artifacts now live in the adjacent STR8-N
   repository and are host-qualified, with stock-board proof still pending:
   `str8n-v1.23-wdcmonv2-archive-2000.s19` inventories/exports banks without
