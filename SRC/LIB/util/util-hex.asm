@@ -151,7 +151,7 @@ UTL_HEX_ASCII_TO_NIBBLE:
                         CLC
                         RTS
 UTL_HEX_ASCII_TO_NIBBLE_TXT:
-                        DB              "HEX NI",('B'+$80)
+                        DB              "HEX>NI",('B'+$80)
                         ENDMOD
 
                         MODULE          UTL_HEX_ASCII_YX_TO_BYTE

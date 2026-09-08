@@ -72,7 +72,7 @@ name:        THE_JOIN_EXEC_XY
 hash32:      $A9AF15F7
 stored:      F7 15 AF A9
 record kind: $05 executable pointer with display text
-text:        HASH ACQUIRE
+text:        HASH RESOLVE
 ```
 
 Current direction updates that matter here:
@@ -476,7 +476,7 @@ THE_JOIN_LOAD_HASH_XY
 ```
 
 `THE_JOIN_EXEC_XY` also has its own FNV record, with resident text
-`HASH ACQUIRE`, so `S`, `COPY`, `MOVE`, `FILL`, `MODIFY`, and similar flash
+`HASH RESOLVE`, so `S`, `COPY`, `MOVE`, `FILL`, `MODIFY`, and similar flash
 members can carry one tiny bootstrap scanner to find the joiner, then call the
 resident routine instead of each carrying a full private resolver.
 

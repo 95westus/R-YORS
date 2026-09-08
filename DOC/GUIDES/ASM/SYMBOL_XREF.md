@@ -284,7 +284,7 @@ abi_in:      A = ASCII hex char
 abi_out:     valid: C = 1, A = 0..15; invalid: C = 0, A unchanged
 calls:       none direct
 notes:       Accepts `0..9`, `A..F`, and `a..f`. Current K05 EXEC+TEXT
-             record: 46 4E D6 B1 14 D7 AD 05, text `HEX NIB`.
+             record: 46 4E D6 B1 14 D7 AD 05, text `HEX>NIB`.
 ```
 
 ```text

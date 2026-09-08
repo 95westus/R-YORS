@@ -159,7 +159,7 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 | `SYS_READ_CSTRING_EDIT_MODE` | `$A49D7915` | SYS editable CSTR | `A=mode`, `X/Y=dest` | edit-line `A/C` | NEEDS_PROOF | insert/delete/cursor capable path | `SYS READ CSTRING EDIT` |
 | `SYS_READ_CSTRING_EDIT_ECHO_UPPER` | `$B3A76D2C` | SYS editable CSTR | `X/Y=dest` | edit-line `A/C` | NEEDS_PROOF | convenience wrapper: echo and uppercase | `SYS READ CSTRING EDIT ECHO UPPER` |
 | `SYS_READ_CSTRING_SILENT` | `$98B68980` | SYS CSTR read | `X/Y=dest` | line-reader `A/C` | NEEDS_PROOF | cooked no-echo input | `SYS READ CSTRING SILENT` |
-| `SYS_READ_CSTRING_ECHO_UPPER` | `$E2DD10AF` | SYS CSTR read | `X/Y=dest` | line-reader `A/C` | NEEDS_PROOF | resident HIMON compact line reader row; echo, uppercase, backspace, Ctrl-C, CR/LF; text `READ LINE` | `SYS READ CSTRING ECHO UPPER` |
+| `SYS_READ_CSTRING_ECHO_UPPER` | `$E2DD10AF` | SYS CSTR read | `X/Y=dest` | line-reader `A/C` | NEEDS_PROOF | resident HIMON compact line reader row; echo, uppercase, backspace, Ctrl-C, CR/LF; text `READ UPPER` | `SYS READ CSTRING ECHO UPPER` |
 | `SYS_READ_CSTRING_ECHO_LOWER` | `$A05843C2` | SYS CSTR read | `X/Y=dest` | line-reader `A/C` | NEEDS_PROOF | echo and lowercase | `SYS READ CSTRING ECHO LOWER` |
 | `SYS_READ_CSTRING_SILENT_UPPER` | `$C9364C7F` | SYS CSTR read | `X/Y=dest` | line-reader `A/C` | NEEDS_PROOF | silent uppercase | `SYS READ CSTRING SILENT UPPER` |
 | `SYS_READ_CSTRING_SILENT_LOWER` | `$43D98ED2` | SYS CSTR read | `X/Y=dest` | line-reader `A/C` | NEEDS_PROOF | silent lowercase | `SYS READ CSTRING SILENT LOWER` |
@@ -192,7 +192,7 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `UTL_HEX_NIBBLE_TO_ASCII` | `$D4C88B87` | UTL hex encode | `A=byte` | low nibble as `'0'..'F'`, `C=1` | PROVEN | promoted small uppercase nibble encoder; resident text `NIB HEX` | `UTL HEX ENCODE NIBBLE PROMOTED` |
 | `UTL_HEX_BYTE_TO_ASCII_YX` | `$7142DD21` | UTL hex encode | `A=byte` | `A` preserved, `Y=hi ASCII`, `X=lo ASCII`, `C=1` | PROVEN | promoted byte-to-two-ASCII helper; resident text `BYTE HEX` | `UTL HEX ENCODE BYTE PROMOTED` |
-| `UTL_HEX_ASCII_TO_NIBBLE` | `$ADD714B1` | UTL hex parse | `A=ASCII hex` | `C=1,A=nibble` success; `C=0,A` unchanged invalid | PROVEN | promoted parser; resident text `HEX NIB` | `UTL HEX PARSE NIBBLE PROMOTED` |
+| `UTL_HEX_ASCII_TO_NIBBLE` | `$ADD714B1` | UTL hex parse | `A=ASCII hex` | `C=1,A=nibble` success; `C=0,A` unchanged invalid | PROVEN | promoted parser; resident text `HEX>NIB` | `UTL HEX PARSE NIBBLE PROMOTED` |
 | `UTL_HEX_ASCII_YX_TO_BYTE` | `$EA0B3E6D` | UTL hex parse | `Y=hi ASCII`, `X=lo ASCII` | `C=1,A=byte` success; `C=0` invalid | PROVEN | promoted two-char parser; source text `HEX BYTE`; uses `UTL_CONV_TMP_A=$E6` | `UTL HEX PARSE BYTE PROMOTED` |
 | `UTL_CHAR_IS_PRINTABLE` | `$0566EC22` | UTL char test | `A=char` | `C=1` printable | NEEDS_PROOF | space through `~` | `UTL CHAR CLASSIFY PRINTABLE` |
 | `UTL_CHAR_IS_CONTROL` | `$7B454918` | UTL char test | `A=char` | `C=1` control | NEEDS_PROOF | `00..1F` or `7F` | `UTL CHAR CLASSIFY CONTROL` |
@@ -207,7 +207,7 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 
 | routine | hash | class | in | out / flags | proof | notes | tags |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `FNV1A_INIT` | `$4B9AEE1E` | hash init | none | `FNV_HASH=$811C9DC5` little-endian | BUILDS | start a new 32-bit FNV-1a hash; resident text `HASH OPEN` | `FNV HASH INIT` |
+| `FNV1A_INIT` | `$4B9AEE1E` | hash init | none | `FNV_HASH=$811C9DC5` little-endian | BUILDS | start a new 32-bit FNV-1a hash; resident text `HASH INIT` | `FNV HASH INIT` |
 | `FNV1A_UPDATE_A` | `$6E684C95` | hash update | `A=next byte` | `FNV_HASH` updated | BUILDS | hash one byte | `FNV HASH UPDATE BYTE` |
 | `FNV1A_UPDATE_A_FAST` | `$A8802314` | hash update | `A=next byte` | `FNV_HASH` updated | BUILDS | faster drop-in update; ROM-for-cycles tradeoff to lessen software multiply cost; resident text `HASH MIX` | `FNV HASH UPDATE BYTE FAST` |
 | `FNV1A_MUL_PRIME` | `$40C68FD2` | hash math | current `FNV_HASH` | `FNV_HASH *= $01000193 mod 2^32` | BUILDS | internal multiply step | `FNV HASH MATH` |

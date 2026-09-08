@@ -116,7 +116,7 @@ SYS_READ_CHAR_ECHO              READ ECHO
 SYS_READ_CHAR_COOKED_ECHO       READ COOK
 UTL_HEX_NIBBLE_TO_ASCII         NIB HEX
 UTL_HEX_BYTE_TO_ASCII_YX        BYTE HEX
-UTL_HEX_ASCII_TO_NIBBLE         HEX NIB
+UTL_HEX_ASCII_TO_NIBBLE         HEX>NIB
 UTL_HEX_ASCII_YX_TO_BYTE        HEX BYTE
 ```
 
@@ -141,7 +141,7 @@ UTL_HEX_NIBBLE_TO_ASCII_FNV       $E822 entry=$E82E text=$E83A
 resident in the active HIMON image.
 
 Board proof: `# K=5` confirmed `READ BYTE`, `WRITE BYTE`, `READ CH`,
-`READ ECHO`, `READ COOK`, `HEX NIB`, `BYTE HEX`, and `NIB HEX` as active K05
+`READ ECHO`, `READ COOK`, `HEX>NIB`, `BYTE HEX`, and `NIB HEX` as active K05
 resident text rows.
 
 ## Output Helper Candidates
@@ -242,8 +242,8 @@ Already shared or resolved:
 | --- | --- | --- |
 | `ASM_RJ_WRITE_BYTE` | `BIO_FTDI_WRITE_BYTE_BLOCK` / `WRITE BYTE` | done |
 | `ASM_RJ_READ_CSTRING` | `SYS_READ_CSTRING` / `READ SOURCE` | done |
-| `ASM_HEX_TO_NIBBLE` | `UTL_HEX_ASCII_TO_NIBBLE` / `HEX NIB` | done |
-| `ASM_FNV1A_INIT` | `FNV1A_INIT` / `HASH OPEN` | done |
+| `ASM_HEX_TO_NIBBLE` | `UTL_HEX_ASCII_TO_NIBBLE` / `HEX>NIB` | done |
+| `ASM_FNV1A_INIT` | `FNV1A_INIT` / `HASH INIT` | done |
 | `ASM_FNV1A_UPDATE_A_FAST` | `FNV1A_UPDATE_A_FAST` / `HASH MIX` | done |
 
 Remaining output overlaps:

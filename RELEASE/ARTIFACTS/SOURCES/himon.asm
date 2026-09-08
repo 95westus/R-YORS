@@ -4949,12 +4949,12 @@ MSG_BANNER:              DB              $0D,$0A
                         INCLUDE         "himon-version.inc"
 TXT_HCOLD:               DB              "HCOL",('D'+$80)
 TXT_HWARM:               DB              "HWAR",('M'+$80)
-TXT_THE_JOIN_EXEC_XY:    DB              "HASH ACQUIR",('E'+$80)
-TXT_FNV1A_INIT:          DB              "HASH OPE",('N'+$80)
+TXT_THE_JOIN_EXEC_XY:    DB              "HASH RESOLV",('E'+$80)
+TXT_FNV1A_INIT:          DB              "HASH INI",('T'+$80)
 TXT_FNV1A_UPDATE_A_FAST: DB              "HASH MI",('X'+$80)
 TXT_SYS_READ_CSTRING:   DB              "READ SOURC",('E'+$80)
 TXT_SYS_READ_CSTRING_ECHO_UPPER:
-                        DB              "READ LIN",('E'+$80)
+                        DB              "READ UPPE",('R'+$80)
 TXT_BIO_FTDI_PUT_CSTR:   DB              "PUT CST",('R'+$80)
 TXT_STR8:                DB              "STR8: BOOTLOADE",('R'+$80)
 MSG_PROMPT:              DB              ('>'+$80)

@@ -5503,7 +5503,7 @@ does not reopen an ASM session.
 Current seed-only ASM requires its resident joiner seed at `$7E00/$7E01`.
 HIMON publishes the current `THE_JOIN_EXEC_XY` addr16 there during common init.
 The seed is accepted only if it is not `$FFFF` and has a ROM-ish high byte
-(`>= $C0`); ASM then treats that pointer as the `HASH ACQUIRE` joiner. The
+(`>= $C0`); ASM then treats that pointer as the `HASH RESOLVE` joiner. The
 local scanner bootstrap is removed for the `$8000` ASM/no-header direction, and
 STR8 `U` / `UPDATE HIMON` works without patching top-sector flash because the
 seed cell is refreshed in RAM after HIMON starts.

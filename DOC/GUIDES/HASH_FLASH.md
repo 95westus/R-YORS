@@ -917,7 +917,7 @@ RREC UTL_HEX_ASCII_TO_NIBBLE
   hash_sig: 46 4E D6 B1 14 D7 AD 05
   record: K05 EXEC+TEXT
   entry: UTL_HEX_ASCII_TO_NIBBLE
-  text: HEX NIB
+  text: HEX>NIB
   contract: parse ASCII hex char; valid C=1,A=0..15; invalid C=0,A unchanged
   import: none
   proof: PROVEN, reviewed and hash-sig promoted 2026-05-15; K05 text promoted 2026-06-10
