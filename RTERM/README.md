@@ -16,6 +16,8 @@ of minicom, PuTTY, or Tera Term. Around that baseline it may add:
 - optional field/form editing with validation, justification, padding, Field
   Exit, and AID-style submission;
 - configurable, bounded actions based on what appears in named screen regions;
+- later conversation macros that can wait for board output, capture received
+  data, and send replies;
 - distinct S19 and binary transfer actions;
 - System Request, Attention, console, subconsole, and operator-message
   facilities; and

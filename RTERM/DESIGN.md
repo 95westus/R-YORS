@@ -532,6 +532,98 @@ The action dispatcher should receive a structured event containing at least:
 - timestamp; and
 - console/session identity.
 
+## Conversation Macros
+
+RTERM should eventually support bounded conversation macros comparable in
+purpose to Tera Term macros or PuTTY-adjacent automation. A macro is a sequence
+of serial interactions; it is distinct from a screen rule, although a screen
+rule may start one.
+
+The fundamental exchange is:
+
+```text
+board -> RTERM   output, prompt, request, or framed data
+RTERM            waits for or captures the received bytes
+RTERM -> board   configured reply
+```
+
+RTERM therefore receives in two senses. Its serial RX path always receives,
+parses, displays, and optionally logs board traffic. A running macro may also
+observe that same ordered RX stream without stealing bytes from the terminal
+parser. It may either wait for a condition (`expect`) or explicitly collect a
+bounded result (`receive`).
+
+Candidate macro operations include:
+
+```text
+send       transmit literal or safely encoded bytes through the TX queue
+expect     wait until RX contains one of several bounded patterns
+receive    collect a delimited or exact-length RX value into macro state
+sleep      wait for a bounded interval
+mark       add a named transcript event
+fail       stop with an operator-visible diagnostic
+```
+
+### Local Triggers
+
+A local trigger originates within RTERM and starts a named macro or bounded
+action. It is different from `expect`: the trigger starts the conversation,
+while `expect` reacts to board traffic after the conversation is running.
+
+Candidate local triggers include:
+
+```text
+key          configured key or prefix sequence at the owning console
+menu         selection in the local RTERM or SYSREQ interface
+command      explicit local request to run a named macro
+startup      serial port opened, optionally followed by a readiness condition
+reconnect    connection restored and a new session established
+timer        one-shot or periodic local timer
+idle         configured absence of keyboard activity, board traffic, or both
+session      console attach, detach, ownership change, or shutdown
+screen-rule  a local rule observes committed screen state and starts a macro
+```
+
+For example, a locally bound key could start a status exchange:
+
+```text
+TRIGGER KEY F5 RUN query_status
+
+MACRO query_status
+    SEND "S\r"
+    EXPECT "STATUS>" TIMEOUT 2s
+    RECEIVE UNTIL "\r\n" AS status
+END
+```
+
+This syntax is illustrative. Trigger definitions should remain outside the
+terminal parser and name configured macros or built-in actions. Each trigger
+needs a profile, console authorization, and concurrency policy. If a macro or
+transfer already owns serial TX, a repeated trigger must explicitly queue,
+coalesce, replace, or fail; it must not silently interleave another exchange.
+
+Manual key, menu, and command triggers are the safest initial set. Startup,
+reconnect, timer, idle, session, and screen-rule triggers can cause unattended
+activity and should require explicit enablement, bounded frequency, overlap
+prevention, and audit logging. A reconnect trigger must begin a fresh recovery
+exchange and must not blindly resume a partially transmitted action.
+
+`expect` and `receive` need explicit timeout, size, delimiter, encoding, and
+match-scope rules. Matching may target raw RX bytes, decoded text, or a stable
+screen region, but the choice must be declared. Binary receive must use exact
+length or documented framing and must not be passed through a text matcher.
+
+Macros must use the single serialized TX queue. They must not race keyboard,
+terminal replies, or transfers, and every macro should declare whether normal
+keyboard input is allowed, buffered, or inhibited while it runs. Cancellation,
+disconnect, timeout, and partial-send behavior must be visible and logged.
+
+Initial macros should call named built-in operations and use bounded variables;
+they should not provide arbitrary shell execution. Board-supplied bytes must
+never become an unrestricted host path or command. A later macro language can
+add conditionals, captures, and subroutines after the basic send/expect/receive
+state machine is tested.
+
 ## Actions and Safety Boundary
 
 Initial actions should be named built-ins, not shell command strings. Possible
@@ -777,6 +869,8 @@ Host tests should include:
 - S19 validation and pacing tests;
 - exact binary transfer tests including embedded zeroes;
 - partial screen-paint and duplicate-trigger tests;
+- local-trigger authorization, debounce, overlap, and queue-policy tests;
+- startup and reconnect tests that prove partial actions are not replayed;
 - file allowlist and path-escape rejection tests;
 - console ownership and disconnect tests;
 - SYSREQ and ATTN routing tests; and
@@ -801,8 +895,10 @@ host tests does not replace an observed board run and retained transcript.
    error reset, and audit events.
 7. **Console/subconsole** -- structured local attachments, ownership, messages,
    inquiries, replies, and cancellation.
-8. **Design aid** -- visual field/region authoring and saved layout definitions.
-9. **VT525 personality** -- implement and test the advanced DEC surface in
+8. **Conversation macros** -- bounded send, expect, receive, timeout,
+   cancellation, and transcript behavior over the shared RX/TX paths.
+9. **Design aid** -- visual field/region authoring and saved layout definitions.
+10. **VT525 personality** -- implement and test the advanced DEC surface in
    independently reviewable slices.
 
 The order can change. In particular, a small screen-definition editor may be
@@ -823,6 +919,10 @@ useful before the complete console service.
 - Serial-output conflict handling while local form edits are pending.
 - Screen-rule commit and rearm defaults.
 - Initial built-in action set.
+- Macro grammar, raw-stream versus screen matching, capture framing, and
+  keyboard ownership while a macro runs.
+- Initial local-trigger set, trigger precedence, debounce, queuing, and which
+  unattended triggers each operating profile permits.
 - Asset aliases versus root-relative filenames.
 - Default S19 pacing for the current R-YORS loader.
 - Whether normal keystrokes are rejected or buffered during transfers.
