@@ -55,6 +55,62 @@ The following distinctions are important:
 - **subconsole** is an attached observer or operator session with explicitly
   granted capabilities.
 
+### Verb Namespaces
+
+Lifecycle words must name their boundary. A bare verb such as `ATTACH` is too
+ambiguous because RTERM has a serial transport, a target protocol, and local
+operator clients. The provisional namespaces are:
+
+| Namespace | Examples | Meaning |
+| --- | --- | --- |
+| transport | `OPEN`, `CLOSE`, `RECONNECT` | RTERM owns or releases the host serial device. |
+| local session | `ATTACH`, `DETACH`, `TAKE_INPUT`, `RELEASE_INPUT` | A console or subconsole changes its relationship to the running RTERM process. |
+| target protocol | `HELLO`, `ACCEPT`, `REJECT`, `KEEPALIVE`, `GOODBYE` | RTERM and cooperating R-YORS firmware establish or retire an optional negotiated session. |
+| macro | `SEND`, `EXPECT`, `RECEIVE`, `SLEEP`, `MARK`, `FAIL` | A bounded automation step executes inside RTERM. |
+
+`ATTACH` and `DETACH` are therefore local control-plane verbs. They are not
+VT102 input, ordinary board commands, or implicit bytes sent over FTDI. If a
+future local attachment protocol uses textual messages, their full semantic
+names remain `CONSOLE ATTACH` and `CONSOLE DETACH` even if an implementation
+encodes them as compact numeric operations.
+
+The target-protocol verbs are proposed vocabulary, not a frozen wire format.
+Their intended lifecycle is:
+
+```text
+transport OPEN                host serial device is open; target may be absent
+RTERM -> board  HELLO         offer identity, version, capabilities, fresh boot ID
+board -> RTERM  ACCEPT        create a fresh target session and return its ID
+RTERM -> board  KEEPALIVE     renew the bounded terminal-presence lease
+RTERM -> board  GOODBYE       advisory orderly close; never required for expiry
+transport CLOSE               end transport and invalidate local connection state
+```
+
+`REJECT` declines an unsupported version, profile, or policy. Loss of PWE#,
+expiry of the keepalive lease, target reset, or transport close invalidates
+the negotiated session even when no `GOODBYE` arrives. Reopening the serial
+device starts with a fresh `HELLO`; it must not reuse an old session ID or
+resume a partial transfer.
+
+These states must remain distinct:
+
+```text
+serial open            RTERM owns the host device
+target seen            bytes have recently arrived from some target
+protocol accepted      HELLO/ACCEPT completed for this target generation
+terminal present       accepted session has an unexpired presence lease
+console attached       a local human or automation client is attached to RTERM
+keyboard owner         one authorized local attachment currently owns normal TX
+```
+
+Only `terminal present` is suitable for a cooperating board's stronger
+"RTERM connected" indication. FTDI enumeration alone proves only USB
+configuration/not-suspended, while a received character proves activity only
+at that instant. Presence signaling must be profile-enabled, explicitly
+framed or negotiated, consumed outside the ordinary command-input stream, and
+safe to ignore by firmware or terminals that do not implement it. It confers
+no authentication, operator authority, or permission for destructive work.
+
 ## Operating Profiles
 
 Three provisional profiles describe increasing amounts of host assistance:
@@ -745,6 +801,10 @@ Shift-Escape for SYSREQ may also be offered.
 RTERM owns the serial device. Consoles and subconsoles attach to the running
 RTERM session rather than opening the serial device independently.
 
+Here `attach` has the local-session meaning defined under **Verb Namespaces**.
+It does not assert that the target is alive and does not transmit a target
+`ATTACH` operation.
+
 ```text
                               +-- main console: display + keyboard owner
 serial <--> RTERM core <-------+-- subconsole S1: operator messages
@@ -908,6 +968,8 @@ useful before the complete console service.
 
 - Exact OIA column layout and color/attribute conventions.
 - The readiness policy that controls `SA`.
+- Target-protocol framing, keepalive interval/lease, and the exact evidence
+  required before RTERM or R-YORS reports `terminal present`.
 - Whether undetectable indicators such as physical keyboard shift should be
   omitted rather than approximated.
 - Configuration and screen-definition file grammars.
