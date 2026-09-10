@@ -201,6 +201,11 @@ short regression rail:
 - `SEAL`, `PACKAGE`, and direct AP load/link where applicable;
 - `INSTALL package Bn`, reset-time rediscovery, `APS`, named `AP`, and `AP L`
   for carrier or manager changes;
+- `AP D Bn name|s000` by both selector forms for APMAN inspection changes:
+  require HIMON front-door forwarding, the same AP-v2 validation and duplicate
+  rejection as `AP`, exact five-section boundaries, a `$40`-byte envelope
+  prefix only, no `AP LOAD` or `GO`, unchanged post-install sector CRCs, and
+  Bank-3 restoration;
 - missing-import, overlap, malformed-envelope, and bank-restore rejection for
   AP/OIL changes;
 - before/after sector or bank CRCs for every flash mutation;

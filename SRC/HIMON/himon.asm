@@ -700,6 +700,8 @@ CMD_AP:
                         BEQ             CMD_AP_MANAGER
                         CMP             #'L'
                         BEQ             CMD_AP_MANAGER
+                        CMP             #'D'
+                        BEQ             CMD_AP_MANAGER
                         JSR             CMD_PARSE_HEX_WORD_TOKEN
                         BCS             CMD_AP_SRC_OK
                         JMP             CMD_USAGE_AP
@@ -5014,7 +5016,7 @@ MSG_M_PROTECT:           DB              "M PROT=",('$'+$80)
 MSG_USAGE_R:             DB              "R reg",('s'+$80)
 MSG_USAGE_X:             DB              "X reg",('s'+$80)
 MSG_USAGE_G:             DB              "G ",('a'+$80)
-MSG_USAGE_AP:            DB              "AP pkg dst | AP [L] Bn name|s000 [dst",(']'+$80)
+MSG_USAGE_AP:            DB              "AP pkg dst | AP [L|D] Bn name|s000 [dst",(']'+$80)
 MSG_APMAN_NF:            DB              "APMAN N",('F'+$80)
                         IF              0
 MSG_USAGE_APS:           DB              "AP",('S'+$80)

@@ -26034,3 +26034,27 @@ HIMON V 00.0910(1202)
 The final prompt displayed `$43`. Result: accepted for live HIMON wait,
 latched-RX, ASM-F2 inherited line wait, single-character wait, guarded C-E
 install, raw-service ownership, and physical-reset recovery.
+
+## 2026-09-10 APMAN Read-Only Carrier Inspection
+
+The first live `AP D B2 APMAN` attempt was rejected by the old HIMON usage
+path before APMAN ran. The host correction routed `D` through the existing
+manager bootstrap, added a regression assertion for that bridge, and passed
+`make -C SRC apman` plus the full `make -C SRC asm-test` suite.
+
+With explicit approval, STR8-N installed the `$0C23` APMAN carrier at B2:8 and
+the matched HIMON `00.0910(1343)` image at B3:C-E. Both guarded installs reached
+their separate `COMMIT? Y` gates and returned `. OK`. Exact artifact hashes,
+the failed-first-attempt record, install transcript, positive dump, rejection
+rails, and complete CRC tables are retained in
+[APMAN_INSPECT_2026-09-10.md](APMAN_INSPECT_2026-09-10.md).
+
+Both `AP D B2 APMAN` and `AP D B2 8000` reported sections
+`S 0005-0012`, `R 0013-0016`, `E 0017-0026`, `I 0027-002A`, and
+`B 002B-0C22`, then exactly four rows covering `$0000-$003F`. Neither printed
+`AP LOAD` or `GO`. Missing-name and unaligned-address cases returned `$D1`;
+Bank 3 and extra-destination cases returned `$D0`, all without a dump.
+
+`APS`, `AP L B1 BANKAUDIT`, and `AP B1 BANKAUDIT` passed. A physical reset
+returned to HIMON, and the final complete 32-sector CRC table was byte-for-byte
+identical to the post-install baseline. Result: accepted.

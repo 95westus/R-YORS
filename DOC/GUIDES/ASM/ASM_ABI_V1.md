@@ -27,6 +27,13 @@ tagged sections in `S R E I B` order. Every section has a tag and little-endian
 length, and FNV-1a, with all words little-endian. Packages are at most `$1000`
 bytes.
 
+The five-tag sequence is called **SREIB** (pronounced approximately
+“shrybe”): **S**eal, **R**elocations, **E**xports, **I**mports, **B**ody. The
+pronunciation deliberately echoes German *schreib*, the imperative and stem
+form of *schreiben* (“to write”). SREIB is an English project mnemonic, not a
+German spelling or a second encoding order; the canonical serialized and
+displayed order remains `S R E I B`.
+
 Relocation rows are five bytes: kind, site offset, and target/addend word.
 Kinds `$01-$03` are internal ABS16/LO8/HI8. Kinds `$04-$06` are import
 ABS16/LO8/HI8; their final byte is the signed addend. Export and import

@@ -150,6 +150,7 @@ APMAN_PACKAGE := $(BIN_DIR)/apman-v1.ap
 APMAN_BANK2_BIN := $(BIN_DIR)/apman-v1-bank2-8000.bin
 APMAN_BANK2_S19 := $(S19_DIR)/apman-v1-bank2-8000.s19
 APMAN_BOOTSTRAP_CHECK := tools/check_apman_bootstrap.ps1
+APMAN_INSPECT_CHECK := tools/check_apman_inspect.ps1
 APMAN_LINKFLAGS := -g -s -t -c7000 -hm19 -j -o
 APMAN_WORKER_GEN := tools/write_apman_worker_inc.ps1
 APMAN_WORKER_SOURCE := $(STR8N_HOME)/tools/bank-maint/str8n-v1.23-bank-maint-2000.asm
@@ -567,8 +568,9 @@ bank-dump: $(BANK_DUMP_S19) $(BANK_DUMP_A) $(BANK_DUMP_CHECK)
 	@echo "Built and checked $(BANK_DUMP_S19) against $(BANK_DUMP_A)."
 	@$(MAKE) artifacts
 
-apman: $(APMAN_S19) $(APMAN_PACKAGE) $(APMAN_BANK2_BIN) $(APMAN_BANK2_S19) $(APMAN_BOOTSTRAP_CHECK)
+apman: $(APMAN_S19) $(APMAN_PACKAGE) $(APMAN_BANK2_BIN) $(APMAN_BANK2_S19) $(APMAN_BOOTSTRAP_CHECK) $(APMAN_INSPECT_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(APMAN_BOOTSTRAP_CHECK) -PackagePath "$(APMAN_PACKAGE)" -BinPath "$(APMAN_BANK2_BIN)" -S19Path "$(APMAN_BANK2_S19)"
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(APMAN_INSPECT_CHECK) -SourcePath "$(APMAN_SRC)" -HimonSourcePath "$(HIMON_SRC)" -MapPath "$(APMAN_MAP)" -PackagePath "$(APMAN_PACKAGE)"
 	@echo "Built APMAN carrier manager: $(APMAN_S19), $(APMAN_PACKAGE), $(APMAN_BANK2_BIN), and $(APMAN_BANK2_S19)."
 
 himon-debug-proof: $(ROM_LIB) $(HIMON_DEBUG_PROOF_S19)

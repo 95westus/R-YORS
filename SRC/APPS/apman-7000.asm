@@ -85,7 +85,7 @@ BACKUP_ROLE             EQU             $FFF1
 
 FLAG_LOAD_ONLY          EQU             $01
 FLAG_SELECTOR_ADDR      EQU             $02
-FLAG_APS_DETAIL         EQU             $04
+FLAG_DUMP               EQU             $04
 
                         CODE
 
@@ -113,6 +113,7 @@ APMAN_DISPATCH_BAD:
 ; ---------------------------------------------------------------------------
 ; AP Bn name|s000 [destination]
 ; AP L Bn name|s000 [destination]
+; AP D Bn name|s000
 ; ---------------------------------------------------------------------------
 APMAN_COMMAND_AP:       LDA             #<CMD_BUF+2
                         STA             PTRL
@@ -123,8 +124,15 @@ APMAN_COMMAND_AP:       LDA             #<CMD_BUF+2
                         LDY             #$00
                         LDA             (PTRL),Y
                         CMP             #'L'
-                        BNE             APMAN_AP_BANK
+                        BNE             APMAN_AP_NOT_LOAD
                         LDA             #FLAG_LOAD_ONLY
+                        STA             FLAGS
+                        JSR             APMAN_ADVANCE
+                        JSR             APMAN_SKIP_SPACES
+                        BRA             APMAN_AP_BANK
+APMAN_AP_NOT_LOAD:      CMP             #'D'
+                        BNE             APMAN_AP_BANK
+                        LDA             #FLAG_DUMP
                         STA             FLAGS
                         JSR             APMAN_ADVANCE
                         JSR             APMAN_SKIP_SPACES
@@ -176,6 +184,27 @@ APMAN_AP_FIND_NAME:     JSR             APMAN_FIND_NAMED
                         BCS             APMAN_AP_HAVE
                         JMP             APMAN_NOT_FOUND
 APMAN_AP_HAVE:          JSR             APMAN_SET_PACKAGE_FACTS
+                        LDA             FLAGS
+                        AND             #FLAG_DUMP
+                        BEQ             APMAN_AP_NOT_DUMP
+                        LDA             TAIL_LO
+                        STA             PTRL
+                        LDA             TAIL_HI
+                        STA             PTRH
+                        JSR             APMAN_SKIP_SPACES
+                        LDY             #$00
+                        LDA             (PTRL),Y
+                        BEQ             APMAN_AP_DUMP_EOL
+                        JMP             APMAN_BAD_COMMAND
+APMAN_AP_DUMP_EOL:
+                        LDX             #<MSG_APD_PREFIX
+                        LDY             #>MSG_APD_PREFIX
+                        JSR             APMAN_PUTS
+                        JSR             APMAN_PRINT_CARRIER_DETAIL_BODY
+                        JSR             APMAN_PRINT_SECTIONS
+                        JSR             APMAN_DUMP_PREFIX
+                        JMP             APMAN_RETURN_OK
+APMAN_AP_NOT_DUMP:
                         JSR             APMAN_SELECTED_IS_MANAGER
                         BCC             APMAN_AP_NOT_MANAGER
                         JMP             APMAN_SELF
@@ -911,6 +940,7 @@ APMAN_PRINT_CARRIER_DETAIL:
                         LDX             #<MSG_APS_PREFIX
                         LDY             #>MSG_APS_PREFIX
                         JSR             APMAN_PUTS
+APMAN_PRINT_CARRIER_DETAIL_BODY:
                         JSR             APMAN_PRINT_LOCATION
                         LDA             #' '
                         JSR             APMAN_PUTC
@@ -933,6 +963,90 @@ APMAN_PRINT_CARRIER_DETAIL:
                         LDA             STAGE_BASE+$09
                         JSR             APMAN_HEX
                         JMP             APMAN_CRLF
+
+; Print the five validated AP-v2 section boundaries as staged RAM addresses,
+; then dump only the first $40 envelope bytes. The staged sector is immutable
+; RAM and Bank 3 has already been restored before this path runs.
+APMAN_PRINT_SECTIONS:   LDA             #<STAGE_BASE+$05
+                        STA             PTRL
+                        LDA             #>STAGE_BASE+$05
+                        STA             PTRH
+                        LDA             #$05
+                        STA             COUNT
+APMAN_SECTION_ROW:      LDY             #$00
+                        LDA             (PTRL),Y
+                        JSR             APMAN_PUTC
+                        LDA             #' '
+                        JSR             APMAN_PUTC
+                        LDA             PTRH
+                        SEC
+                        SBC             #>STAGE_BASE
+                        JSR             APMAN_HEX
+                        LDA             PTRL
+                        JSR             APMAN_HEX
+                        LDY             #$01
+                        LDA             (PTRL),Y
+                        STA             VALUE_LO
+                        INY
+                        LDA             (PTRL),Y
+                        STA             VALUE_HI
+                        LDA             PTRL
+                        CLC
+                        ADC             #$02
+                        ADC             VALUE_LO
+                        STA             TMP0
+                        LDA             PTRH
+                        ADC             VALUE_HI
+                        STA             TMP1
+                        LDA             #'-'
+                        JSR             APMAN_PUTC
+                        LDA             TMP1
+                        SEC
+                        SBC             #>STAGE_BASE
+                        JSR             APMAN_HEX
+                        LDA             TMP0
+                        JSR             APMAN_HEX
+                        JSR             APMAN_CRLF
+                        LDA             TMP0
+                        CLC
+                        ADC             #$01
+                        STA             PTRL
+                        LDA             TMP1
+                        ADC             #$00
+                        STA             PTRH
+                        DEC             COUNT
+                        BNE             APMAN_SECTION_ROW
+                        RTS
+
+APMAN_DUMP_PREFIX:      STZ             PTRL
+                        LDA             #>STAGE_BASE
+                        STA             PTRH
+                        LDA             #$04
+                        STA             COUNT
+APMAN_DUMP_ROW:         LDA             #$00
+                        JSR             APMAN_HEX
+                        LDA             PTRL
+                        JSR             APMAN_HEX
+                        LDA             #':'
+                        JSR             APMAN_PUTC
+                        LDY             #$00
+APMAN_DUMP_BYTE:        LDA             #' '
+                        JSR             APMAN_PUTC
+                        LDA             (PTRL),Y
+                        PHY
+                        JSR             APMAN_HEX
+                        PLY
+                        INY
+                        CPY             #$10
+                        BNE             APMAN_DUMP_BYTE
+                        JSR             APMAN_CRLF
+                        LDA             PTRL
+                        CLC
+                        ADC             #$10
+                        STA             PTRL
+                        DEC             COUNT
+                        BNE             APMAN_DUMP_ROW
+                        RTS
 
 APMAN_PRINT_LOCATION:  LDA             #'B'
                         JSR             APMAN_PUTC
@@ -1229,6 +1343,7 @@ MSG_INSTALLED:         DB              "INST ",0
 MSG_GO:                DB              "GO ",0
 MSG_ARROW:             DB              " -> ",0
 MSG_APS_PREFIX:        DB              "APS ",0
+MSG_APD_PREFIX:        DB              "APD ",0
 MSG_APC:               DB              "APC ",0
 MSG_LEN:               DB              " L=",0
 MSG_AT:                DB              " @",0

@@ -46,6 +46,8 @@ After installation:
 ```text
 APS                         list Bank 0-2 media
 APS B2 APMAN                describe a named carrier
+AP D B2 name                validate and inspect by exported name
+AP D B2 8000                validate and inspect by sector address
 AP B2 name                  load, link, and run it
 AP B2 name 4000             request a destination
 AP L B2 name 4000           load and link without running
@@ -59,6 +61,11 @@ The exact syntax and limits are maintained in the
 
 An APC remains data until OIL validates and loads it. The stored address and
 the BODY load address are different concepts:
+
+Its five AP-v2 sections use canonical **SREIB** order: Seal, Relocations,
+Exports, Imports, Body. SREIB is pronounced approximately “shrybe,” echoing
+German *schreib* (“write”), while remaining a mnemonic for the actual tag
+order rather than another on-media format.
 
 ```text
 bank sector
@@ -83,7 +90,7 @@ APMAN carrier, envelope, staging, and overlay maps are in the
 
 - HIMON owns AP parsing, BODY loading, relocation, resident-import linking,
   entry derivation, and the public AP service.
-- APMAN occupies `$7000-$7B11` while delegated carrier operations are active.
+- APMAN occupies `$7000-$7BF4` while delegated carrier operations are active.
 - Banked media is staged at `$0A00-$19FF`.
 - The HIMON command buffer is at `$7A00`; manager operations shadow it before
   APMAN overwrites its own execution range.
@@ -128,6 +135,7 @@ carrier installation for Bank 3.
 - Current operator sequence: [Operator's Guide](../OPERATORS_GUIDE.md)
 - Current ASM production workflow: [ASM User Guide](../ASM/ASM_USER_GUIDE.md)
 - Current carrier manager proof: [APMAN Board Test](../ASM/APMAN_V1_BOARD_TEST.md)
+- Current read-only carrier inspection proof: [APMAN Inspection](../LOGS/APMAN_INSPECT_2026-09-10.md)
 - Current physical inspector proof: [BANKDUMP Card](../ASM/BANK_DUMP_AP_CARD.md)
 - Board transcripts: [Hardware Test Log](../LOGS/HARDWARE_TEST_LOG.md)
 - Historical `.710` release rail: [OIL .710 Test Plan](../PLANNING/OIL_710_TEST_PLAN.md)

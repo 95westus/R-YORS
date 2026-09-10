@@ -1,12 +1,12 @@
 # Current Capability Matrix
 
 This is the short authority for the live STR8-N, HIMON, and ASM-F2 command
-surfaces. The board currently has these accepted identities; STR8-N and HIMON
-were updated and checked together on COM4 on 2026-09-07:
+surfaces. The board currently has these accepted identities; HIMON was updated
+and checked with the APMAN inspection carrier on COM4 on 2026-09-10:
 
 ```text
 STR8-N 1.32
-HIMON   00.0907(0637)
+HIMON   00.0910(1343)
 ASM-F2  00.0905(2321)
 ```
 
@@ -54,6 +54,7 @@ that transcript.
 | Assemble W65C02 source on the board | ASM-F2 | Current; hardware-accepted | Bounded line, symbol, fixup, relocation, import/export, and RAM budgets |
 | Seal, relocate, package, load, and link AP v2 programs | ASM-F2 + HIMON | Current; hardware-accepted | Loader destinations and package/body ranges must not overlap protected workspaces |
 | Install one named AP carrier per Bank 0-2 sector and use it after reset | APMAN + HIMON | Current; hardware-accepted | Envelope maximum is one 4K sector; this is not packed AP Store storage |
+| Inspect one AP carrier by name or sector address without loading or executing it | APMAN + HIMON `AP D` | Current; hardware-accepted | Prints validated metadata, five section ranges, and exactly the first `$40` envelope bytes |
 | Inventory carrier/store/media roles without mutation | `APS`, BANKAUDIT, BANKDUMP | Current; hardware-accepted | Some deeper inspection is supplied by installed APC utilities, not a resident HIMON dump command |
 | Append, chain, reconstruct, validate, load, and tombstone AP Store objects | AP Store V1 tools | Proven tooling | Focused transient tools and cards are accepted; a consolidated operator manager is not current |
 
@@ -143,8 +144,9 @@ checked by `make -C SRC asm-test`.
 
 The supported simple storage unit is an **AP carrier**: one complete named AP
 v2 envelope at one sector base. APMAN can select a safe erased sector, program
-and verify it, restore Bank 3, list it after reset, and load/link/run it by
-entry name or sector address.
+and verify it, restore Bank 3, list it after reset, inspect its validated
+metadata and bounded envelope prefix with `AP D Bn name|s000`, and load/link/run
+it by entry name or sector address.
 
 **AP Store V1** is a separate append-only managed-object format. Its accepted
 tooling proves identity and role checks, object generations, arbitrary
@@ -247,7 +249,6 @@ gates agree.
 | Possible capability | Why it is plausible | What is still missing |
 | --- | --- | --- |
 | Consolidated AP Store manager | V1 media and transient install/read/plan/delete tools are already hardware-accepted | One persistent menu/dispatcher, frozen overlay map, recovery contract, and complete acceptance pass |
-| Read-only `AP D` carrier inspection | APMAN parsing and BANKDUMP header/page/full-sector inspection already work | Resident/manager command design, bounded output contract, size, tests, and board proof |
 | Scoped automatic external AP/FNV search | Resident FNV lookup and banked carrier validation already exist | Frozen enrollment policy, duplicate/malformed rejection, RAM map, size, and board proof |
 | Managed AP Store compaction | Live/stale/free accounting and append-only generations already exist | Atomic compaction/recovery rules, wear policy, implementation, and destructive board testing |
 | A stable parent-AP/child-AP call ABI | Direct AP loading and manager operation `$04` make chaining mechanically possible | Parent context, scratch ownership, non-overlap, error-return, and reset/bank-restore contracts |

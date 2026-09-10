@@ -182,7 +182,7 @@ B1:F backup, and `Q` rejection through `HSH_NF!`.
   board output rather than schematic-only descriptions. Published as
   `ASM/APMAN_APC_DISSECTION.md`; BANKDUMP provides the accepted read-only
   inspection/dump path for APMAN itself.
-- [ ] Add a read-only APMAN carrier inspection command after that baseline is
+- [x] Add a read-only APMAN carrier inspection command after that baseline is
   hardware-proven. Preferred command shape is `AP D Bn name|s000`: validate
   the selected carrier exactly as `AP` does, print its parsed AP v2 metadata
   and section boundaries, then produce a bounded hexadecimal dump of the
@@ -190,6 +190,16 @@ B1:F backup, and `Q` rejection through `HSH_NF!`.
   The command must never load, execute, erase, program, or alter directory/AP
   Store state. Decide separately whether an optional raw whole-sector dump is
   useful; do not make 4K of `$FF` the default output.
+  APMAN accepts both named and sector-address `AP D`
+  selectors through its existing stage/validate path, reports the five AP-v2
+  section offset ranges, and dumps exactly envelope offsets `$0000-$003F`.
+  The `$0BF5` body ends at `$7BF5`; the `$0C23` package fits one carrier sector.
+  The dedicated host check proves HIMON front-door routing, the `APMAN`
+  self-export, bounded output, and return before load/execute paths. COM4 board
+  proof on 2026-09-10 exercised both selectors, all four rejection rails,
+  `APS`, `AP L`, named `AP`, physical reset, and identical complete post-install
+  and post-test CRC tables. See
+  [the accepted transcript](../LOGS/APMAN_INSPECT_2026-09-10.md).
 - [ ] Implement the accepted
   [scoped HIMON FNV/AP bank search](HIMON_SCOPED_FNV_BANK_SEARCH.md) only after
   the consolidated RAM/overlay map is frozen. The settled design keeps resident
