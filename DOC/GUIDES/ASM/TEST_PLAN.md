@@ -64,6 +64,38 @@ make -C SRC str8-readonly-bank-tools-check
 
 Run `git diff --check` before accepting documentation or source changes.
 
+## HIMON Live USB LED Acceptance (2026-09-10)
+
+Status: host-qualified and board-accepted on COM4.
+
+HIMON's private `HIM_READ_BYTE_BLOCK` now polls
+`BIO_FTDI_READ_BYTE_NONBLOCK`. While no byte is available it resamples PWE#
+through `SYS_CHECK_ENUMERATED` and updates `$21`/`$43` only when the indicated
+host state changes. Host-bearing `$07`, `$0B`, and `$43` remain undisturbed
+while PWE# stays asserted, so a partial-line `$07` remains visible. If PWE#
+deasserts it changes to `$21`; a later assertion changes `$21` to `$43`.
+
+This is HIMON-only policy. STR8-N is unchanged, both raw BIO blocking FNV
+records remain LED-neutral, and ASM-F2 inherits the behavior only through the
+HIMON line-input service vector. Single-character HIMON confirmations call the
+same private wait routine.
+
+The focused `himon-io-led-check` freezes the cooperative loop and both linked
+transition paths in addition to the existing activity veneers, raw FNV
+pointers, service-vector routing, and ROM bound. The candidate ends at
+`_END_DATA=$EE95`, leaving `$016B` bytes below STR8-N at `$F000`; it adds no
+fixed RAM. The focused check and complete `asm-test` suite pass; flash ASM
+remains unchanged at `_END_DATA=$BD95`.
+
+Board acceptance is recorded by the
+[live USB LED board card](../HIMON/HIMON_LIVE_USB_LED_BOARD_TEST_2026-09-10.md).
+The guarded Bank-3 C-E install returned `OK` and cold-entered exact HIMON
+`00.0910(1202)`. The board then accepted live HIMON `$43 -> $21 -> $43`,
+latched-RX `$07 -> $21 -> $43`, ASM-F2 `$43 -> $21 -> $43`, and a harmless
+single-character confirmation `$0B -> $21 -> $43`. Physical RESET returned
+through STR8-N 1.32 and warm-entered the same HIMON identity at `$43`. The
+hardware log retains the exact transcript and operator LED observations.
+
 ## HIMON I/O LED Acceptance (2026-09-06)
 
 ASM-F2 requires no private LED code. Its input routines resolve to HIMON's

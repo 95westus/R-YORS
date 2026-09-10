@@ -6,6 +6,17 @@ Review this checklist before starting any ASM feature implementation. An item
 stays unchecked until its source, regression tests, documentation, resident
 size measurement, and required hardware proof are complete.
 
+### Accepted: live HIMON USB indication
+
+- [x] Replace HIMON's private blocking input call with cooperative nonblocking
+  polling so PWE# changes update `$21`/`$43` during an existing wait. Preserve
+  latched `$07` while the host remains present, cover single-character waits,
+  retain raw FTDI LED neutrality, and let ASM-F2 inherit the behavior through
+  HIMON's line-input service. Source, focused linked-byte checks, documentation,
+  size measurement, and the full host suite agree. COM4 accepted live HIMON
+  `$43/$21/$43`, latched-RX `$07/$21/$43`, ASM-F2 `$43/$21/$43`, confirmation
+  `$0B/$21/$43`, guarded C-E install, and physical-reset recovery on 2026-09-10.
+
 ### Accepted: ASM-F2 text diagnostics
 
 - [x] Replace interactive numeric errors with compact words, preserving the

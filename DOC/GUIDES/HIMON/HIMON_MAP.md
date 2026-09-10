@@ -371,7 +371,7 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Boot/re-enter monitor | reset, trap return, `$8000` handoff | `START`, `MON_REENTER`, `MON_START_INIT` | Owns hardware stack on entry, initializes system I/O, installs active vectors, enters prompt. | This is the normal HIMON path today. STR8 hands normal boot here. |
 | Cold RAM clear | reset path | `MON_COLD_RESET`, `MON_CLEAR_RAM` | Clears RAM through `SYS_RAM_END` (`$7EFF`), then sets reset signature and starts monitor. | `SYS_IO_BASE` (`$7F00`) is the hard stop before memory-mapped I/O. |
 | Vector/trap install | boot-time | `SYS_VEC_SET_NMI_XY`, `SYS_VEC_SET_IRQ_BRK_XY`, `SYS_VEC_SET_IRQ_NONBRK_XY` | Installs HIMON NMI, BRK, and IRQ handlers through system vector helpers. | STR8 should own physical vectors later, with HIMON installing active RAM vectors. |
-| Line input | prompt, loaders, and ASM service vector | `HIM_READ_LINE_ECHO`, `HIM_READ_LINE_ECHO_UPPER`, `HIM_READ_LINE_UPPER`, `HIM_IO_PUBLISH_INPUT_WAIT`, `HIM_IO_RX_ACTIVITY_A` | Blocking FTDI read with exact-case echoed or uppercase modes, backspace, Ctrl-C abort, NUL termination, and latched `$21`/`$43` wait then `$07` RX status. | HIMON commands and `L` retain uppercase input; the ASM-facing vector uses exact-case echo so quoted source bytes survive. Activity stays latched while the editor waits for the next byte. |
+| Line input | prompt, loaders, confirmations, and ASM service vector | `HIM_READ_LINE_ECHO`, `HIM_READ_LINE_ECHO_UPPER`, `HIM_READ_LINE_UPPER`, `HIM_READ_BYTE_BLOCK`, `HIM_IO_PUBLISH_INPUT_WAIT`, `HIM_IO_REFRESH_INPUT_WAIT`, `HIM_IO_RX_ACTIVITY_A` | Private cooperative FTDI polling with exact-case echoed or uppercase line modes, backspace, Ctrl-C abort, NUL termination, live `$21`/`$43` PWE# transitions, and latched `$07` RX status. | HIMON commands and `L` retain uppercase input; the ASM-facing vector uses exact-case echo so quoted source bytes survive. `$07` remains latched while the host remains present and changes to `$21` only if PWE# deasserts. Raw FTDI entries remain unchanged. |
 | Console output | HIMON messages, ASM service vectors, and `BIO_FTDI_PUT_CSTR` | `HIM_IO_TX_ACTIVITY_A`, `HIM_IO_WRITE_*_ACTIVITY`, `HIM_WRITE_HBSTRING` | Publishes `$0B` before entering the raw blocking FTDI output path. | The raw `BIO_FTDI_READ_BYTE_BLOCK` and `BIO_FTDI_WRITE_BYTE_BLOCK` records remain LED-neutral so an application can own all eight Port A bits. |
 | FNV-era command hashing | every command token | `CMD_HASH_TOKEN`, `FNV1A_*`, `MATH_*` | Computes the current HIMON command hash and saves it in command exec state. | FNV32 remains the public command/export identity hash; CRC16 is for compact local/scoped tables and checks. |
 | Catalog scan/dispatch | command execution | `CMD_DISPATCH_HASH`, `CMD_HASH_SCAN_*`, `CMD_HASH_RECORD_*`, `CMD_EXEC_ADDR` | Scans `$8000` through vector boundary for `FN(V\|$80)` records, matches hash, requires executable kind, calls entry. | Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer. |
@@ -622,6 +622,29 @@ run accepted the guarded Bank-3 C-E install, `$43` HIMON and ASM waits, `$07`
 partial-line receive activity in both programs, `$0B` from an ASM program using
 the `$7E08` output vector, and physical-reset recovery to the same HIMON
 identity and `$43` prompt.
+
+2026-09-10 board-accepted live-enumeration slice:
+
+```text
+CODE     $2955 / 10581
+DATA     $0540 /  1344
+TOTAL    $2E95 / 11925
+_END_DATA = $EE95
+HIM_READ_BYTE_HW = $CBA3
+HIM_IO_RX_ACTIVITY_A = $CBAD
+HIM_IO_REFRESH_INPUT_WAIT = $CBC5
+```
+
+This adds 35 bytes and leaves `$016B` bytes below STR8-N. The private blocking
+wait now loops over the nonblocking BIO receive entry and resamples PWE# after
+each empty result. It rewrites the display only on a host-state transition,
+so `$07` remains latched while the host stays present but changes immediately
+to `$21` on disconnect; reconnect changes it to `$43`. The focused linked-byte
+check and complete ASM host suite pass. STR8-N, fixed RAM, service-vector
+shape, and the raw LED-neutral FTDI entries are unchanged. COM4 accepted the
+guarded C-E install, live HIMON wait and latched-RX transitions, inherited
+ASM-F2 transitions, the single-character wait, and physical-reset recovery to
+the same identity and `$43` prompt.
 
 ### Future heartbeat ownership
 

@@ -30,6 +30,7 @@ function Read-Equ([string]$Name) {
 
 $expectedEqu = [ordered]@{
     HIM_LED_PIA_PORTA = 0x7FA0
+    HIM_LED_FLAG_HOST = 0x02
     HIM_LED_STATUS_NO_HOST_WAIT = 0x21
     HIM_LED_STATUS_HOST_INPUT_WAIT = 0x43
     HIM_LED_STATUS_RX_ACTIVITY = 0x07
@@ -88,13 +89,38 @@ function Jsr-Jmp-Bytes([int]$JsrTarget, [int]$JmpTarget) {
         0x4C, ($JmpTarget -band 0xFF), (($JmpTarget -shr 8) -band 0xFF))
 }
 
+function Rel8([int]$FromAfterOperand, [int]$Target) {
+    return (($Target - $FromAfterOperand) -band 0xFF)
+}
+
 $rx = Read-MapSymbol 'HIM_IO_RX_ACTIVITY_A'
 $wait = Read-MapSymbol 'HIM_IO_PUBLISH_INPUT_WAIT'
+$waitPublish = Read-MapSymbol 'HIM_IO_PUBLISH_WAIT'
+$refresh = Read-MapSymbol 'HIM_IO_REFRESH_INPUT_WAIT'
+$refreshNoHost = Read-MapSymbol 'HIM_IO_REFRESH_NO_HOST_WAIT'
+$refreshDone = Read-MapSymbol 'HIM_IO_REFRESH_WAIT_DONE'
 $tx = Read-MapSymbol 'HIM_IO_TX_ACTIVITY_A'
 $sysEnum = Read-MapSymbol 'SYS_CHECK_ENUMERATED'
+$nonblock = Read-MapSymbol 'BIO_FTDI_READ_BYTE_NONBLOCK'
+$readHw = Read-MapSymbol 'HIM_READ_BYTE_HW'
+Assert-Bytes $readHw @(0x20,($nonblock -band 0xFF),(($nonblock -shr 8) -band 0xFF),
+    0xB0,(Rel8 ($readHw + 5) $rx),
+    0x20,($refresh -band 0xFF),(($refresh -shr 8) -band 0xFF),
+    0x80,(Rel8 ($readHw + 10) $readHw)) 'private cooperative input loop'
 Assert-Bytes $rx @(0x48,0xA9,0x07,0x8D,0xA0,0x7F,0x68,0x38,0x60) 'RX activity veneer'
 Assert-Bytes $wait @(0x20,($sysEnum -band 0xFF),(($sysEnum -shr 8) -band 0xFF),
     0x90,0x04,0xA9,0x43,0x80,0x02,0xA9,0x21,0x8D,0xA0,0x7F,0x60) 'input-wait publisher'
+Assert-Bytes $refresh @(0x20,($sysEnum -band 0xFF),(($sysEnum -shr 8) -band 0xFF),
+    0x90,(Rel8 ($refresh + 5) $refreshNoHost),
+    0xAD,0xA0,0x7F,0x29,0x02,
+    0xD0,(Rel8 ($refresh + 12) $refreshDone),
+    0xA9,0x43,
+    0x80,(Rel8 ($refresh + 16) $waitPublish)) 'host-present refresh path'
+Assert-Bytes $refreshNoHost @(0xAD,0xA0,0x7F,0xC9,0x21,
+    0xF0,(Rel8 ($refreshNoHost + 7) $refreshDone),
+    0xA9,0x21,
+    0x80,(Rel8 ($refreshNoHost + 11) $waitPublish)) 'no-host refresh path'
+Assert-Bytes $refreshDone @(0x60) 'unchanged-host refresh return'
 Assert-Bytes $tx @(0x48,0xA9,0x0B,0x8D,0xA0,0x7F,0x68,0x60) 'TX activity veneer'
 
 $wrappers = [ordered]@{
@@ -144,4 +170,4 @@ if ($source -notmatch '(?s)HIM_CHECK_CTRL_C:.*?JSR\s+BIO_FTDI_READ_BYTE_NONBLOCK
 
 $endData = Read-MapSymbol '_END_DATA'
 if ($endData -gt 0xF000) { Fail-Check ('HIMON overlaps STR8-N at ${0:X4}' -f $endData) }
-Write-Host ('HIMON I/O LED check = PASS; wait=$21/$43 rx=$07 tx=$0B; end=${0:X4}; margin=${1:X4}' -f $endData, (0xF000 - $endData))
+Write-Host ('HIMON I/O LED check = PASS; live wait=$21/$43 rx=$07 tx=$0B; end=${0:X4}; margin=${1:X4}' -f $endData, (0xF000 - $endData))

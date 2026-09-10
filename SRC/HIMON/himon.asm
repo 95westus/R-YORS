@@ -1347,7 +1347,12 @@ HIM_READ_BYTE_BLOCK:
                         LDA             HIM_RX_BYTE
                         BRA             HIM_IO_RX_ACTIVITY_A
 HIM_READ_BYTE_HW:
-                        JSR             BIO_FTDI_READ_BYTE_BLOCK
+; Keep the host indication current while this private HIMON wait owns the
+; display.  The stable raw blocking BIO entry remains LED-neutral.
+                        JSR             BIO_FTDI_READ_BYTE_NONBLOCK
+                        BCS             HIM_IO_RX_ACTIVITY_A
+                        JSR             HIM_IO_REFRESH_INPUT_WAIT
+                        BRA             HIM_READ_BYTE_HW
 HIM_IO_RX_ACTIVITY_A:
                         PHA
                         LDA             #HIM_LED_STATUS_RX_ACTIVITY
@@ -1365,6 +1370,25 @@ HIM_IO_PUBLISH_NO_HOST_WAIT:
                         LDA             #HIM_LED_STATUS_NO_HOST_WAIT
 HIM_IO_PUBLISH_WAIT:
                         STA             HIM_LED_PIA_PORTA
+                        RTS
+
+HIM_IO_REFRESH_INPUT_WAIT:
+                        JSR             SYS_CHECK_ENUMERATED
+                        BCC             HIM_IO_REFRESH_NO_HOST_WAIT
+; Host-bearing states already describe current enumeration.  In particular,
+; retain visible RX activity until PWE# actually changes.
+                        LDA             HIM_LED_PIA_PORTA
+                        AND             #HIM_LED_FLAG_HOST
+                        BNE             HIM_IO_REFRESH_WAIT_DONE
+                        LDA             #HIM_LED_STATUS_HOST_INPUT_WAIT
+                        BRA             HIM_IO_PUBLISH_WAIT
+HIM_IO_REFRESH_NO_HOST_WAIT:
+                        LDA             HIM_LED_PIA_PORTA
+                        CMP             #HIM_LED_STATUS_NO_HOST_WAIT
+                        BEQ             HIM_IO_REFRESH_WAIT_DONE
+                        LDA             #HIM_LED_STATUS_NO_HOST_WAIT
+                        BRA             HIM_IO_PUBLISH_WAIT
+HIM_IO_REFRESH_WAIT_DONE:
                         RTS
 
 ; Private HIMON/ASM-F2 console veneers.  The shared raw FTDI services retain

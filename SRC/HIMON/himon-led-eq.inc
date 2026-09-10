@@ -7,6 +7,7 @@
 ; ----------------------------------------------------------------------------
 
 HIM_LED_PIA_PORTA              EQU             $7FA0
+HIM_LED_FLAG_HOST              EQU             $02
 
 HIM_LED_STATUS_NO_HOST_WAIT    EQU             $21
 HIM_LED_STATUS_HOST_INPUT_WAIT EQU             $43

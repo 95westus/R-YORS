@@ -25945,3 +25945,92 @@ BANKAUDIT package again printed all 32 CRCs, restored Bank 3, and returned
 `A=$AC` with carry set. Exact hashes and the new append-only transcript are
 recorded in
 [FINAL_RELEASE_BOARD_TEST_2026-09-07.md](FINAL_RELEASE_BOARD_TEST_2026-09-07.md).
+
+## 2026-09-10: HIMON live USB LED polling accepted on COM4
+
+The host-qualified HIMON-only cooperative-polling candidate was installed
+through STR8-N 1.32. Reviewed artifacts were:
+
+```text
+HIMON candidate                  00.0910(1202)
+transfer                         SRC/BUILD/s19/himon-apv2-bank3-c-e.s19
+transfer SHA-256                 ED749822BAA6174AD67190B5F661C5A9BC5BA0E234FDC5C84292CE791A8F17A4
+HIMON ROM S19 SHA-256            134CCF194AC695CBA0A2ABE719C599422BB1756C694ADFFC3A7D7D04E1DD65DA
+HIMON 32K BIN SHA-256            D1FBA7549B358BC52C25F4D366DDCDEDF002FFE64F317CC70C1F58900CB5D6BD
+range / S9                       $C000-$EFFF / $C000
+resident end / margin            $EE95 / $016B
+```
+
+An initial `I` was mistakenly sent at the reset selector rather than the
+STR8-N shell. It was rejected before any `B0-3`, range, confirmation, or S19
+phase and returned safely to HIMON with `HSH_NF!`; no flash path opened. The
+retry waited through reset quarantine, selected `S`, and reached the shell:
+
+```text
+STR8
+RUN STR8: BOOTLOADER @C15A K=03 ? Y
+RST S
+
+STR8-N 1.32
+0-2 C W S: S
+I L C W J
+STR8-N>
+```
+
+The guarded install selected only Bank 3 sectors C-E. The two pre-commit dots,
+separate confirmation, final dot, and `OK` were observed:
+
+```text
+STR8-N>I
+B0-3: 3
+RANGE: C-E
+I B3 C-E WRITE? Y: Y
+S19
+..COMMIT? Y: Y.
+OK
+STR8-N>C
+BOOT COLD
+
+HIMON V 00.0910(1202)
+>
+```
+
+The operator confirmed `$43` at the existing HIMON prompt. Windows Device
+Manager, **View -> Devices by connection**, was used to disable the FTDI
+**USB Serial Converter** parent `USB\\VID_0403&PID_6001\\A10MQFLC`, not the
+COM4 child or hub. USB power remained present. With no input and no new prompt,
+the LEDs changed `$43 -> $21`; re-enable changed `$21 -> $43`.
+
+A single partial `X` then latched `$07`. Disabling and re-enabling the same
+converter produced `$07 -> $21 -> $43`, proving that activity remains latched
+while PWE# stays asserted but yields to a real host-state transition.
+
+The partial line was cancelled and ASM-F2 `00.0907(0959)` entered its existing
+`ASM>$2000:` wait. The operator confirmed `$43 -> $21 -> $43` without source
+input, accepting inheritance through the unchanged HIMON service-vector
+surface. Back in HIMON, the harmless `RUN STR8: BOOTLOADER @C15A K=03 ?`
+single-character wait showed `$0B -> $21 -> $43` and was declined. This proves
+that the shared private byte wait polls even when the preceding TX state stays
+visible.
+
+Both raw BIO blocking FNV records remain linked directly to their byte-exact
+LED-neutral entries. The current change is confined to HIMON's private caller,
+so the accepted 2026-09-06 raw-service application-ownership proof applies
+unchanged.
+
+The final physical RESET was captured from before reset through recovery:
+
+```text
+RST H
+
+STR8-N 1.32
+0-2 C W S:
+BOOT WARM
+
+HIMON V 00.0910(1202)
+>
+```
+
+The final prompt displayed `$43`. Result: accepted for live HIMON wait,
+latched-RX, ASM-F2 inherited line wait, single-character wait, guarded C-E
+install, raw-service ownership, and physical-reset recovery.
