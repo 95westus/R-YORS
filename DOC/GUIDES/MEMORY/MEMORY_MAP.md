@@ -82,8 +82,8 @@ $8000-$BD2A   ASM-F2 low-flash image, entry $800C
 $BD2B-$BFFF   current low-flash growth margin; no carrier storage in Bank 3
 $C000-$EE11   HIMON body, including resident AP-v2 linker/APMAN bootstrap
 $EE12-$EFFF   current image gap inside the E sector
-$F000-$FD45   STR8-N v1.32 resident supervisor, installer, loader, and services
-$FD46-$FD4F   currently available resident growth, 10 bytes
+$F000-$FD41   STR8-N v1.32 resident supervisor, installer, loader, and services
+$FD42-$FD4F   currently available resident growth, 14 bytes
 $FD50-$FFAF   stored unified STR8-N RAM worker, copied to $0200-$045F
 $FFB0-$FFEF   fixed V1 directory, erased in a new primary image
 $FFF0-$FFF9   STR8 config pocket

@@ -69,8 +69,8 @@ $8000-$BD2A   ASM-F2, entry $800C
 $BD2B-$BFFF   low-flash growth margin
 $C000-$EE11   HIMON
 $EE12-$EFFF   HIMON growth margin
-$F000-$FD45   standalone STR8-N v1.32 resident
-$FD46-$FD4F   available 10-byte growth margin
+$F000-$FD41   standalone STR8-N v1.32 resident
+$FD42-$FD4F   available 14-byte growth margin
 $FD50-$FFAF   stored unified STR8-N worker, runs at $0200-$045F
 $FFB0-$FFEF   bank directory
 $FFF0-$FFF9   configuration pocket

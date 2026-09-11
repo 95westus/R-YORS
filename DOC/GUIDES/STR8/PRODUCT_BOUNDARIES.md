@@ -35,7 +35,7 @@ external manifest before assembling HIMON. Release builds additionally reject
 a dirty STR8-N worktree.
 
 This is an exact image lock, not a minimum-version check. The accepted 1.32
-resident ends at `$FD45` with a 10-byte margin before its stored RAM worker.
+resident ends at `$FD41` with a 14-byte margin before its stored RAM worker.
 Its private loader paths publish the shared PIA LED status vocabulary while
 the public raw console services remain LED-neutral. The top-sector and public
 contract hashes are pinned explicitly. Future versions or different binaries
