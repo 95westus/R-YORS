@@ -474,6 +474,74 @@ if ($ramStart -lt $selectorEnd -or ($ramStart + $size) -gt 0x0A00) {
 }
 
 $image = Read-S19Memory
+
+# The resident MICROCHESS FNV command is deliberately only a launcher. It
+# copies one exact, NUL-terminated APMAN command into HIMON's command page,
+# restores the ordinary parser pointer/length contract, and tail-enters CMD_AP.
+$microFnv = Read-MapSymbol 'CMD_MICROCHESS_FNV'
+$microEntry = Read-MapSymbol 'CMD_MICROCHESS'
+$microCopy = Read-MapSymbol 'CMD_MICROCHESS_COPY'
+$microLine = Read-MapSymbol 'CMD_MICROCHESS_LINE'
+$microLineEnd = Read-MapSymbol 'CMD_MICROCHESS_LINE_END'
+$microText = Read-MapSymbol 'TXT_MICROCHESS'
+$cmdAp = Read-MapSymbol 'CMD_AP'
+$cmdBuf = Read-MapSymbol 'CMD_BUF'
+$cmdLen = Read-MapSymbol 'CMD_LEN'
+$cmdPtrLo = Read-MapSymbol 'CMDP_PTR_LO'
+$cmdPtrHi = Read-MapSymbol 'CMDP_PTR_HI'
+$microCommand = [System.Text.Encoding]::ASCII.GetBytes("AP B1 MICROCHESS`0")
+if ($microEntry -ne ($microFnv + 12) -or
+        $microLineEnd -ne ($microLine + $microCommand.Length)) {
+    Fail-Check 'MICROCHESS FNV/entry/command extents are invalid'
+}
+$microRecord = [byte[]](
+    0x46,0x4E,0xD6,0xD5,0xE8,0xEB,0x34,0x05,
+    ($microEntry -band 0xFF),(($microEntry -shr 8) -band 0xFF),
+    ($microText -band 0xFF),(($microText -shr 8) -band 0xFF)
+)
+for ($i = 0; $i -lt $microRecord.Length; $i++) {
+    if (-not $image.Present[$microFnv + $i] -or
+            $image.Memory[$microFnv + $i] -ne $microRecord[$i]) {
+        Fail-Check ('MICROCHESS FNV record differs at +${0:X2}' -f $i)
+    }
+}
+$microTextBytes = [byte[]](0x4D,0x49,0x43,0x52,0x4F,0x43,0x48,0x45,0x53,0xD3)
+for ($i = 0; $i -lt $microTextBytes.Length; $i++) {
+    if (-not $image.Present[$microText + $i] -or
+            $image.Memory[$microText + $i] -ne $microTextBytes[$i]) {
+        Fail-Check ('MICROCHESS catalog text differs at +${0:X2}' -f $i)
+    }
+}
+for ($i = 0; $i -lt $microCommand.Length; $i++) {
+    if (-not $image.Present[$microLine + $i] -or
+            $image.Memory[$microLine + $i] -ne $microCommand[$i]) {
+        Fail-Check ('MICROCHESS command text differs at +${0:X2}' -f $i)
+    }
+}
+$microLauncher = [byte[]](
+    0xA2,($microCommand.Length - 1),
+    0xBD,($microLine -band 0xFF),(($microLine -shr 8) -band 0xFF),
+    0x9D,($cmdBuf -band 0xFF),(($cmdBuf -shr 8) -band 0xFF),
+    0xCA,
+    0x10,(($microCopy - ($microEntry + 11)) -band 0xFF),
+    0xA9,($microCommand.Length - 1),
+    0x8D,($cmdLen -band 0xFF),(($cmdLen -shr 8) -band 0xFF),
+    0xA9,($cmdBuf -band 0xFF),
+    0x85,$cmdPtrLo,
+    0xA9,(($cmdBuf -shr 8) -band 0xFF),
+    0x85,$cmdPtrHi,
+    0x4C,($cmdAp -band 0xFF),(($cmdAp -shr 8) -band 0xFF)
+)
+if ($microLine -ne ($microEntry + $microLauncher.Length)) {
+    Fail-Check 'MICROCHESS launcher extent differs from its checked byte model'
+}
+for ($i = 0; $i -lt $microLauncher.Length; $i++) {
+    if (-not $image.Present[$microEntry + $i] -or
+            $image.Memory[$microEntry + $i] -ne $microLauncher[$i]) {
+        Fail-Check ('MICROCHESS launcher differs at +${0:X2}' -f $i)
+    }
+}
+
 $relocMemory = [byte[]]::new(0x10000)
 [Array]::Copy($image.Memory, $relocMemory, $relocMemory.Length)
 $relocPtrLo = Read-MapSymbol 'CMDP_PTR_LO'

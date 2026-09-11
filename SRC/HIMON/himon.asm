@@ -689,6 +689,26 @@ CMD_USAGE_G:
 ; AP pkg dst -- load an AP package body to RAM and run dst.
 ; V0 contract: the package ENTRY is at BODY offset zero.
 ; ----------------------------------------------------------------------------
+CMD_MICROCHESS_FNV:
+                        DB              'F','N',CMD_FNV_SIG2,$D5,$E8,$EB,$34,CMD_HASH_KIND_EXEC_TEXT ; MICROCHESS $34EBE8D5 EXEC+TEXT
+                        DW              CMD_MICROCHESS
+                        DW              TXT_MICROCHESS
+CMD_MICROCHESS:
+                        LDX             #(CMD_MICROCHESS_LINE_END-CMD_MICROCHESS_LINE-1)
+CMD_MICROCHESS_COPY:    LDA             CMD_MICROCHESS_LINE,X
+                        STA             CMD_BUF,X
+                        DEX
+                        BPL             CMD_MICROCHESS_COPY
+                        LDA             #(CMD_MICROCHESS_LINE_END-CMD_MICROCHESS_LINE-1)
+                        STA             CMD_LEN
+                        LDA             #<CMD_BUF
+                        STA             CMDP_PTR_LO
+                        LDA             #>CMD_BUF
+                        STA             CMDP_PTR_HI
+                        JMP             CMD_AP
+CMD_MICROCHESS_LINE:    DB              "AP B1 MICROCHESS",0
+CMD_MICROCHESS_LINE_END:
+
 CMD_AP_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$94,$37,$D5,$3A,CMD_HASH_KIND_EXEC ; AP $3AD53794 EXEC
 CMD_AP:
@@ -4983,6 +5003,7 @@ TXT_SYS_READ_CSTRING_ECHO_UPPER:
                         DB              "READ UPPE",('R'+$80)
 TXT_BIO_FTDI_PUT_CSTR:   DB              "PUT CST",('R'+$80)
 TXT_STR8:                DB              "STR8: BOOTLOADE",('R'+$80)
+TXT_MICROCHESS:          DB              "MICROCHES",('S'+$80)
 MSG_PROMPT:              DB              ('>'+$80)
 MSG_UNKNOWN:             DB              ('?'+$80)
 MSG_HASH_NF:             DB              " HSH_NF",('!'+$80)

@@ -164,6 +164,7 @@ flowchart TD
     DISPATCH --> G[G CMD_G]
     DISPATCH --> AP[AP CMD_AP]
     DISPATCH --> APS[APS CMD_APS]
+    DISPATCH --> MICRO[MICROCHESS CMD_MICROCHESS]
     DISPATCH --> L[L CMD_L]
     DISPATCH --> B[B CMD_B]
     DISPATCH --> N[N CMD_N]
@@ -377,13 +378,14 @@ revised; new bulk mutation should use full words such as `COPY`, `FILL`,
 | Catalog scan/dispatch | command execution | `CMD_DISPATCH_HASH`, `CMD_HASH_SCAN_*`, `CMD_HASH_RECORD_*`, `CMD_EXEC_ADDR` | Scans `$8000` through vector boundary for `FN(V\|$80)` records, matches hash, requires executable kind, calls entry. | Current record entry is immediate after kind byte. Future records can grow an explicit entry pointer. |
 | Catalog inspection | `#`, `# token` | `CMD_HASH_INFO`, `CMD_HASH_LIST`, `CMD_HASH_FIND`, `CMD_HASH_PRINT_*` | Lists catalog records or shows one token hash/entry/kind. | This is the master runtime catalog view. |
 | PACK40 service | service vectors | `HIM_PACK40_ASCII_TO_CODE`, `HIM_PACK40_PACK3` | Converts ASCII to base-40 codes and packs three base-40 codes into the AP metadata word. | Published through `$7E1F-$7E22`; flash ASM calls this for IMPORT/EXPORT metadata so the encoder is not duplicated in low flash. |
-| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes built-in commands: `# ? D M R X G AP APS L B N STR8`. |
+| Help | `?` | `CMD_HELP` | Prints current command list. | Help text includes built-in commands: `# ? D M R X G AP APS L B N STR8`; named catalog entries belong in `#`. |
 | Memory dump | `D start [end]` | `CMD_D`, `CMD_D_PARSE_RANGE`, `MON_PRINT_MEM_RANGE` | Dumps one byte when `end` is omitted, or an inclusive absolute range when `end` is present. | Bare `D`, short relative end tokens, continuation, and byte/text search were removed in the resident-size pass. An explicit end must be greater than start; `$7F00-$7FFF` is still reported as I/O rather than read as ordinary RAM. |
 | Memory modify | `M start [end|+count]` | `CMD_M`, `MON_MODIFY_RANGE` | Prompts each byte, writes only below monitor workspace, `.` aborts. | Protected ranges from `$7A00` upward report `M PROT=$hhhh`; this is stricter than the hard `$7EFF` RAM ceiling. Current short mutator remains under review; future bulk fill should be `FILL start end|+count bb`, not an `M` subform. |
 | Register display/edit | `R [regs]` | `CMD_R`, `MON_CTX_REQUIRE_VALID`, `MON_CTX_PARSE_ASSIGN_LIST`, `MON_PRINT_STOP_AND_REGS` | Requires trapped context, optionally updates A/X/Y/P/S/PC, then prints context. | Context comes from NMI/BRK capture; the active POC NMI vector eats bounce during a short software debounce window. |
 | Resume trapped context | `X [regs]` | `CMD_X`, `MON_CTX_RESUME_RTI` | Requires context, optionally edits regs, rebuilds stack frame, then `RTI`s. | This is why HIMON must be disciplined about the hardware stack. |
 | Go to address | `G start` | `CMD_G` | Parses address, saves exec entry, prints go address, jumps indirectly. | Return reporting only happens if called through command record or loader-go path. |
 | AP package/carrier run | `AP pkg dst`; `AP Bn name\|s000 [dst]`; `AP L ...` | `CMD_AP`, `HIM_APMAN_BOOTSTRAP`, APMAN `APMAN_COMMAND_AP` | The direct form validates and loads a visible envelope. Bank/name/address forms discover APMAN, stage and validate one bank sector, load/link the body below `$7000`, and either run it or return after load-only. | APMAN rejects its own `AM01` carrier as a child and restores Bank 3 around bank access. Named carrier execution is board-accepted. |
+| MicroChess launcher | `MICROCHESS` | `CMD_MICROCHESS_FNV`, `CMD_MICROCHESS` | Copies `AP B1 MICROCHESS` into the command page and tail-enters `CMD_AP`. | FNV `$34EBE8D5`, K05 EXEC+TEXT so bare `#` names it; fixed to Bank 1 and inherits the normal APMAN validation/failure path. |
 | AP status/list/detail | `APS`; `APS Bn`; `APS Bn name\|s000` | `CMD_APS`, `HIM_APMAN_BOOTSTRAP`, APMAN `APMAN_COMMAND_APS` | Delegates to APMAN. Bare `APS` prints the 24 Bank 0-2 storage sectors with erased/unmanaged/managed/APC/WORK/backup states. Bank/detail forms list or inspect validated carriers. | Read-only. The accepted board has APMAN at B2:8 and BANKDUMP at B2:9; BANKDUMP `M` supplies the complete Bank 0-3 physical map. |
 | Enter STR8 | `STR8` | `CMD_STR8_FNV` | Hash-record alias for `$F000`; confirms, then jumps into the resident STR8 entry without typing `G F000`. | Token hash is `$A2AD0E18`; kind is `K03`; display text is `STR8: BOOTLOADER`. STR8's separate identity marker remains `#5F6A0F7A`. |
 | S-record load to RAM | `L` | `CMD_L`, `L_STR8_REQUIRE_SERVICE`, `L_PARSE_RECORD_STR8`, `L_VALIDATE_RAM_SPAN` | Requires STR8-N `SR/02`, submits each complete line to `$F009`, copies only a validated S1 descriptor, tracks the byte count, and reports the S9 entry without executing it. A fatal error latches failure, suppresses later S1 writes, and quenches through S9 or Ctrl-C; earlier accepted records remain in RAM. | Missing/incompatible STR8-N reports `LERR=$03` before receive. Every nonempty span touching `$7A00-$FFFF` reports `LERR=$02`; `L G` and `L F` remain invalid. |
@@ -645,6 +647,93 @@ shape, and the raw LED-neutral FTDI entries are unchanged. COM4 accepted the
 guarded C-E install, live HIMON wait and latched-RX transitions, inherited
 ASM-F2 transitions, the single-character wait, and physical-reset recovery to
 the same identity and `$43` prompt.
+
+2026-09-10 board-proven MicroChess launcher slice:
+
+```text
+CODE     $29AA / 10666
+DATA     $054C /  1356
+TOTAL    $2EF6 / 12022
+_END_DATA = $EEF6
+CMD_MICROCHESS_FNV = $C390
+CMD_MICROCHESS = $C39C
+MICROCHESS command hash = $34EBE8D5
+```
+
+The K05 launcher consumes 66 bytes: a 12-byte record with entry/text pointers,
+27-byte copy/tail dispatcher, 17-byte NUL-terminated `AP B1 MICROCHESS`
+command, and 10-byte high-bit-terminated catalog name. The resulting image
+leaves `$010A` (266) bytes below STR8-N at `$F000`. Host checks compare the
+exact record, pointers, catalog text, launcher instructions, and command
+bytes. COM4 acceptance requires bare `#` to print `MICROCHESS`, direct lookup,
+bare launch through B1:9, MicroChess `H`, and `Q` return. Physical-reset
+repetition remains open.
+
+### Proposed shared FNV AP-alias launcher
+
+The current MicroChess alias is intentionally self-contained. Before adding a
+second AP alias, replace its dedicated command-copy body with one shared
+resident launcher. This is a documented design, not a current ABI or accepted
+command surface.
+
+Each alias uses a K05 EXEC+TEXT record whose entry pointer names the common
+launcher and whose extra pointer names the high-bit-terminated catalog/AP
+name. For a launcher that can target any application bank, store one bank
+digit immediately before the text while keeping the extra pointer on the text:
+
+```text
+ALIAS_FNV:
+  FN(V|$80), hash32, K05, DW AP_ALIAS_LAUNCH, DW ALIAS_TEXT
+ALIAS_META:
+  DB '1'
+ALIAS_TEXT:
+  DB "NAM",('E'|$80)
+```
+
+This preserves the catalog behavior: bare `#` prints `NAME`, `# NAME` shows
+the same K05 entry, and `?` remains only the compact built-in help. The first
+version of this contract requires the command token, catalog text, and AP
+export name to be identical uppercase ASCII. The metadata bank must be `0`,
+`1`, or `2`.
+
+Direct hash dispatch does not currently promise `CMD_HASH_EXTRA_LO/HI` to a
+called command, although `THE_JOIN_EXEC` does. The refactor must therefore
+make direct dispatch call `CMD_HASH_RECORD_EXTRA` before `CMD_EXEC_ADDR` and
+document that pointer as part of the internal command-entry contract. The
+shared launcher then:
+
+1. rejects a missing/non-K05 extra pointer, invalid bank, overlong name, or
+   missing high-bit terminator;
+2. writes `AP Bn ` plus the catalog name, with bit 7 removed, and a NUL into
+   `CMD_BUF`;
+3. sets `CMD_LEN` and `CMDP_PTR_LO/HI`; and
+4. tail-enters `CMD_AP`, preserving the existing APMAN validation, load,
+   linking, error, Bank-3 restoration, and return behavior.
+
+Do not let the shared path execute arbitrary text or bypass the AP parser.
+The metadata is immutable resident data associated with the matched FNV
+record; user-supplied trailing arguments are not part of the generated AP
+command.
+
+Per-alias storage is exactly 12 bytes for the K05 record, one bank byte, and
+`N` bytes for an `N`-character name: `13+N` bytes, or 23 bytes for a
+ten-character name such as `MICROCHESS`. If every alias is permanently Bank
+1, the bank byte can be omitted and the cost is `12+N`. The common launcher's
+one-time linked size must be measured rather than estimated before accepting
+the refactor; the existing dedicated MicroChess form remains the size and
+hardware authority until then.
+
+Acceptance requires exact-byte checks for every record/pointer/metadata row,
+duplicate-hash and name-bound tests, invalid bank/name/termination failures,
+two or more aliases proving the same entry with distinct metadata, `#` and
+direct lookup output, successful launch/return for each carrier, missing and
+malformed carrier failures, Bank-3 restoration, full host regression, and a
+physical-reset board run.
+
+An install-time `ALIAS` option requires persistent provider metadata in
+addition to this fixed-image launcher. That lifecycle is owned by the sibling
+R-YORS II (Junior) architecture repository; current R-YORS `INSTALL` does not
+create an alias.
 
 ### Future heartbeat ownership
 

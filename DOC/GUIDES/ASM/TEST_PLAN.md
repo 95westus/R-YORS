@@ -98,12 +98,12 @@ and the run did not include a physical RESET, so those two gates remain open.
 
 ## Microchess AP Host Qualification
 
-Status: help-enabled build board-qualified for onboard assembly, AP-v2
-packaging, RAM load/link/entry, board rendering, and exact `H` command,
-copyright, and AI-assistance output. The preceding build is board-qualified
-for gameplay, Bank-1 carrier installation, discovery, installed execution,
-and physical-reset recovery. Installing the help-enabled build and proving
-its named discovery/execution after physical reset remain pending.
+Status: help-enabled `$06A6` build board-qualified for onboard assembly,
+AP-v2 packaging, RAM and `B1:9000` carrier load/link/entry, named discovery,
+board rendering, exact `H` output, and `Q` return. The resident 66-byte
+`MICROCHESS` launcher is host-checked and hardware-proven under HIMON
+`00.0910(2121)`. Physical-reset persistence of this exact build remains
+pending.
 
 The `microchess` target builds Peter Jennings' engine as a fixed `$2000`
 AP-v2 BODY and stages its envelope at `$3000`. Its focused structural check
@@ -127,6 +127,16 @@ expected `$06A6` package, entered it through `AP 3000 2000`, and printed all
 three required `H` lines exactly. Its transcript ends after entering the four
 digits of the human move, before Return or `Q`; those runtime paths remain
 covered by the host smoke and the preceding-build board run.
+
+A later COM4 run erased only obsolete carrier sector B1:9, installed the
+current `$06A6` package at the same address, and proved `APS B1 MICROCHESS`,
+`AP B1 MICROCHESS`, exact `H`, and `Q`. Guarded STR8-N 1.33 C-E updates first
+proved the K01 launcher, then installed the corrected K05 HIMON
+`00.0910(2121)`. `?` retained compact command help; bare `#` printed
+`34EBE8D5 C39C 05 MICROCHESS`, and `# MICROCHESS` resolved the same entry.
+Bare `MICROCHESS` printed `AP LOAD B1
+9000 -> 2000`, entered the application, printed the exact help disclosure,
+and returned through `Q`. No physical RESET occurred after these writes.
 
 Run `git diff --check` before accepting documentation or source changes.
 

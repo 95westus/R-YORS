@@ -1,11 +1,11 @@
 # Microchess AP
 
-Status: the help-enabled build is board-qualified for onboard assembly, AP-v2
-packaging, RAM load/link/entry, board rendering, and exact `H` command,
-copyright, and AI-assistance output. The preceding build was board-qualified
-for gameplay, Bank-1 carrier installation, discovery, installed execution,
-and physical-reset recovery. The help-enabled build still requires carrier
-installation and named discovery/execution after physical RESET.
+Status: the help-enabled `$06A6` build is installed at `B1:9000` and is
+board-qualified for onboard assembly, AP-v2 packaging, RAM and carrier
+load/link/entry, named discovery, board rendering, exact `H` output, and `Q`
+return. HIMON `00.0910(2121)` also provides a hardware-proven bare
+`MICROCHESS` launcher. A physical-reset persistence run remains the final
+acceptance gate for this exact carrier/launcher combination.
 
 This is the complete implementation and routine guide for the R-YORS port of
 Peter Jennings' Microchess. The application is a fixed-load AP-v2 package: its
@@ -212,6 +212,32 @@ APS B1 hhhh APC MICROCHESS L=06A6 @2000
 >AP B1 MICROCHESS
 GO 2000
 ```
+
+The current HIMON also provides the short launch form:
+
+```text
+>MICROCHESS
+AP LOAD B1 9000 -> 2000
+GO 2000
+```
+
+`MICROCHESS` is a resident K05 EXEC+TEXT record with FNV-1a-32 `$34EBE8D5`.
+Its 66-byte implementation consists of the record/pointers, catalog text, a
+launcher that copies the exact NUL-terminated command `AP B1 MICROCHESS` into
+HIMON's command page, and a tail entry into the ordinary `AP` parser. It is
+deliberately pinned to Bank 1 and inherits APMAN's normal missing, malformed,
+import, and load failures; it is not a second package loader or registry.
+Bare `#` lists `MICROCHESS`, while `# MICROCHESS` resolves its exact entry.
+The linked HIMON end is `$EEF6`, leaving `$010A` (266) bytes below `$F000`.
+
+The current alias remains deliberately dedicated. Before adding another AP
+command alias, use the proposed shared K05 launcher contract in the
+[HIMON map](../HIMON/HIMON_MAP.md#proposed-shared-fnv-ap-alias-launcher).
+That design keeps names in `#`, leaves `?` as built-in help, and reduces each
+generalized additional alias to a 12-byte record, one bank byte, and one copy
+of its catalog/AP name. A later `INSTALL ... ALIAS` path is separately owned
+by the sibling R-YORS II (Junior) architecture repository. Neither the shared
+launcher nor install-time alias registration is implemented yet.
 
 At `?`, enter `C` before playing and `Q` to return to HIMON. `AP L B1
 MICROCHESS` is the load-and-link-only form. After a physical reset, repeat
@@ -457,9 +483,13 @@ at `B1:9000`, named discovery, and installed execution. The remaining board
 transcript proves physical-reset recovery, named discovery, and execution of
 that carrier. A later COM4 run proves the help-enabled `$06A6` build's exact
 onboard assembly, RAM package load/link/entry, board rendering, and all three
-`H` output lines. It ends before Return or `Q` and does not install the new
-package. Carrier installation and named discovery/execution after physical
-RESET therefore remain its final board gate.
+`H` output lines. A subsequent COM4 transaction erased only the obsolete
+`B1:9` carrier, installed the current `$06A6` package back at `B1:9000`, and
+proved `APS B1 MICROCHESS`, named `AP B1 MICROCHESS`, exact `H`, and `Q`
+return. After guarded replacement of Bank-3 sectors C-E, bare `MICROCHESS`
+proved the same load, display, help, and return path under HIMON
+`00.0910(2121)`. A physical RESET and repeated discovery/launch remain the
+only open board gate for this exact build.
 
 ## Refreshing From Upstream
 

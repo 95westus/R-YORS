@@ -33,10 +33,32 @@ size measurement, and required hardware proof are complete.
   `$3000`, complete board rendering, opening and human moves, searched reply,
   and `Q` return with `A=$AC/C=1`. The help-enabled build now has exact onboard
   assembly, `$06A6` packaging, RAM load/link/entry, board rendering, and exact
-  `H` command/copyright/AI text proof. Remaining proof: install this build in a
-  carrier, physically reset, then confirm named discovery and execution
-  through STR8-N/HIMON. See
+  `H` command/copyright/AI text proof. A later guarded run erased only the old
+  B1:9 carrier, installed this build at `B1:9000`, and proved named discovery,
+  named execution, exact `H`, and `Q`. HIMON `00.0910(2121)` then proved its
+  bare `MICROCHESS` launcher through the same carrier. The final K05 form also
+  makes bare `#` display the `MICROCHESS` name. Remaining
+  proof: physically reset, then repeat discovery and bare launch. See
   [MICROCHESS_AP.md](../ASM/MICROCHESS_AP.md).
+
+### Candidate: shared FNV AP-alias launcher
+
+- [ ] Replace the dedicated MicroChess command-copy body only when a second AP
+  alias is ready. Use one common launcher plus K05 EXEC+TEXT records. Each
+  generalized alias stores an entry pointer to the common code, an extra
+  pointer to its high-bit catalog/AP name, and one validated `0`-`2` bank byte
+  immediately before that text. Direct command dispatch must publish the
+  record's extra pointer before calling the shared entry. The launcher must
+  build only `AP Bn NAME` in `CMD_BUF` and tail-enter `CMD_AP`, so all APMAN
+  validation and restoration rails remain authoritative. Expected per-alias
+  data is `13+N` bytes for an `N`-character name; measure the shared routine
+  and total linked break-even before implementation. Require two-alias host
+  and board proof, exact `#` names/lookups, malformed metadata and carrier
+  failures, launch/return, Bank-3 restoration, full regression, and physical
+  RESET. See the
+  [shared-launcher design](../HIMON/HIMON_MAP.md#proposed-shared-fnv-ap-alias-launcher).
+  Install-time registration remains R-YORS II architecture work rather than
+  part of this fixed-image refactor.
 
 ### Accepted: live HIMON USB indication
 

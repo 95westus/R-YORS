@@ -2,12 +2,12 @@
 
 This is the short authority for the live STR8-N, HIMON, and ASM-F2 command
 surfaces. The board currently has these accepted identities; HIMON was updated
-and checked with the APMAN inspection carrier on COM4 on 2026-09-10:
+and its MicroChess launcher checked on COM4 on 2026-09-10:
 
 ```text
-STR8-N 1.32
-HIMON   00.0910(1343)
-ASM-F2  00.0905(2321)
+STR8-N 1.33
+HIMON   00.0910(2121)
+ASM-F2  00.0910(1709)
 ```
 
 Historical plans, accepted test cards, transcripts, and story documents may
@@ -54,6 +54,7 @@ that transcript.
 | Assemble W65C02 source on the board | ASM-F2 | Current; hardware-accepted | Bounded line, symbol, fixup, relocation, import/export, and RAM budgets |
 | Seal, relocate, package, load, and link AP v2 programs | ASM-F2 + HIMON | Current; hardware-accepted | Loader destinations and package/body ranges must not overlap protected workspaces |
 | Install one named AP carrier per Bank 0-2 sector and use it after reset | APMAN + HIMON | Current; hardware-accepted | Envelope maximum is one 4K sector; this is not packed AP Store storage |
+| Launch the installed MicroChess carrier with bare `MICROCHESS` | HIMON + APMAN | Current; hardware-accepted except physical-reset repetition | Fixed alias for `AP B1 MICROCHESS`; requires the current carrier in Bank 1 |
 | Inspect one AP carrier by name or sector address without loading or executing it | APMAN + HIMON `AP D` | Current; hardware-accepted | Prints validated metadata, five section ranges, and exactly the first `$40` envelope bytes |
 | Inventory carrier/store/media roles without mutation | `APS`, BANKAUDIT, BANKDUMP | Current; hardware-accepted | Some deeper inspection is supplied by installed APC utilities, not a resident HIMON dump command |
 | Append, chain, reconstruct, validate, load, and tombstone AP Store objects | AP Store V1 tools | Proven tooling | Focused transient tools and cards are accepted; a consolidated operator manager is not current |
@@ -68,7 +69,7 @@ mechanism, but its management experience has not yet been consolidated.
 | Owner | Flash/RAM role | Current operator surface |
 | --- | --- | --- |
 | STR8-N | Reset owner; Bank-3 `$F000-$FFFF`; flash install, recovery, bank handoff, and public resident services | reset selector `0`-`2`, `C`, `W`, `S`; prompt commands `I`, `L`, `C`, `W`, `J0`-`J3` |
-| HIMON | Bank-3 `$C000-$EFFF`; monitor, debugger, catalog/RJOIN host, AP client, and load-only RAM S19 adapter | `?`, `#`, `D`, `M`, `R`, `X`, `G`, `AP`, `APS`, `L`, `B`, `N`, `STR8`, plus catalog commands such as `ASM` |
+| HIMON | Bank-3 `$C000-$EFFF`; monitor, debugger, catalog/RJOIN host, AP client, and load-only RAM S19 adapter | `?`, `#`, `D`, `M`, `R`, `X`, `G`, `AP`, `APS`, `MICROCHESS`, `L`, `B`, `N`, `STR8`, plus catalog commands such as `ASM` |
 | ASM-F2 | Bank-3 `$8000-$BFFF`; onboard W65C02 assembler and AP-v2 producer | `ASM`, `ASM NEW`, `ASM SEAL`; source `.P`, `.`, and source lines through `END`; post-`END` `SEAL`, `RELOCATE`, `PACKAGE`, `LOAD`, `INSTALL`, `NEW`, `.` |
 
 `CHECK` is available only in full-core/package-check diagnostic builds. It is
@@ -114,7 +115,9 @@ HIMON is the current Bank-3 monitor and integration host. It can:
 - load, validate, relocate, and link AP v2 packages, including typed resident
   imports;
 - discover APMAN, inspect Bank 0-2 AP status, and load or run a named or
-  address-selected carrier; and
+  address-selected carrier;
+- launch the current Bank-1 MicroChess carrier through the resident
+  `MICROCHESS` shorthand for `AP B1 MICROCHESS`; and
 - enter ASM-F2 or return control to STR8-N through their published boundaries.
 
 HIMON is not an alternate reset supervisor or flash installer. Its current

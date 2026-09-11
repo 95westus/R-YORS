@@ -26398,3 +26398,77 @@ Result: exact onboard assembly, `$06A6` AP-v2 packaging, RAM load/link/entry,
 board rendering, command handling, and the visible help/copyright/AI text are
 accepted for the help-enabled build. Installing this build in a carrier and
 proving named discovery/execution after physical RESET remain open.
+
+## 2026-09-10 Current MicroChess Install And Bare Launcher On COM4
+
+The live board began at HIMON `00.0910(1709)` with the preceding MicroChess
+carrier at B1:9. Bank Maintenance 1.32 erased only B1:9 after the exact
+`ERASE 19` confirmation. The current onboard source then assembled through
+`$2625`, sealed, and produced the expected `$06A6` package. APMAN installed it
+back into the erased sector:
+
+```text
+SEAL OK
+PKG OK @=$3000 L=$06A6
+INST B1 9000 L=06A6
+APS B1 9000 APC MICROCHESS L=06A6 @2000
+AP LOAD B1 9000 -> 2000
+GO 2000
+```
+
+The installed application rendered the board. `H` printed the exact command,
+copyright, and AI-assistance lines, and `Q` returned to HIMON. The append-only
+install transcript is
+`SRC/BUILD/evidence/microchess-help-install-20260910.jsonl`, 422,367 bytes,
+SHA-256 `F2C948CE53E8EA567D647E00E978E81E794C696050A8F89E65EA6D8778F50F31`.
+
+An intermediate K01 image proved the launch path but left bare `#` without a
+display name. The corrected K05 EXEC+TEXT record adds explicit entry/text
+pointers and high-bit `MICROCHESS` metadata. The complete resident addition
+is 66 bytes for name hash `$34EBE8D5`; linked HIMON ends at `$EEF6` with
+`$010A` bytes free. The final C-E stream was SHA-256
+`FAE7A1C462634A607D0C7A825AB2A576C1E91356C9CC627B4C2575648C0FB420`.
+STR8-N 1.33 replaced only Bank-3 sectors C-E through its guarded installer:
+
+```text
+I B3 C-E WRITE? Y: Y
+S19
+..COMMIT? Y: Y.
+OK
+STR8-N>C
+BOOT COLD
+HIMON V 00.0910(2121)
+```
+
+At that new HIMON prompt, `?` retained its compact help surface. Bare `#` and
+direct lookup displayed the launcher name and K05 identity:
+
+```text
+>?
+#? D M R X G AP APS L B N STR8
+>#
+34EBE8D5 C39C 05 MICROCHESS
+># MICROCHESS
+34EBE8D5 ENTRY=C39C K=05  MICROCHESS
+```
+
+The bare launcher then resolved the installed carrier, entered MicroChess,
+printed the exact help disclosure, and returned cleanly:
+
+```text
+>MICROCHESS
+AP LOAD B1 9000 -> 2000
+GO 2000
+H Help C New E Reverse P Play 0-7 FROMTO Enter Move Q Quit
+(c) 1976 Peter Jennings benlo.com
+R-YORS port AI-assisted with OpenAI Codex; review and hardware-verify.
+>
+```
+
+The final catalog/update transcript is
+`SRC/BUILD/evidence/microchess-alias-catalog-20260910.jsonl`, 134,496 bytes,
+SHA-256 `1D8A0C3A984C261F8DD4CEC6FB02111599CC43E676B2416BB79C5545BA32D35C`.
+An ASM entry check reports the still-installed `ASM-F2 00.0910(1709)` and
+returns through `ASM BYE`. These runs prove the current carrier and resident
+alias after software restart/cold entry. They do not claim physical-reset
+persistence; that is the remaining MicroChess board gate.
