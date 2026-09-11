@@ -503,6 +503,20 @@ start +count    count is the number of bytes
   not permission to execute the first duplicate. Bank 0 catalog lookup remains
   off under `$A6`, while `J0`, BANKDUMP inspection, CRC/audit, and separately
   authorized recovery operations remain distinct and available.
+- B0, B1, and B2 are symmetric policy bits, not permanent bank personalities.
+  `$A6` excludes B0 only for the present WDCMONv2 deployment; `$A7` may enroll
+  it after deliberate operator policy change. An enrolled bank may still mix
+  opaque, reserved, carrier, and managed-store sectors. Enrollment authorizes
+  bounded discovery only, and never converts unknown media or grants mutation.
+- The scoped resident-first rule above is intentionally limited to the first
+  current-HIMON discovery proof. It does not settle R-YORS II dynamic-provider
+  precedence. The proposed later registry assigns a separate provider
+  generation, installs candidates inactive, tests an exact stored generation,
+  commits activation last, permits a higher compatible external generation to
+  shadow a replaceable B3 baseline, retains rollback, and retires logically
+  before physical compaction. That architecture is maintained in the sibling
+  `R-YORS-II` repository at `DOC/DYNAMIC_FNV_PROVIDER_REGISTRY_PROPOSAL.md`;
+  none of it is current command behavior merely because it is documented.
 - Current HIMON proving record shape is:
 
 ```text

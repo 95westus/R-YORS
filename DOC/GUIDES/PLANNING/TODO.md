@@ -210,6 +210,17 @@ B1:F backup, and `Q` rejection through `HSH_NF!`.
   decode, request/allow intersection, proof that `$06` never selects B0,
   format-specific HREC/AP validation, BANKDUMP B2:9 unique resolution, malformed
   and duplicate rejection, size measurement, docs, and board proof.
+- [ ] After the scoped-search proof, implement only a separately frozen bridge
+  to the R-YORS II Dynamic FNV Provider Registry. Its proposal lives in the
+  sibling `R-YORS-II` repository at
+  `DOC/DYNAMIC_FNV_PROVIDER_REGISTRY_PROPOSAL.md`. Keep B0-B2 symmetric under
+  operator enrollment and per-sector managed/opaque validation; treat B3 as the
+  resident/recovery baseline. Before generation-aware behavior is coded, freeze
+  a host oracle for typed identity, global provider generation, inactive
+  candidate install, exact stored-generation test, commit-last activation,
+  rollback, logical retirement, equal-generation ambiguity, and corrupt-newest
+  refusal. Command providers precede AP-import binding; live routine
+  slots/quiescence and physical compaction are later independent gates.
 - [ ] Freeze the new RAM/overlay map, shared-core boundaries, staging ownership,
   return-to-menu contract, and interrupted-operation recovery before coding.
 - [ ] Decide whether compaction, harder confirmation/recovery rails, and a

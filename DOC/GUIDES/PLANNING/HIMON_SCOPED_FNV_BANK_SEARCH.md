@@ -4,6 +4,14 @@ Status: accepted design direction; not current command behavior. No source,
 RAM address, Bank-3 configuration byte, operator command, host check, or board
 proof is complete merely because this contract is documented.
 
+Scope: this is the bounded first external-discovery proof for current HIMON and
+AP carriers. It intentionally preserves resident-first lookup and rejects
+duplicate external names. It is not the final generation-aware replacement
+policy. The sibling R-YORS II planning repository defines that later work in
+`DOC/DYNAMIC_FNV_PROVIDER_REGISTRY_PROPOSAL.md`: B3 becomes a baseline
+provider, while a higher active compatible generation in any operator-enrolled
+B0-B2 managed store may shadow it after candidate testing and atomic promotion.
+
 This plan gives HIMON a bounded way to resolve a public FNV-1a name outside its
 resident Bank-3 catalog. The immediate proving case is `BANKDUMP`: after the
 resident lookup misses, HIMON may find the one fully valid AP-v2 carrier whose
@@ -76,6 +84,12 @@ The initial board policy will become `$A6` only through a separately specified,
 host-checked, full Bank-3:F update and board proof. Until that happens,
 `$FFF2-$FFF9` remain physically erased and unassigned under the current
 implemented configuration contract.
+
+B0, B1, and B2 are symmetric in the policy encoding. `$A6` is the initial
+choice because the present B0 contains opaque WDCMONv2; it is not a permanent
+architectural reservation. An enrolled bank may mix opaque, reserved, carrier,
+and AP Store sectors. Enrollment permits bounded discovery, not mutation, and
+only format-valid candidates are considered.
 
 The `$A6` bit pattern is deliberately flash-conservative:
 
@@ -366,8 +380,18 @@ This design does not:
 - turn BANKDUMP physical inspection into catalog discovery;
 - let a RAM request override persistent flash-bank exclusion;
 - choose a newest AP generation when duplicate public names exist;
+- assign or compare global provider generations;
+- distinguish installed candidates from atomically activated providers;
+- allow an external provider to shadow a resident B3 implementation;
+- quiesce or rebind live routine callers;
 - freeze a public command spelling, RAM ABI address, or service-vector slot;
 - declare `$FFF2` implemented before its update/check/board gate passes.
+
+Those lifecycle and precedence rules belong to the proposed Dynamic FNV
+Provider Registry. Completing this scoped search proves bank policy,
+format-specific validation, uniqueness, restoration, and load/link mechanics
+that the later registry can reuse; it must not freeze resident-first precedence
+as the final R-YORS II behavior.
 
 ## Implementation Slices And Gates
 

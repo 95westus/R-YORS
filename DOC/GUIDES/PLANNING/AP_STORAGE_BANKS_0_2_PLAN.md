@@ -35,6 +35,22 @@ otherwise opaque in every sector not explicitly registered as AP storage.
   erase or reclaim payload bytes. Compaction is deferred.
 - Compression is not required and is outside the initial design.
 
+## Relationship To Dynamic FNV Providers
+
+AP Store V1 supplies durable payload generations, not a global routine-provider
+registry. Its bank/object/generation key reconstructs one exact AP envelope and
+remains distinct from a future provider generation that orders accepted
+implementations of one public FNV identity across B3 and operator-enrolled
+B0-B2 stores.
+
+The sibling R-YORS II planning repository defines that proposed layer in
+`DOC/DYNAMIC_FNV_PROVIDER_REGISTRY_PROPOSAL.md`. It reuses V1's managed/opaque
+sector boundary, commit-last records, validation, exact-generation loading, and
+tombstones, but adds inactive candidate state, exact stored-candidate testing,
+an atomic activation binding, cross-bank provider selection, rollback, and
+later compaction. This reference does not change AP Store V1 media bytes or
+promote registry behavior to current capability.
+
 ## Safety Invariants
 
 1. An unregistered or invalidly identified sector is opaque. AP discovery,
