@@ -125,6 +125,17 @@ LIFE_SRC := $(APPS_DIR)/life.asm
 LIFE_OBJ := $(OBJ_DIR)/$(APPS_DIR)/life.obj
 LIFE_S19 := $(S19_DIR)/life-2000.s19
 LIFE_BIN := $(BIN_DIR)/life-2000-load.bin
+MICROCHESS_SRC := $(APPS_DIR)/microchess-2000.asm
+MICROCHESS_LICENSE := $(APPS_DIR)/MICROCHESS-LICENSE.txt
+MICROCHESS_A := ../DOC/GUIDES/ASM/SAMPLES/microchess-2000.a
+MICROCHESS_OBJ := $(OBJ_DIR)/$(APPS_DIR)/microchess-2000.obj
+MICROCHESS_S19 := $(S19_DIR)/microchess-2000.s19
+MICROCHESS_MAP := $(S19_DIR)/microchess-2000.map
+MICROCHESS_PACKAGE := $(BIN_DIR)/microchess.ap
+MICROCHESS_PACKAGE_S19 := $(S19_DIR)/microchess-ap-3000.s19
+MICROCHESS_CHECK := tools/check_microchess_ap.ps1
+MICROCHESS_A_GEN := tools/write_microchess_a.ps1
+MICROCHESS_ONBOARD_CHECK := tools/check_microchess_onboard.py
 PIA_LED_SHOW_SRC := $(APPS_DIR)/pia-led-show-2000.asm
 PIA_LED_SHOW_OBJ := $(OBJ_DIR)/$(APPS_DIR)/pia-led-show-2000.obj
 PIA_LED_SHOW_S19 := $(S19_DIR)/pia-led-show-2000.s19
@@ -392,6 +403,7 @@ APP_TARGETS ?= \
 	bank-audit \
 	bank-dump \
 	life \
+	microchess \
 	pia-led-show \
 	rom-append-calc
 
@@ -553,6 +565,12 @@ life: $(ROM_LIB) $(LIFE_S19) $(LIFE_BIN)
 	@echo "Built $(LIFE_S19) and $(LIFE_BIN)."
 	@$(MAKE) artifacts
 
+microchess: $(ROM_LIB) $(MICROCHESS_S19) $(MICROCHESS_PACKAGE) $(MICROCHESS_PACKAGE_S19) $(MICROCHESS_A) $(MICROCHESS_CHECK) $(MICROCHESS_LICENSE) $(MICROCHESS_ONBOARD_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_ROM_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(MICROCHESS_CHECK) -SourcePath "$(MICROCHESS_SRC)" -LicensePath "$(MICROCHESS_LICENSE)" -MapPath "$(MICROCHESS_MAP)" -PackagePath "$(MICROCHESS_PACKAGE)"
+	@python $(MICROCHESS_ONBOARD_CHECK) --source "$(MICROCHESS_A)" --host-package "$(MICROCHESS_PACKAGE)"
+	@echo "Built and checked Microchess AP: $(MICROCHESS_S19), $(MICROCHESS_PACKAGE), and $(MICROCHESS_PACKAGE_S19)."
+	@$(MAKE) artifacts
+
 pia-led-show: $(PIA_LED_SHOW_S19) $(PIA_LED_SHOW_A) $(PIA_LED_SHOW_CHECK)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(PIA_LED_SHOW_CHECK) -AsmPath "$(PIA_LED_SHOW_SRC)" -APath "$(PIA_LED_SHOW_A)" -S19Path "$(PIA_LED_SHOW_S19)"
 	@echo "Built and checked $(PIA_LED_SHOW_S19) against $(PIA_LED_SHOW_A)."
@@ -702,7 +720,7 @@ board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(
 release-files: board-s19-check apman bank-audit bank-dump life pia-led-show rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
-asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show asm-ap-v2-check asm-error-check
+asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show microchess asm-ap-v2-check asm-error-check
 	@echo "ASM v1 smoke checks passed."
 
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
@@ -917,6 +935,22 @@ $(LIFE_BIN): $(LIFE_S19)
 	@if not exist $(subst /,\,$(BIN_DIR)) mkdir $(subst /,\,$(BIN_DIR))
 	@echo [ps] build $(LIFE_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$srecCat = (Get-Command srec_cat -ErrorAction Stop).Source; & $$srecCat '$(LIFE_S19)' -motorola -crop 0x2000 0x3000 -offset -0x2000 -o '$(LIFE_BIN)' -binary; if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }; $$bin = [System.IO.File]::ReadAllBytes('$(LIFE_BIN)'); Write-Host ('BIN                      = {0}' -f '$(LIFE_BIN)'); Write-Host ('Load address/bytes       = 2000/{0}' -f $$bin.Length)"
+
+$(MICROCHESS_S19): $(MICROCHESS_OBJ)
+	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
+	$(LINKER) $(TEST_LINKFLAGS) $(MICROCHESS_S19) $(MICROCHESS_OBJ)
+	@echo [ps] set S9 start $$2000 in $(MICROCHESS_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(MICROCHESS_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9032000DC'; Set-Content -Path $$p -Value $$lines"
+
+$(MICROCHESS_A): $(MICROCHESS_SRC) $(MICROCHESS_MAP) $(MICROCHESS_A_GEN)
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(MICROCHESS_A_GEN) -AsmPath "$(MICROCHESS_SRC)" -MapPath "$(MICROCHESS_MAP)" -OutPath "$@"
+
+$(MICROCHESS_PACKAGE): $(MICROCHESS_S19) tools/build_ap_fixed_package.ps1
+	@if not exist $(subst /,\,$(BIN_DIR)) mkdir $(subst /,\,$(BIN_DIR))
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_ap_fixed_package.ps1 -S19Path "$(MICROCHESS_S19)" -MapPath "$(MICROCHESS_MAP)" -PackagePath "$@" -BaseAddress 0x2000 -EntrySymbol MICROCHESS -ExportName MICROCHESS -EndSymbol MICROCHESS_ENGINE_END -Import "BIO_FTDI_READ_BYTE_BLOCK|MICROCHESS_IMP_READ|EXEC;BIO_FTDI_WRITE_BYTE_BLOCK|MICROCHESS_IMP_WRITE_CHAR|EXEC;SYS_WRITE_HEX_BYTE|MICROCHESS_IMP_WRITE_HEX|EXEC"
+
+$(MICROCHESS_PACKAGE_S19): $(MICROCHESS_PACKAGE) tools/build_rom_install_s19.ps1
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_rom_install_s19.ps1 -BinPath "$(MICROCHESS_PACKAGE)" -S19Path "$@" -BaseAddress 0x3000 -StartAddress 0x3000
 
 $(PIA_LED_SHOW_S19): $(PIA_LED_SHOW_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
@@ -1501,7 +1535,7 @@ endif
 	str8-readonly-bank-tools-check himon-rom-install-s19 himon-apv2-install-s19 rom-install-s19 \
 	basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr \
 	test-mon test-ftdi-drv test-ftdi-hal test-flash \
-	life pia-led-show bank-audit bank-dump apman himon-debug-proof himon-search-static himon-search-static-proof \
+	life microchess pia-led-show bank-audit bank-dump apman himon-debug-proof himon-search-static himon-search-static-proof \
 	himon-search-proof himon-search-flash himon-search-for-himon \
 	hrec-join-proof pack40-test asm-rjoin-proof bank3-erase-legacy asm-v1-core \
 	asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest \

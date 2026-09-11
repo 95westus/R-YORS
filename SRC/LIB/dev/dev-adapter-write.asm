@@ -210,23 +210,37 @@ SYS_WRITE_LINE_XY:
                         MODULE          SYS_WRITE_HEX_BYTE
 
                         XDEF            SYS_WRITE_HEX_BYTE
+                        XDEF            SYS_WRITE_HEX_BYTE_FNV
                         XREF            COR_FTDI_WRITE_HEX_BYTE
 
 ; ----------------------------------------------------------------------------
 ; ROUTINE: SYS_WRITE_HEX_BYTE  [HASH:A1722743]
 ; TIER: SYS-L4
-; TAGS: SYS, SYS-L4, WRITE, HEX, PRESERVE-A, CARRY-STATUS, NO-ZP, NO-RAM,
-;   CALLS_COR, NOSTACK
+; TAGS: SYS, SYS-L4, WRITE, HEX, PRESERVE-A, PRESERVE-XY, CARRY-STATUS, NO-ZP,
+;   NO-RAM, CALLS_COR, STACK
 ; MEM : ZP: none; FIXED_RAM: none.
 ; PURPOSE: Device-neutral write of byte as two ASCII hex characters.
 ; IN : A = source byte
-; OUT: C = 1 on success, A preserved
+; OUT: C = 1 on success, A/X/Y preserved
 ; EXCEPTIONS/NOTES:
 ; - Delegates to backend routine `COR_FTDI_WRITE_HEX_BYTE`.
+; - Emits a current FNV EXEC+TEXT record immediately before the callable entry.
+;   Existing callers must continue to call `SYS_WRITE_HEX_BYTE`, not the
+;   `_FNV` label.
 ; ----------------------------------------------------------------------------
+SYS_WRITE_HEX_BYTE_FNV:
+                        DB              'F','N',('V'+$80),$43,$27,$72,$A1,$05 ; SYS_WRITE_HEX_BYTE $A1722743 EXEC+TEXT
+                        DW              SYS_WRITE_HEX_BYTE
+                        DW              SYS_WRITE_HEX_BYTE_TXT
 SYS_WRITE_HEX_BYTE:
+                        PHX
+                        PHY
                         JSR             COR_FTDI_WRITE_HEX_BYTE
+                        PLY
+                        PLX
                         RTS
+SYS_WRITE_HEX_BYTE_TXT:
+                        DB              "WRITE HE",('X'+$80)
                         ENDMOD
 
                         MODULE          SYS_WRITE_CRLF

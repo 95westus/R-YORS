@@ -159,6 +159,14 @@ foreach ($name in @('BIO_FTDI_READ_BYTE_BLOCK','BIO_FTDI_WRITE_BYTE_BLOCK')) {
         Fail-Check "$name public record no longer points to its raw entry"
     }
 }
+$sysHexRecord = Read-MapSymbol 'SYS_WRITE_HEX_BYTE_FNV'
+Assert-Bytes $sysHexRecord @(0x46,0x4E,0xD6,0x43,0x27,0x72,0xA1,0x05) 'SYS_WRITE_HEX_BYTE FNV record'
+if ((Read-Word ($sysHexRecord + 8)) -ne (Read-MapSymbol 'SYS_WRITE_HEX_BYTE')) {
+    Fail-Check 'SYS_WRITE_HEX_BYTE public record does not point to its callable entry'
+}
+$sysHex = Read-MapSymbol 'SYS_WRITE_HEX_BYTE'
+$corHex = Read-MapSymbol 'COR_FTDI_WRITE_HEX_BYTE'
+Assert-Bytes $sysHex @(0xDA,0x5A,0x20,($corHex -band 0xFF),(($corHex -shr 8) -band 0xFF),0x7A,0xFA,0x60) 'SYS_WRITE_HEX_BYTE A/X/Y-preserving veneer'
 
 $lineSetMode = Read-MapSymbol 'HIM_READ_LINE_SET_MODE'
 Assert-Bytes ($lineSetMode + 8) @(0x20,($wait -band 0xFF),(($wait -shr 8) -band 0xFF)) 'line-reader wait hook'

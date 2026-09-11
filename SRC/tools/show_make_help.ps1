@@ -54,6 +54,7 @@ $rows = @(
     [pscustomobject]@{ Target = "asm-test"; Category = "asm"; Description = "Run the full ASM smoke/proof build set." }
     [pscustomobject]@{ Target = "asm-error-check"; Category = "asm"; Description = "Execute every ASM error mapping and command failure path using py65; includes optional CHECK host fixture." }
     [pscustomobject]@{ Target = "life"; Category = "app"; Description = "Build Conway Life loadable S19/BIN at 2000." }
+    [pscustomobject]@{ Target = "microchess"; Category = "app"; Description = "Build and host-qualify the MicroChess AP-v2 package with HIMON console imports." }
     [pscustomobject]@{ Target = "calc-9a00-fnv-proof"; Category = "app"; Description = "Build legacy CALC inline FNV scanner proof at 9A00; do not load with rom-append-calc." }
     [pscustomobject]@{ Target = "rom-append-calc"; Category = "app"; Description = "Build CALC command as a ROM append proof at B804." }
     [pscustomobject]@{ Target = "fig-forth"; Category = "local"; Description = "Generate and build local fig-Forth S19 at A000." }

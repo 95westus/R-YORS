@@ -46,6 +46,8 @@ shows an older command or image.
   safe placement.
 - [APMAN/APC Dissection](GUIDES/ASM/APMAN_APC_DISSECTION.md) — exact carrier,
   envelope, RAM overlay, and service maps.
+- [Microchess AP](GUIDES/ASM/MICROCHESS_AP.md) — licensed fixed-load port,
+  operator controls, memory contract, full routine map, and acceptance status.
 - [Carrier Versus AP Store](GUIDES/ASM/BANKED_AP_CARRIER_VS_AP_STORE.md) —
   storage-model comparison.
 - [Catalog](GUIDES/CATALOG/CATALOG.md) and

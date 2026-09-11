@@ -5,7 +5,8 @@ param(
   [int]$BaseAddress = 0x4800,
   [string]$EntrySymbol = "START",
   [string]$ExportName = "START",
-  [string]$EndSymbol = "_END_DATA"
+  [string]$EndSymbol = "_END_DATA",
+  [string]$Import = ""
 )
 
 Set-StrictMode -Version Latest
@@ -265,6 +266,43 @@ if ($bodyLength -gt 0xFFFF) {
   throw "body is too large for AP package: $bodyLength bytes"
 }
 
+$importSpecs = @()
+if (-not [string]::IsNullOrWhiteSpace($Import)) {
+  $importSpecs = @($Import.Split(';'))
+}
+$importRows = @()
+for ($importIndex = 0; $importIndex -lt $importSpecs.Count; $importIndex++) {
+  $parts = $importSpecs[$importIndex].Split('|')
+  if ($parts.Count -lt 2 -or $parts.Count -gt 3) {
+    throw "bad import specification '$($importSpecs[$importIndex])'; expected NAME|SITE_SYMBOL[|EXEC|DATA]"
+  }
+  $importName = $parts[0].ToUpperInvariant()
+  $siteAddress = Get-SymbolAddress $resolvedMap $parts[1]
+  $kindName = if ($parts.Count -eq 3) { $parts[2].ToUpperInvariant() } else { 'EXEC' }
+  $kind = if ($kindName -eq 'EXEC') { 0x01 } elseif ($kindName -eq 'DATA') { 0x02 } else { throw "bad import kind '$kindName'" }
+  $siteOffset = $siteAddress - $base
+  if ($siteOffset -lt 0 -or ($siteOffset + 1) -ge $bodyLength) {
+    throw "import site $($parts[1]) is outside the BODY word range"
+  }
+  if ($body[$siteOffset] -ne 0xFF -or $body[$siteOffset + 1] -ne 0xFF) {
+    throw "import site $($parts[1]) does not contain the expected `$FFFF placeholder"
+  }
+  $nameBytes = [System.Text.Encoding]::ASCII.GetBytes($importName)
+  $packedName = Get-Pack40NameBytes $importName
+  $rowLength = 1 + 4 + 1 + $packedName.Length
+  $importRows += [pscustomobject]@{
+    Index = $importIndex
+    Name = $importName
+    Kind = $kind
+    Hash = Get-Fnv1a32 $nameBytes
+    NameBytes = $packedName
+    NameLength = $importName.Length
+    RowLength = $rowLength
+    SiteOffset = $siteOffset
+  }
+}
+if ($importRows.Count -gt 64) { throw "too many imports: $($importRows.Count)" }
+
 $hash = Get-Fnv1a32 $body
 $entryOffset = $entryAddress - $base
 $exportNameUpper = $ExportName.ToUpperInvariant()
@@ -289,8 +327,24 @@ Add-Byte $sections (($hash -shr 16) -band 0xFF)
 Add-Byte $sections (($hash -shr 24) -band 0xFF)
 
 Add-Byte $sections ([byte][char]'R')
-Add-WordLe $sections 0x0001
-Add-Byte $sections 0x00
+$relocPayloadLength = 1 + (5 * $importRows.Count)
+Add-WordLe $sections $relocPayloadLength
+Add-Byte $sections $importRows.Count
+foreach ($row in $importRows) {
+  Add-Byte $sections 0x04
+}
+foreach ($row in $importRows) {
+  Add-Byte $sections ($row.SiteOffset -band 0xFF)
+}
+foreach ($row in $importRows) {
+  Add-Byte $sections (($row.SiteOffset -shr 8) -band 0xFF)
+}
+foreach ($row in $importRows) {
+  Add-Byte $sections $row.Index
+}
+foreach ($row in $importRows) {
+  Add-Byte $sections 0x00
+}
 
 Add-Byte $sections ([byte][char]'E')
 Add-WordLe $sections $exportRecordLength
@@ -305,8 +359,21 @@ Add-Byte $sections $exportNameUpper.Length
 Add-Bytes $sections $exportNameBytes
 
 Add-Byte $sections ([byte][char]'I')
-Add-WordLe $sections 0x0001
-Add-Byte $sections 0x00
+$importPayloadLength = 1
+foreach ($row in $importRows) {
+  $importPayloadLength += $row.RowLength
+}
+Add-WordLe $sections $importPayloadLength
+Add-Byte $sections $importRows.Count
+foreach ($row in $importRows) {
+  Add-Byte $sections $row.Kind
+  Add-Byte $sections ($row.Hash -band 0xFF)
+  Add-Byte $sections (($row.Hash -shr 8) -band 0xFF)
+  Add-Byte $sections (($row.Hash -shr 16) -band 0xFF)
+  Add-Byte $sections (($row.Hash -shr 24) -band 0xFF)
+  Add-Byte $sections $row.NameLength
+  Add-Bytes $sections $row.NameBytes
+}
 
 Add-Byte $sections ([byte][char]'B')
 Add-WordLe $sections $bodyLength
@@ -331,5 +398,6 @@ Write-Host ("AP package built: {0}" -f $resolvedPackage)
 Write-Host ("  body: `${0}-`${1} len=`${2}" -f ("{0:X4}" -f $base), ("{0:X4}" -f $endAddress), ("{0:X4}" -f $bodyLength))
 Write-Host ("  entry/export: {0} @ `${1} offset=`${2}" -f $exportNameUpper, ("{0:X4}" -f $entryAddress), ("{0:X4}" -f $entryOffset))
 Write-Host ("  fnv32: `${0}" -f ("{0:X8}" -f $hash))
+Write-Host ("  imports/relocations: {0}/{0}" -f $importRows.Count)
 Write-Host ("  package length: `${0}" -f ("{0:X4}" -f $totalLength))
 Write-Host ("  head: $head")

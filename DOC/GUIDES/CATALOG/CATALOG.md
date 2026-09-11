@@ -177,7 +177,7 @@ FLASH BYTE PROGRAM -> guarded flash byte writer
 | `SYS_WRITE_HBSTRING` | `$A6D68C34` | SYS write HBSTR | `X/Y=source` | `A=count`, `C=1` full string, `C=0` truncation | NEEDS_PROOF | high-bit-terminated string writer | `SYS WRITE HBSTRING HIBIT_TERM` |
 | `SYS_WRITE_HBLINE` | `$3A150F83` | SYS write HB line | `X/Y=source` | `C` follows trailing CRLF | NEEDS_PROOF | HBSTR plus newline | `SYS WRITE HBSTRING CRLF` |
 | `SYS_WRITE_LINE_XY` | `$59A0E7C5` | SYS write C line | `X/Y=source` | `C` follows trailing CRLF | NEEDS_PROOF | CSTR plus newline | `SYS WRITE CSTRING CRLF` |
-| `SYS_WRITE_HEX_BYTE` | `$A1722743` | SYS write hex | `A=byte` | `C=1`, `A` preserved | NEEDS_PROOF | print `A` as two uppercase hex chars | `SYS WRITE HEX BYTE PRESERVE_A` |
+| `SYS_WRITE_HEX_BYTE` | `$A1722743` | SYS write hex | `A=byte` | `C=1`, `A/X/Y` preserved | NEEDS_PROOF | print `A` as two uppercase hex chars | `SYS WRITE HEX BYTE PRESERVE_A PRESERVE_XY` |
 | `SYS_WRITE_CRLF` | `$3F362368` | SYS newline | none | `C=1` success | NEEDS_PROOF | device-neutral CRLF | `SYS WRITE CRLF` |
 | `BIO_FTDI_WRITE_BYTE_BLOCK` | `$379FE930` | BIO write byte | `A=byte` | `C=1`, `A` preserved | PROVEN | promoted stable unbounded FTDI byte write; resident text `WRITE BYTE` | `BIO FTDI WRITE BYTE BLOCKING PROMOTED` |
 | `BIO_FTDI_WRITE_BYTE_NONBLOCK` | `$8FAE8ABB` | BIO write byte | `A=byte` | `C=1` accepted, `C=0` timeout, `A` preserved | PARTIAL | success path has test harness evidence; timeout path still needs forced blocked-FIFO proof | `BIO FTDI WRITE BYTE NONBLOCKING` |
@@ -588,7 +588,32 @@ RREC BIO_FTDI_WRITE_BYTE_BLOCK
              or an explicit timeout wrapper
 ```
 
-These BIO block records now use the K05 EXEC+TEXT shape. The first eight bytes
+```text
+RREC SYS_WRITE_HEX_BYTE
+  lifecycle: formed, sealed, not buried
+  kind:      routine/export
+  name:      SYS_WRITE_HEX_BYTE
+  hash32:    $A1722743
+  stored:    hash0=$43 hash1=$27 hash2=$72 hash3=$A1
+  hash_sig:  46 4E D6 43 27 72 A1 05
+             emitted as SYS_WRITE_HEX_BYTE_FNV K05 EXEC+TEXT record
+  provider:  active HIMON/SYS image
+  body:      current ROM image or linked SYS body
+  entry:     SYS_WRITE_HEX_BYTE
+  call:      JSR entry; returns after two uppercase hex digits are accepted
+  in:        A=byte to render
+  out:       C=1, A/X/Y preserved
+  imports:   COR_FTDI_WRITE_HEX_BYTE
+  resources: ZP none; fixed RAM none
+             FTDI/VIA MMIO through the active COR/BIO/PIN write path
+  flags:     SYS, WRITE, HEX, BYTE, CARRY_STATUS, PRESERVE_A, PRESERVE_XY,
+             EXEC, TEXT
+  proof:     host ROM record/pointer check and MicroChess AP import/link check;
+             physical-board acceptance remains pending
+  caveat:    current backend is FTDI; the published name remains device-neutral
+```
+
+These published records use the K05 EXEC+TEXT shape. The first eight bytes
 end in `$05`, then the record carries `DW entry` and `DW text` before the
 callable routine body. Existing callers still call the routine entry label, not
 the `_FNV` label.
