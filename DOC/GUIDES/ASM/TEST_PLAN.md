@@ -98,10 +98,12 @@ and the run did not include a physical RESET, so those two gates remain open.
 
 ## Microchess AP Host Qualification
 
-Status: help-enabled build host-qualified. The preceding build is
-board-qualified for assembly, RAM execution, gameplay, Bank-1 carrier
-installation, discovery, and installed execution. Help output and
-physical-reset persistence after carrier installation remain pending.
+Status: help-enabled build board-qualified for onboard assembly, AP-v2
+packaging, RAM load/link/entry, board rendering, and exact `H` command,
+copyright, and AI-assistance output. The preceding build is board-qualified
+for gameplay, Bank-1 carrier installation, discovery, installed execution,
+and physical-reset recovery. Installing the help-enabled build and proving
+its named discovery/execution after physical reset remain pending.
 
 The `microchess` target builds Peter Jennings' engine as a fixed `$2000`
 AP-v2 BODY and stages its envelope at `$3000`. Its focused structural check
@@ -119,6 +121,12 @@ the caller stack.
 Physical acceptance must follow the card in
 [MICROCHESS_AP.md](MICROCHESS_AP.md) and be appended to the hardware log. Do
 not mark the queue item complete from host execution alone.
+
+The 2026-09-10 help-output board run assembled through `$2625`, produced the
+expected `$06A6` package, entered it through `AP 3000 2000`, and printed all
+three required `H` lines exactly. Its transcript ends after entering the four
+digits of the human move, before Return or `Q`; those runtime paths remain
+covered by the host smoke and the preceding-build board run.
 
 Run `git diff --check` before accepting documentation or source changes.
 

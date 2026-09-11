@@ -31,9 +31,11 @@ size measurement, and required hardware proof are complete.
   py65 opening/human/off-book-search runtime smoke agree. COM4 proof now covers
   the preceding `$05E6` build's exact onboard assembly and package load at
   `$3000`, complete board rendering, opening and human moves, searched reply,
-  and `Q` return with `A=$AC/C=1`. Remaining proof for the help-enabled build:
-  run `H` and verify its command/copyright/AI text, then physically reset and
-  confirm recovery through STR8-N/HIMON. See
+  and `Q` return with `A=$AC/C=1`. The help-enabled build now has exact onboard
+  assembly, `$06A6` packaging, RAM load/link/entry, board rendering, and exact
+  `H` command/copyright/AI text proof. Remaining proof: install this build in a
+  carrier, physically reset, then confirm named discovery and execution
+  through STR8-N/HIMON. See
   [MICROCHESS_AP.md](../ASM/MICROCHESS_AP.md).
 
 ### Accepted: live HIMON USB indication

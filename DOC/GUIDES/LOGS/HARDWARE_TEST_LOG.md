@@ -26355,3 +26355,46 @@ The serial functional update and bank-restoration rails pass. This transcript
 does not claim visual LED acceptance because the host cannot observe the eight
 physical lamps, and no physical RESET was performed after installation. Keep
 the feature-queue item open until the operator confirms both observations.
+
+## 2026-09-10 MicroChess Help Output On Board
+
+The operator-supplied 1,887-line transcript is 46,103 bytes with SHA-256
+`41D46D8D265F5357B200DBE4BA61C0F3E73D73BD1DE443BF0E4B75854F04BE53`.
+It first repeats the preceding `$05E6` carrier's physical-reset, named-load,
+and execution evidence, then assembles and runs the help-enabled candidate in
+RAM.
+
+The complete onboard source retained the copyright/license and AI-assistance
+notices. ASM-F2 ended at `$2625`; packaging produced the expected `$06A6`
+envelope, and the correct AP invocation linked and entered the `$2000` BODY:
+
+```text
+ASM>$2625: END
+ASM OK
+SEAL> PACKAGE 3000
+PKG OK @=$3000 L=$06A6
+SEAL> .
+ASM BYE
+>AP 3000 2000
+GO 2000
+```
+
+At the MicroChess prompt, `H` printed the exact required runtime disclosure:
+
+```text
+?H Help C New E Reverse P Play 0-7 FROMTO Enter Move Q Quit
+(c) 1976 Peter Jennings benlo.com
+R-YORS port AI-assisted with OpenAI Codex; review and hardware-verify.
+```
+
+The board redrew afterward, `C` restored the initial position, and the
+operator entered the four digits for `$62->$42`. The transcript ends at
+`1C 62 42` before Return, so it does not claim that the current build committed
+the move, searched a reply, or returned through `Q`. The earlier direct
+`G 3000` ending in `BRK 01 PC=3009` is expected because `$3000` contains an AP
+envelope rather than directly executable code.
+
+Result: exact onboard assembly, `$06A6` AP-v2 packaging, RAM load/link/entry,
+board rendering, command handling, and the visible help/copyright/AI text are
+accepted for the help-enabled build. Installing this build in a carrier and
+proving named discovery/execution after physical RESET remain open.

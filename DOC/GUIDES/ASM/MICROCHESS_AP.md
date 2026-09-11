@@ -1,9 +1,11 @@
 # Microchess AP
 
-Status: the help-enabled build is host-qualified. The preceding build was
-board-qualified for onboard assembly, AP-v2 packaging, RAM execution, gameplay,
-Bank-1 carrier installation, discovery, and installed execution. The new `H`
-command and physical-RESET persistence still require board proof.
+Status: the help-enabled build is board-qualified for onboard assembly, AP-v2
+packaging, RAM load/link/entry, board rendering, and exact `H` command,
+copyright, and AI-assistance output. The preceding build was board-qualified
+for gameplay, Bank-1 carrier installation, discovery, installed execution,
+and physical-reset recovery. The help-enabled build still requires carrier
+installation and named discovery/execution after physical RESET.
 
 This is the complete implementation and routine guide for the R-YORS port of
 Peter Jennings' Microchess. The application is a fixed-load AP-v2 package: its
@@ -189,7 +191,7 @@ SEAL OK
 SEAL> PACKAGE MICROCHESS $3000
 PKG OK @=$3000 L=$06A6
 SEAL> INSTALL 3000 B1
-INST B1 hhhh L=05E6
+INST B1 hhhh L=06A6
 SEAL> .
 ASM BYE
 >
@@ -206,7 +208,7 @@ Confirm discovery and execute the flash copy by its AP entry name:
 
 ```text
 >APS B1 MICROCHESS
-APS B1 hhhh APC MICROCHESS L=05E6 @2000
+APS B1 hhhh APC MICROCHESS L=06A6 @2000
 >AP B1 MICROCHESS
 GO 2000
 ```
@@ -448,13 +450,16 @@ this narrative snapshot, is the final address authority.
   off-book searched reply, repeated board rendering, and `q` return-stack
   restore.
 
-The 2026-09-10 COM4 transcript proves the preceding `$05E6` build's RAM-envelope
+The first 2026-09-10 COM4 transcript proves the preceding `$05E6` build's RAM-envelope
 load, `AP $3000 $2000`, `C`,
 one human/computer exchange, `Q`, the `RET A=AC ... C set` line, installation
 at `B1:9000`, named discovery, and installed execution. The remaining board
-gate is a physical reset followed by named discovery and execution of the
-same carrier. The help-enabled `$06A6` package additionally requires an `H`
-command board run before its runtime UI is accepted.
+transcript proves physical-reset recovery, named discovery, and execution of
+that carrier. A later COM4 run proves the help-enabled `$06A6` build's exact
+onboard assembly, RAM package load/link/entry, board rendering, and all three
+`H` output lines. It ends before Return or `Q` and does not install the new
+package. Carrier installation and named discovery/execution after physical
+RESET therefore remain its final board gate.
 
 ## Refreshing From Upstream
 
