@@ -98,9 +98,10 @@ and the run did not include a physical RESET, so those two gates remain open.
 
 ## Microchess AP Host Qualification
 
-Status: host-qualified and board-qualified for assembly, RAM execution,
-gameplay, Bank-1 carrier installation, discovery, and installed execution.
-Physical-reset persistence after carrier installation remains pending.
+Status: help-enabled build host-qualified. The preceding build is
+board-qualified for assembly, RAM execution, gameplay, Bank-1 carrier
+installation, discovery, and installed execution. Help output and
+physical-reset persistence after carrier installation remain pending.
 
 The `microchess` target builds Peter Jennings' engine as a fixed `$2000`
 AP-v2 BODY and stages its envelope at `$3000`. Its focused structural check
@@ -108,10 +109,11 @@ retains the upstream notice and license, rejects KIM-only stack reset,
 validates the wrap-sensitive zero-page aliases, and requires the three typed,
 HIMON-published console imports with matching ABS16 relocation rows. The
 pinned py65 smoke also sends the complete symbol-lean `.a` through the real
-ASM-F2 image and requires its `$05E6` AP package to equal the host package
-byte-for-byte. The runtime smoke executes reset, the canned `$13->$33` move,
-a human `$62->$42` move, a
-real off-book searched reply, board output, `A=$AC/C=1`, and restoration of
+ASM-F2 image and requires its `$06A6` AP package to equal the host package
+byte-for-byte. The runtime smoke executes lowercase `h`, verifies the command,
+copyright, and AI-assistance lines, resets, plays the canned `$13->$33` move,
+a human `$62->$42` move, a real off-book searched reply, board output,
+`A=$AC/C=1`, and restoration of
 the caller stack.
 
 Physical acceptance must follow the card in

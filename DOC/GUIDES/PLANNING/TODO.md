@@ -25,14 +25,15 @@ size measurement, and required hardware proof are complete.
 - [ ] Accept the fixed-load `$2000` Microchess AP on hardware. The port retains
   Peter Jennings' copyright, redistribution conditions, disclaimer, Daryl
   Rictor serial adaptation credit, and Bill Forster OCR-correction credit. The
-  WDC source and onboard `.a`, `$0565`-byte BODY, `$05E6` AP-v2 envelope,
-  package FNV32 `$BA97DF23`, three published HIMON console imports, complete
+  WDC source and onboard `.a`, `$0625`-byte BODY, `$06A6` AP-v2 envelope,
+  package FNV32 `$011A81B8`, three published HIMON console imports, complete
   routine guide, exact host/onboard package comparison, structural checks, and
   py65 opening/human/off-book-search runtime smoke agree. COM4 proof now covers
-  exact onboard assembly, `PKG OK @=$3000 L=$05E6`, load
-  at `$3000`, complete board rendering, opening and human moves, searched reply,
-  and `Q` return with `A=$AC/C=1`. Remaining proof: physically reset and confirm
-  recovery through STR8-N/HIMON. See
+  the preceding `$05E6` build's exact onboard assembly and package load at
+  `$3000`, complete board rendering, opening and human moves, searched reply,
+  and `Q` return with `A=$AC/C=1`. Remaining proof for the help-enabled build:
+  run `H` and verify its command/copyright/AI text, then physically reset and
+  confirm recovery through STR8-N/HIMON. See
   [MICROCHESS_AP.md](../ASM/MICROCHESS_AP.md).
 
 ### Accepted: live HIMON USB indication

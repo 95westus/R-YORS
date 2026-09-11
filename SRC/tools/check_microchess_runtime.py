@@ -69,7 +69,7 @@ def main() -> int:
 
     # Reset, take the canned first move, enter a non-book reply ($62->$42),
     # force a real search, then quit.
-    keys = iter(b"cp6242\rpq")
+    keys = iter(b"hcp6242\rpq")
     output: list[str] = []
 
     def emulate_rts() -> None:
@@ -107,6 +107,12 @@ def main() -> int:
     rendered = "".join(output)
     if "MicroChess (c) 1976 Peter Jennings benlo.com - R-YORS AP" not in rendered:
         raise AssertionError("copyright banner was not rendered")
+    if "H Help C New E Reverse P Play 0-7 FROMTO Enter Move Q Quit" not in rendered:
+        raise AssertionError("H command did not render the command summary")
+    if "(c) 1976 Peter Jennings benlo.com" not in rendered:
+        raise AssertionError("help did not render the copyright attribution")
+    if "R-YORS port AI-assisted with OpenAI Codex" not in rendered:
+        raise AssertionError("help did not render the AI-assistance disclosure")
     if rendered.count("00 01 02 03 04 05 06 07") < 3:
         raise AssertionError("board was not rendered before each command")
     if memory[0x005F] != 0x33:
@@ -122,7 +128,7 @@ def main() -> int:
     if mpu.a != 0xAC or not (mpu.p & mpu.CARRY):
         raise AssertionError("AP did not return A=$AC with carry set")
 
-    print("Microchess runtime smoke passed: reset, opening move, human move, searched reply, Q return")
+    print("Microchess runtime smoke passed: help, reset, opening move, human move, searched reply, Q return")
     return 0
 
 

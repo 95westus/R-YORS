@@ -34,9 +34,15 @@ Require-Text $source 'Redistribution and use in source and binary forms' 'upstre
 Require-Text $source 'name of the author may not be used to endorse' 'upstream non-endorsement condition is missing'
 Require-Text $source 'produced with assistance from OpenAI\s+; Codex, an AI coding system' 'R-YORS AI adaptation notice is missing'
 Require-Text $source 'This notice does not alter the upstream\s+; copyright or license terms above' 'AI notice must preserve the upstream terms'
+Require-Text $source "(?s)CMP\s+#'H'.*?JSR\s+HELP" 'H command dispatch is missing'
+Require-Text $source 'H Help C New E Reverse P Play 0-7 FROMTO Enter Move Q Quit' 'help command summary is missing'
+Require-Text $source '\(c\) 1976 Peter Jennings benlo.com' 'help copyright attribution is missing'
+Require-Text $source 'R-YORS port AI-assisted with OpenAI Codex' 'help AI-assistance disclosure is missing'
 Require-Text $license 'Kim-1 MicroChess \(c\) 1976-2005 Peter Jennings' 'binary-distribution copyright notice is missing'
 Require-Text $license 'Redistribution and use in source and binary forms' 'binary-distribution terms are missing'
 Require-Text $license 'THIS SOFTWARE IS PROVIDED BY THE AUTHOR' 'binary-distribution disclaimer is missing'
+Require-Text $license 'produced with assistance from OpenAI\s+Codex, an AI coding system' 'binary-distribution AI notice is missing'
+Require-Text $license 'This notice does not alter the upstream copyright\s+or license terms above' 'binary-distribution AI notice must preserve upstream terms'
 Require-Text $source 'BIO_FTDI_READ_BYTE_BLOCK' 'HIMON input adapter is missing'
 Require-Text $source 'BIO_FTDI_WRITE_BYTE_BLOCK' 'HIMON output adapter is missing'
 Require-Text $source 'MICROCHESS_IMP_WRITE_HEX:\s+DW\s+\$FFFF' 'published SYS hex adapter is missing'
@@ -53,7 +59,10 @@ if ($source -match 'LDX\s+#\$FF\s*; TWO STACKS') { throw 'KIM-only stack reset w
 $entry = Get-MapAddress $map 'MICROCHESS'
 $engineEnd = Get-MapAddress $map 'MICROCHESS_ENGINE_END'
 $linkedEnd = Get-MapAddress $map '_END_CODE'
+$helpText = Get-MapAddress $map 'help_text'
+$banner = Get-MapAddress $map 'banner'
 if ($entry -ne 0x2000) { throw ('MICROCHESS moved from $2000 to ${0:X4}' -f $entry) }
+if (($banner - $helpText) -gt 0xFF) { throw 'help text exceeds the 8-bit HELP index' }
 if ($engineEnd -le $entry -or $engineEnd -gt $linkedEnd) { throw 'engine/link boundary is invalid' }
 if ($linkedEnd -gt 0x3000) { throw ('linked AP body crosses $3000: ${0:X4}' -f $linkedEnd) }
 

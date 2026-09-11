@@ -1,9 +1,9 @@
 # Microchess AP
 
-Status: host-built and board-qualified for onboard assembly, AP-v2 packaging,
-RAM execution, gameplay, Bank-1 carrier installation, discovery, and installed
-execution. A physical-RESET persistence capture after carrier installation is
-still pending.
+Status: the help-enabled build is host-qualified. The preceding build was
+board-qualified for onboard assembly, AP-v2 packaging, RAM execution, gameplay,
+Bank-1 carrier installation, discovery, and installed execution. The new `H`
+command and physical-RESET persistence still require board proof.
 
 This is the complete implementation and routine guide for the R-YORS port of
 Peter Jennings' Microchess. The application is a fixed-load AP-v2 package: its
@@ -32,7 +32,9 @@ specific source that was ported.
 The complete upstream copyright notice, three redistribution conditions, and
 warranty disclaimer are retained at the head of
 `SRC/APPS/microchess-2000.asm` and in the distributable sidecar
-`SRC/APPS/MICROCHESS-LICENSE.txt`. The visible board banner also says:
+`SRC/APPS/MICROCHESS-LICENSE.txt`. The sidecar appends a clearly separated
+R-YORS AI-assistance notice without changing the upstream terms. The visible
+board banner also says:
 
 ```text
 MicroChess (c) 1976 Peter Jennings benlo.com - R-YORS AP
@@ -71,9 +73,9 @@ The target produces:
 Current measured identity:
 
 ```text
-engine/BODY     $2000-$2565, $0565 bytes (1381)
-AP envelope     $05E6 bytes (1510)
-BODY FNV-1a-32  $BA97DF23
+engine/BODY     $2000-$2625, $0625 bytes (1573)
+AP envelope     $06A6 bytes (1702)
+BODY FNV-1a-32  $011A81B8
 entry offset    $0000
 relocations     3 ABS16 import rows
 imports         BIO_FTDI_READ_BYTE_BLOCK, BIO_FTDI_WRITE_BYTE_BLOCK,
@@ -133,7 +135,7 @@ Require the success lines:
 
 ```text
 SEAL OK
-PKG OK @=$3000 L=$05E6
+PKG OK @=$3000 L=$06A6
 ASM BYE
 ```
 
@@ -185,7 +187,7 @@ envelope and ask APMAN to install it in the first suitable Bank 1 sector:
 SEAL> SEAL
 SEAL OK
 SEAL> PACKAGE MICROCHESS $3000
-PKG OK @=$3000 L=$05E6
+PKG OK @=$3000 L=$06A6
 SEAL> INSTALL 3000 B1
 INST B1 hhhh L=05E6
 SEAL> .
@@ -249,6 +251,7 @@ each key. Commands are case-insensitive in this port.
 | `C` | Clear/reset to the standard initial position and reset the opening-book index. Do this first. |
 | `E` | Exchange sides by rotating the board 180 degrees and swapping the two 16-piece arrays. |
 | `P` | Ask Microchess to play. It uses the opening table when the prior move matches, otherwise it searches. |
+| `H` | Print the command summary, Peter Jennings copyright attribution, and R-YORS AI-assistance disclosure. |
 | `0`-`7` | Enter one square digit. Enter four digits as `from-rank`, `from-file`, `to-rank`, `to-file`. |
 | Return | Commit the four-digit human move. |
 | `Q` | Restore the saved caller stack and return to HIMON. |
@@ -325,20 +328,20 @@ for without pretending every branch target is a callable subroutine.
 | Address | Routine/labels | Contract |
 | --- | --- | --- |
 | `$2000` | `MICROCHESS` | Save caller SP, clear reverse mode, then enter `CHESS`. |
-| `$2008` | `CHESS`, `OUT` | Reset both stack domains without losing the AP return frame, render with `POUT`, read one normalized key with `KIN`, and dispatch it. `WHSET`, `NOSET`, `NOREV`, `CLDSP`, `NOGO`, and `NOMV` are command branches. |
-| `$2061` | `DONE` | Restore `CALLER_SP`; return `A=$AC`, C=1. |
-| `$20FF` | `INPUT` | Reject values above 7; fold a square digit through `DISMV`; on display completion locate the piece occupying `DIS2`. `DISP`, `SEARCH`, `HERE`, and `ERROR` are its branch points. |
-| `$230B` | `DISMV` | Shift one input nibble into the legacy from/to display pair; copy the newest destination into `SQUARE`. |
+| `$2008` | `CHESS`, `OUT` | Reset both stack domains without losing the AP return frame, render with `POUT`, read one normalized key with `KIN`, and dispatch it. `WHSET`, `NOSET`, `NOREV`, `NOHELP`, `CLDSP`, `NOGO`, and `NOMV` are command branches. |
+| `$206B` | `DONE` | Restore `CALLER_SP`; return `A=$AC`, C=1. |
+| `$2109` | `INPUT` | Reject values above 7; fold a square digit through `DISMV`; on display completion locate the piece occupying `DIS2`. `DISP`, `SEARCH`, `HERE`, and `ERROR` are its branch points. |
+| `$2315` | `DISMV` | Shift one input nibble into the legacy from/to display pair; copy the newest destination into `SQUARE`. |
 
 ### Search Director And Counters
 
 | Address | Routine/labels | Contract |
 | --- | --- | --- |
-| `$2069` | `JANUS` | State-machine dispatcher called after every generated move. It chooses counting, deeper capture-tree work, reply generation, or final evaluation. |
-| `$206D` | `COUNTS` | Increment mobility, capture-value, and best-captured-piece counters selected by `STATE`. `OVER`, `NOQ`, `ELOOP`, `FOUN`, `LESS`, and `NOCAP` are internal paths. |
-| `$20A8` | `ON4` | At state 4, make the trial move, reverse, generate the immediate reply, reverse back, generate continuation moves at state 8, unmake, and evaluate. |
-| `$20C9` | `NOCOUNT` | At state `$F9`, detect whether reply generation can capture the king and clear `INCHEK`. |
-| `$20D8` | `TREE` | For capture-search states, value the captured piece, retain the best capture at that ply, decrement `STATE`, and recurse through `GENRM` until turnaround state `$FB`. |
+| `$2073` | `JANUS` | State-machine dispatcher called after every generated move. It chooses counting, deeper capture-tree work, reply generation, or final evaluation. |
+| `$2077` | `COUNTS` | Increment mobility, capture-value, and best-captured-piece counters selected by `STATE`. `OVER`, `NOQ`, `ELOOP`, `FOUN`, `LESS`, and `NOCAP` are internal paths. |
+| `$20B2` | `ON4` | At state 4, make the trial move, reverse, generate the immediate reply, reverse back, generate continuation moves at state 8, unmake, and evaluate. |
+| `$20D3` | `NOCOUNT` | At state `$F9`, detect whether reply generation can capture the king and clear `INCHEK`. |
+| `$20E2` | `TREE` | For capture-search states, value the captured piece, retain the best capture at that ply, decrement `STATE`, and recurse through `GENRM` until turnaround state `$FB`. |
 
 The counter block deliberately aliases storage. `MOB`, `MAXC`, `CC`, and
 `PCAP` are base addresses indexed by `STATE`; names such as `BMOB`, `WMOB`,
@@ -349,28 +352,28 @@ name independently would break evaluation.
 
 | Address | Routine/labels | Contract |
 | --- | --- | --- |
-| `$2118` | `GNMZ`, `GNMX` | Clear the 17-byte counter window (`COUNT..COUNT+$10`), then fall into `GNM`. |
-| `$2121` | `GNM` | Iterate piece indices 15 down to 0 and dispatch by type. `NEWP` and `NEX` select the next piece. |
-| `$2145` | `KING` | Generate eight one-step moves through `SNGMV`. |
-| `$214C` | `QUEEN` | Generate eight sliding directions through `LINE`. |
-| `$2153` | `ROOK`, `AGNR` | Generate the four orthogonal sliding directions. |
-| `$215E` | `BISHOP` | Generate the four diagonal sliding directions. |
-| `$2169` | `KNIGHT`, `AGNN` | Generate eight knight jumps through `SNGMV`. |
-| `$2178` | `PAWN`, `P1`, `P2`, `P3` | Try two capture diagonals, then one or two forward squares. The double step is allowed from the encoded starting rank. |
-| `$21A6` | `SNGMV` | Call `CMOVE`, call `JANUS` if nonnegative/legal, reset the source square, and advance direction. |
-| `$21B4` | `LINE` | Repeatedly call `CMOVE` along one ray. Stop at board edge, own piece, check failure, or after a capture; otherwise evaluate and continue. |
-| `$21E2` | `CMOVE` | Add the selected `MOVEX` delta, perform edge and occupancy tests, optionally invoke `CHKCHK`, and return the N/V/C flag contract. `LOOP`, `NO`, `SPX`, `RETL`, and `ILLEGAL` are internal exits. |
-| `$220E` | `CHKCHK` | Save flags/state, make and reverse the trial move, set state `$F9`, generate every opposing reply, unmake, then report whether the king was capturable. |
-| `$2237` | `RESET` | Reload `SQUARE` from the current piece's stored location. |
+| `$2122` | `GNMZ`, `GNMX` | Clear the 17-byte counter window (`COUNT..COUNT+$10`), then fall into `GNM`. |
+| `$212B` | `GNM` | Iterate piece indices 15 down to 0 and dispatch by type. `NEWP` and `NEX` select the next piece. |
+| `$214F` | `KING` | Generate eight one-step moves through `SNGMV`. |
+| `$2156` | `QUEEN` | Generate eight sliding directions through `LINE`. |
+| `$215D` | `ROOK`, `AGNR` | Generate the four orthogonal sliding directions. |
+| `$2168` | `BISHOP` | Generate the four diagonal sliding directions. |
+| `$2173` | `KNIGHT`, `AGNN` | Generate eight knight jumps through `SNGMV`. |
+| `$2182` | `PAWN`, `P1`, `P2`, `P3` | Try two capture diagonals, then one or two forward squares. The double step is allowed from the encoded starting rank. |
+| `$21B0` | `SNGMV` | Call `CMOVE`, call `JANUS` if nonnegative/legal, reset the source square, and advance direction. |
+| `$21BE` | `LINE` | Repeatedly call `CMOVE` along one ray. Stop at board edge, own piece, check failure, or after a capture; otherwise evaluate and continue. |
+| `$21EC` | `CMOVE` | Add the selected `MOVEX` delta, perform edge and occupancy tests, optionally invoke `CHKCHK`, and return the N/V/C flag contract. `LOOP`, `NO`, `SPX`, `RETL`, and `ILLEGAL` are internal exits. |
+| `$2218` | `CHKCHK` | Save flags/state, make and reverse the trial move, set state `$F9`, generate every opposing reply, unmake, then report whether the king was capturable. |
+| `$2241` | `RESET` | Reload `SQUARE` from the current piece's stored location. |
 
 ### Position Mutation And Two-Stack Undo
 
 | Address | Routine/labels | Contract |
 | --- | --- | --- |
-| `$21CA` | `REVERSE`, `ETC` | For all 16 entries, exchange the two sides and rotate both locations with `$77-square`. |
-| `$223E` | `GENRM`, `GENR2`, `RUM` | Make a trial move, reverse, generate replies, reverse back; shared spine for capture-tree and check testing. |
-| `$224A` | `UMOVE` | Switch to the alternate stack, pop `MOVEN`, captured piece, source square, moving piece, and destination, restore both piece entries, then switch back. |
-| `$2264` | `MOVE`, `CHECK`, `TAKE`, `STRV` | Switch stacks; push destination, captured-piece index, original source, mover index, and direction; mark a capture `$CC`; write the mover's destination; switch back. |
+| `$21D4` | `REVERSE`, `ETC` | For all 16 entries, exchange the two sides and rotate both locations with `$77-square`. |
+| `$2248` | `GENRM`, `GENR2`, `RUM` | Make a trial move, reverse, generate replies, reverse back; shared spine for capture-tree and check testing. |
+| `$2254` | `UMOVE` | Switch to the alternate stack, pop `MOVEN`, captured piece, source square, moving piece, and destination, restore both piece entries, then switch back. |
+| `$226E` | `MOVE`, `CHECK`, `TAKE`, `STRV` | Switch stacks; push destination, captured-piece index, original source, mover index, and direction; mark a capture `$CC`; write the mover's destination; switch back. |
 
 The move record order is exactly the reverse of `UMOVE`'s pop order. Capturing
 an empty square records X=`$FF`; indexed storage wraps to the byte immediately
@@ -381,13 +384,13 @@ is not interpreted as a live piece entry.
 
 | Address | Routine/labels | Contract |
 | --- | --- | --- |
-| `$2290` | `CKMATE` | Reject a line where the opponent can take this side's king; award `$FF` when the opponent has no mobility and its king remains attacked. |
-| `$22A5` | `RETV` | Restore search state 4 and fall into `PUSH`. |
-| `$22A9` | `PUSH` | Replace `BESTV/BESTP/BESTM` only on a strictly greater score. Equal scores retain the earlier move. |
-| `$22B9` | `RETP` | Print one dot as a thinking-progress indication, then return through the character adapter. |
-| `$22BE` | `GO` | Match `DIS3` against the reverse-walked `OPNING` table or disable the book. Outside the book, collect state `$0C` and state 4 statistics, then play the best move. `END`, `NOOPEN`, and `MV2` are internal paths. |
-| `$2308` | `MATE` | Return `$FF` when no move reaches the minimum score; the legacy UI treats resignation and stalemate alike. |
-| `$231B` | `STRATGY` | Combine mobility, maximum captures, capture counts, exchange terms, and positional bonuses into an unsigned score, then continue through `CKMATE`. |
+| `$229A` | `CKMATE` | Reject a line where the opponent can take this side's king; award `$FF` when the opponent has no mobility and its king remains attacked. |
+| `$22AF` | `RETV` | Restore search state 4 and fall into `PUSH`. |
+| `$22B3` | `PUSH` | Replace `BESTV/BESTP/BESTM` only on a strictly greater score. Equal scores retain the earlier move. |
+| `$22C3` | `RETP` | Print one dot as a thinking-progress indication, then return through the character adapter. |
+| `$22C8` | `GO` | Match `DIS3` against the reverse-walked `OPNING` table or disable the book. Outside the book, collect state `$0C` and state 4 statistics, then play the best move. `END`, `NOOPEN`, and `MV2` are internal paths. |
+| `$2312` | `MATE` | Return `$FF` when no move reaches the minimum score; the legacy UI treats resignation and stalemate alike. |
+| `$2325` | `STRATGY` | Combine mobility, maximum captures, capture counts, exchange terms, and positional bonuses into an unsigned score, then continue through `CKMATE`. |
 
 `STRATGY` applies the original three weight bands: quarter-weight terms are
 summed before the first shift, half-weight terms before the second shift, and
@@ -399,17 +402,18 @@ a non-king piece out of its back rank.
 
 | Address | Routine/labels | Contract |
 | --- | --- | --- |
-| `$2381` | `POUT` | Print CR/LF, copyright banner, files, eight board rows, piece symbols/square shading, and the three legacy display bytes. `POUT1..POUT4` own row/cell scanning. |
-| `$23F2` | `POUT5`, `POUT6` | Preserve X and print a 25-character horizontal border plus CR/LF. |
-| `$2404` | `POUT8` | Print the bottom file labels and `DIS1 DIS2 DIS3` as hex. |
-| `$2420` | `POUT9` | Print CR/LF. |
-| `$242B` | `POUT10`, `POUT11` | Print file labels `00` through `07`. |
-| `$243D` | `POUT12` | Print the row nibble derived from Y. |
-| `$2444` | `POUT13`, `POUT14`, `POUT15` | Print the NUL-terminated copyright banner. |
-| `$2452` | `KIN` | Print `?`, block for one byte, strip bit 7, turn ASCII `0..7` into binary nibbles, and uppercase `a..z`. |
-| `$2473` | `syskin` | Jump through the AP import patched to `BIO_FTDI_READ_BYTE_BLOCK`. |
-| `$2476` | `syschout` | Jump through the AP import patched to `BIO_FTDI_WRITE_BYTE_BLOCK`. |
-| `$2479` | `syshexout` | Jump through the AP import patched to the published, A/X/Y-preserving `SYS_WRITE_HEX_BYTE`. |
+| `$238B` | `POUT` | Print CR/LF, copyright banner, files, eight board rows, piece symbols/square shading, and the three legacy display bytes. `POUT1..POUT4` own row/cell scanning. |
+| `$23FC` | `POUT5`, `POUT6` | Preserve X and print a 25-character horizontal border plus CR/LF. |
+| `$240E` | `POUT8` | Print the bottom file labels and `DIS1 DIS2 DIS3` as hex. |
+| `$242A` | `POUT9` | Print CR/LF. |
+| `$2435` | `POUT10`, `POUT11` | Print file labels `00` through `07`. |
+| `$2447` | `POUT12` | Print the row nibble derived from Y. |
+| `$244E` | `POUT13`, `POUT14`, `POUT15` | Print the NUL-terminated copyright banner. |
+| `$245C` | `KIN` | Print `?`, block for one byte, strip bit 7, turn ASCII `0..7` into binary nibbles, and uppercase `a..z`. |
+| `$247D` | `HELP` | Print the NUL-terminated command summary, copyright attribution, and AI-assistance disclosure. |
+| `$248B` | `syskin` | Jump through the AP import patched to `BIO_FTDI_READ_BYTE_BLOCK`. |
+| `$248E` | `syschout` | Jump through the AP import patched to `BIO_FTDI_WRITE_BYTE_BLOCK`. |
+| `$2491` | `syshexout` | Jump through the AP import patched to the published, A/X/Y-preserving `SYS_WRITE_HEX_BYTE`. |
 
 The exact addresses can shift when the adapter changes. The symbol map, not
 this narrative snapshot, is the final address authority.
@@ -418,13 +422,14 @@ this narrative snapshot, is the final address authority.
 
 | Current start | Table | Meaning |
 | --- | --- | --- |
-| `$247C` | `banner` | Visible attribution banner. |
-| `$24B7` | `cpl` | Color letters used by normal/reversed display. |
-| `$24E7` | `cph` | Piece-type letters `KQRRBBNNPPPPPPPP` for both sides. |
-| `$2508` | `SETW` | Standard 32-piece starting locations. |
-| `$2528` | `MOVEX` | Zero plus 16 signed direction deltas. |
-| `$2539` | `POINTS` | King/queen/rook/bishop/knight/pawn capture values by piece index. |
-| `$2549` | `OPNING` | Reverse-walked canned opening reply triples, terminated by `$CC`. |
+| `$2494` | `help_text` | Help text, copyright attribution, and AI-assistance disclosure. |
+| `$253C` | `banner` | Visible attribution banner. |
+| `$2577` | `cpl` | Color letters used by normal/reversed display. |
+| `$25A7` | `cph` | Piece-type letters `KQRRBBNNPPPPPPPP` for both sides. |
+| `$25C8` | `SETW` | Standard 32-piece starting locations. |
+| `$25E8` | `MOVEX` | Zero plus 16 signed direction deltas. |
+| `$25F9` | `POINTS` | King/queen/rook/bishop/knight/pawn capture values by piece index. |
+| `$2609` | `OPNING` | Reverse-walked canned opening reply triples, terminated by `$CC`. |
 
 ## Host Acceptance
 
@@ -436,17 +441,20 @@ this narrative snapshot, is the final address authority.
 - exact wrap-sensitive zero-page bases and aliases;
 - exact fixed entry, SREIB section order, three typed imports, three matching
   ABS16 import relocations, BODY length, and one-sector envelope fit;
-- assembly of all 659 `.a` lines by the real ASM-F2 image under py65, followed
+- assembly of all 678 `.a` lines by the real ASM-F2 image under py65, followed
   by `SEAL` and named `PACKAGE`, with byte-exact comparison to the host AP;
-- py65 execution of lowercase `c`, an opening `p`, human `$62->$42`, an
+- py65 execution of lowercase `h`, verification of the help/copyright/AI text,
+  lowercase `c`, an opening `p`, human `$62->$42`, an
   off-book searched reply, repeated board rendering, and `q` return-stack
   restore.
 
-The 2026-09-10 COM4 transcript proves RAM-envelope load, `AP $3000 $2000`, `C`,
+The 2026-09-10 COM4 transcript proves the preceding `$05E6` build's RAM-envelope
+load, `AP $3000 $2000`, `C`,
 one human/computer exchange, `Q`, the `RET A=AC ... C set` line, installation
 at `B1:9000`, named discovery, and installed execution. The remaining board
 gate is a physical reset followed by named discovery and execution of the
-same carrier.
+same carrier. The help-enabled `$06A6` package additionally requires an `H`
+command board run before its runtime UI is accepted.
 
 ## Refreshing From Upstream
 

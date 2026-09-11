@@ -161,13 +161,17 @@ NOSET		CMP     #'E'            ; [E]
 		BNE	CLDSP
 ;
 NOREV		CMP     #'P'            ; [P]
-		BNE	NOGO	; PLAY CHESS
+		BNE	NOHELP	; PLAY CHESS
 		JSR	GO
 CLDSP		STA	DIS1	; DISPLAY
 		STA	DIS2	; ACROSS
 		STA	DIS3	; DISPLAY
 		BNE	CHESS
 ;
+NOHELP		CMP     #'H'            ; [H]
+		BNE	NOGO
+		JSR     HELP
+		JMP     CHESS
 NOGO		CMP	#$0D            ; [Enter]
 		BNE	NOMV	; MOVE MAN
 		JSR	MOVE	; AS ENTERED
@@ -855,6 +859,13 @@ KIN_ALPHA:              CMP             #'a'
                         BCS             KIN_DONE
                         AND             #$DF
 KIN_DONE:               RTS
+HELP:                   LDX             #$00
+HELP_LOOP:              LDA             help_text,X
+                        BEQ             HELP_DONE
+                        JSR             syschout
+                        INX
+                        BRA             HELP_LOOP
+HELP_DONE:              RTS
 ;; AP-v2 import adapters. The package loader replaces each $FFFF word.
 ;
 ;   MICROCHESS_IMP_READ       <- BIO_FTDI_READ_BYTE_BLOCK (EXEC)
@@ -869,6 +880,12 @@ MICROCHESS_IMP_WRITE_CHAR:
 syshexout:              DB              $4C
 MICROCHESS_IMP_WRITE_HEX:
                         DW              $FFFF
+help_text               DB              "H Help C New E Reverse P Play 0-7 FROMTO Enter Move Q Quit"
+                        DB              $0D,$0A
+                        DB              "(c) 1976 Peter Jennings benlo.com"
+                        DB              $0D,$0A
+                        DB              "R-YORS port AI-assisted with OpenAI Codex; review and hardware-verify."
+                        DB              $0D,$0A,$00
 banner                  DB              "MicroChess (c) 1976 Peter Jennings benlo.com - R-YORS AP"
 		DB              $0d, $0a, $00
 cpl		DB              "WWWWWWWWWWWWWWWWBBBBBBBBBBBBBBBBWWWWWWWWWWWWWWWW"

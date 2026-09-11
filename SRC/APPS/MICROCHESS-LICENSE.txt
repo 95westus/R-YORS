@@ -23,3 +23,10 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+R-YORS adaptation notice
+-------------------------
+The R-YORS-specific adaptation was produced with assistance from OpenAI
+Codex, an AI coding system. Independently review and hardware-verify this
+port before relying on it. This notice does not alter the upstream copyright
+or license terms above.

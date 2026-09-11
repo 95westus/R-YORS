@@ -97,6 +97,14 @@ $body = $body -replace '(?m)CMP\s+#\$43\s*; \[C\]', "CMP     #'C'            ; [
 $body = $body -replace '(?m)CMP\s+#\$45\s*; \[E\]', "CMP     #'E'            ; [E]"
 $body = $body -replace '(?m)CMP\s+#\$40\s*; \[P\]', "CMP     #'P'            ; [P]"
 $body = $body -replace '(?m)CMP\s+#\$41\s*; \[Q\]', "CMP     #'Q'            ; [Q]"
+$body = $body -replace '(?i)BNE\s+NOGO\s+;\s*PLAY CHESS', 'BNE     NOHELP         ; PLAY CHESS'
+$body = $body -replace '(?m)^NOGO([ \t]+CMP)', @'
+NOHELP                 CMP             #'H'            ; [H]
+                        BNE             NOGO
+                        JSR             HELP
+                        JMP             CHESS
+NOGO$1
+'@
 
 # The serial board renderer labels this branch as unconditional but the
 # upstream source encoded it as BNE and relied on the local output routine
@@ -148,11 +156,29 @@ KIN_ALPHA:              CMP             #'a'
                         BCS             KIN_DONE
                         AND             #$DF
 KIN_DONE:               RTS
+HELP:                   LDX             #$00
+HELP_LOOP:              LDA             help_text,X
+                        BEQ             HELP_DONE
+                        JSR             syschout
+                        INX
+                        BRA             HELP_LOOP
+HELP_DONE:              RTS
 ;
 '@
 $body = $body.Substring(0, $kinStart) + $newKin + $body.Substring($kinEnd)
 
 $body = $body -replace '(?m)^banner\s+DB\s+"[^"]*"\s*$', 'banner                  DB              "MicroChess (c) 1976 Peter Jennings benlo.com - R-YORS AP"'
+$helpText = @'
+help_text               DB              "H Help C New E Reverse P Play 0-7 FROMTO Enter Move Q Quit"
+                        DB              $0D,$0A
+                        DB              "(c) 1976 Peter Jennings benlo.com"
+                        DB              $0D,$0A
+                        DB              "R-YORS port AI-assisted with OpenAI Codex; review and hardware-verify."
+                        DB              $0D,$0A,$00
+'@
+$body = [regex]::Replace($body, '(?m)^(banner\s+DB\s+"[^"]*"\s*)$', { param($match)
+    $helpText + "`r`n" + $match.Groups[1].Value
+})
 $body = [regex]::Replace($body, '(?i)\bpout([0-9]*)\b', { param($match) $match.Value.ToUpperInvariant() })
 $body = $body -replace '(?m)^; end of file\s*$', @'
 MICROCHESS_ENGINE_END:
