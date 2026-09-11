@@ -73,6 +73,7 @@ VALUE_HI                EQU             $AF
 CMD_BUF                 EQU             $1A00
 STAGE_BASE              EQU             $0A00
 STAGE_LIMIT_HI          EQU             $1A
+APMAN_LED_PIA_PORTA     EQU             $7FA0
 STR8_SELECT             EQU             $F010
 STR8_SELECT_RAM         EQU             $0203
 STR8_WORKER_ENTRY       EQU             $0200
@@ -670,6 +671,12 @@ APMAN_LOAD_RANGE_BAD:  CLC
 ; ---------------------------------------------------------------------------
 APMAN_STAGE_RAW:       PHP
                         SEI
+; Publish the sector in the upper nibble and Bank 0-2 in the low bits. The
+; following LDA restores the selector expected by STR8_SELECT. HIMON output
+; or its next input wait reclaims Port A after the stage completes.
+                        LDA             SECTOR
+                        ORA             BANK
+                        STA             APMAN_LED_PIA_PORTA
                         LDA             BANK
                         JSR             STR8_SELECT
                         BCC             APMAN_STAGE_SELECT_FAIL

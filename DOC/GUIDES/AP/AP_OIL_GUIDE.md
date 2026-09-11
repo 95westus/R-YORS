@@ -53,6 +53,15 @@ AP B2 name 4000             request a destination
 AP L B2 name 4000           load and link without running
 ```
 
+The current host-qualified APMAN candidate publishes each banked-media stage
+on the eight PIA Port-A LEDs. The displayed byte is `SECTOR|BANK`: the upper
+nibble identifies sector `$8-$F`, while the low bits identify Bank 0-2. This
+applies to `AP`, `AP L`, `AP D`, and `APS`; it adds no delay. HIMON's next
+console output or input wait replaces it with the normal activity/wait status,
+and a launched application remains free to take ownership of Port A. Hardware
+load/inspect/run paths have passed on COM4; operator-observed LED values and
+physical-reset recovery are still pending.
+
 The exact syntax and limits are maintained in the
 [ASM User Guide](../ASM/ASM_USER_GUIDE.md). Safe address choices are in
 [Address Practices](../ASM/ADDRESS_PRACTICES.md).
@@ -90,7 +99,8 @@ APMAN carrier, envelope, staging, and overlay maps are in the
 
 - HIMON owns AP parsing, BODY loading, relocation, resident-import linking,
   entry derivation, and the public AP service.
-- APMAN occupies `$7000-$7BF4` while delegated carrier operations are active.
+- The current APMAN candidate occupies `$7000-$7BFB` while delegated carrier
+  operations are active, leaving four bytes below `$7C00`.
 - Banked media is staged at `$0A00-$19FF`.
 - The HIMON command buffer is at `$7A00`; manager operations shadow it before
   APMAN overwrites its own execution range.

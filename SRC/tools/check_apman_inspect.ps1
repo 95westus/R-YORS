@@ -94,6 +94,7 @@ $tags = @('S','R','E','I','B')
 $bounds = [Collections.Generic.List[string]]::new()
 $cursor = 5
 $exportStart = -1
+$bodyStart = -1
 for ($section = 0; $section -lt $tags.Count; $section++) {
     if (($cursor + 3) -gt $package.Length) { Fail 'truncated section header' }
     $tag = [char]$package[$cursor]
@@ -103,6 +104,7 @@ for ($section = 0; $section -lt $tags.Count; $section++) {
     if ($end -gt $package.Length) { Fail "section $tag is truncated" }
     $bounds.Add(('{0}:{1:X4}-{2:X4}' -f $tag, $cursor, ($end - 1)))
     if ($tag -eq 'E') { $exportStart = $cursor + 3 }
+    if ($tag -eq 'B') { $bodyStart = $cursor + 3 }
     $cursor = $end
 }
 if ($cursor -ne $package.Length) { Fail 'section walk does not end at package length' }
@@ -125,5 +127,25 @@ if ((Map 'APMAN_DUMP_PREFIX') -ge (Map 'APMAN_PRINT_LOCATION')) {
     Fail 'bounded dump routine is outside the inspect-printer slice'
 }
 
+# APMAN owns the PIA display while it stages banked media. Freeze the linked
+# sequence that publishes SECTOR|BANK, reloads BANK into A, and only then calls
+# the checked STR8 selector. This is deliberately before bank switching and
+# remains safe when APMAN executes from its RAM overlay.
+if ($bodyStart -lt 0) { Fail 'BODY payload is missing' }
+$stageOffset = $bodyStart + (Map 'APMAN_STAGE_RAW') - 0x7000
+[byte[]]$stagePrefix = @(
+    0x08, 0x78,             # PHP / SEI
+    0xA5, 0xA8,             # LDA SECTOR
+    0x05, 0xA7,             # ORA BANK
+    0x8D, 0xA0, 0x7F,       # STA $7FA0
+    0xA5, 0xA7,             # LDA BANK
+    0x20, 0x10, 0xF0        # JSR $F010
+)
+for ($i = 0; $i -lt $stagePrefix.Length; $i++) {
+    if ($package[$stageOffset + $i] -ne $stagePrefix[$i]) {
+        Fail ('APMAN stage LED/select prefix differs at +${0:X2}' -f $i)
+    }
+}
+
 Write-Host (('APMAN inspect check OK package=${0:X4} body-end=${1:X4} sections={2} ' +
-    'dump=0000-003F self=APMAN read-only') -f $package.Length, $imageEnd, ($bounds -join ','))
+    'dump=0000-003F self=APMAN read-only LED=SECTOR|BANK') -f $package.Length, $imageEnd, ($bounds -join ','))
