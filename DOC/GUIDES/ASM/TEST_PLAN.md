@@ -51,6 +51,7 @@ make -C SRC asm-opcode-coverage
 make -C SRC asm-dc-check
 make -C SRC asm-error-check
 make -C SRC asm-ap-v2-check
+make -C SRC apman
 make -C SRC ap-store-v1-check
 make -C SRC ap-store-inventory-check
 make -C SRC ap-store-sector-tool-check
@@ -59,8 +60,63 @@ make -C SRC ap-store-slice6-tool-check
 make -C SRC himon-banked-ap-check
 make -C SRC himon-str8-record-check
 make -C SRC himon-io-led-check
+make -C SRC microchess
 make -C SRC str8-readonly-bank-tools-check
 ```
+
+## APMAN Bank/Sector LED Host Qualification
+
+Status: host-qualified; COM4 functional paths accepted; visual LED observation
+and physical-reset recovery pending.
+
+APMAN writes `SECTOR|BANK` to PIA Port A immediately before the checked bank
+selection in `APMAN_STAGE_RAW`. Sector bases `$80-$F0` occupy the upper nibble
+and Bank 0-2 occupies the low bits. Because all banked carrier reads use this
+common staging path, `AP`, `AP L`, `AP D`, and `APS` receive the indication
+without delays. APMAN reloads `BANK` before calling `$F010`, still executes
+from RAM while another bank is selected, and still restores Bank 3 before
+returning. Later HIMON console output or input wait reclaims the display; an
+executed application remains free to own Port A.
+
+The APMAN check freezes the linked `PHP`, `SEI`, LED publication, selector
+reload, and `JSR $F010` bytes. `make -C SRC apman` passes with BODY `$0BFC`,
+end `$7BFC` exclusive, AP-v2 package `$0C2A`, and four bytes of overlay
+headroom below `$7C00`.
+
+Board acceptance must exercise `APS`, `AP D`, `AP L`, and named `AP` across
+the available Bank 0-2 media; observe the encoded bank/sector changes, Bank-3
+restoration, HIMON's subsequent wait/activity status, application handoff,
+and physical-reset recovery. Do not mark the queue item complete from host
+checks alone.
+
+COM4 accepted the guarded B2:8 erase/install, `$0C2A` named discovery, exact
+`AP D` section bounds and prefix, full `APS`, `AP L B1 BANKAUDIT`, and named
+BANKAUDIT execution. The read-only run completed all four CRC rows with B2:8
+CRC `$A5C2`, reported `BANKAUDIT OK; B3 RESTORED`, and returned to a responsive
+HIMON `00.0910(1709)`. No host observation can certify the physical LED pattern,
+and the run did not include a physical RESET, so those two gates remain open.
+
+## Microchess AP Host Qualification
+
+Status: host-qualified and board-qualified for assembly, RAM execution,
+gameplay, Bank-1 carrier installation, discovery, and installed execution.
+Physical-reset persistence after carrier installation remains pending.
+
+The `microchess` target builds Peter Jennings' engine as a fixed `$2000`
+AP-v2 BODY and stages its envelope at `$3000`. Its focused structural check
+retains the upstream notice and license, rejects KIM-only stack reset,
+validates the wrap-sensitive zero-page aliases, and requires the three typed,
+HIMON-published console imports with matching ABS16 relocation rows. The
+pinned py65 smoke also sends the complete symbol-lean `.a` through the real
+ASM-F2 image and requires its `$05E6` AP package to equal the host package
+byte-for-byte. The runtime smoke executes reset, the canned `$13->$33` move,
+a human `$62->$42` move, a
+real off-book searched reply, board output, `A=$AC/C=1`, and restoration of
+the caller stack.
+
+Physical acceptance must follow the card in
+[MICROCHESS_AP.md](MICROCHESS_AP.md) and be appended to the hardware log. Do
+not mark the queue item complete from host execution alone.
 
 Run `git diff --check` before accepting documentation or source changes.
 

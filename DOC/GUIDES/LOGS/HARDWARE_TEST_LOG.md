@@ -26058,3 +26058,300 @@ Bank 3 and extra-destination cases returned `$D0`, all without a dump.
 `APS`, `AP L B1 BANKAUDIT`, and `AP B1 BANKAUDIT` passed. A physical reset
 returned to HIMON, and the final complete 32-sector CRC table was byte-for-byte
 identical to the post-install baseline. Result: accepted.
+
+## 2026-09-10 SYS_WRITE_HEX_BYTE HIMON Update On COM4
+
+The current HIMON-only payload was built and installed through the accepted
+STR8-N 1.32 guarded range path. The update selected only Bank 3 sectors C-E;
+sector F and the existing ASM-F2 sectors 8-B were not selected.
+
+```text
+artifact       SRC/BUILD/s19/himon-apv2-bank3-c-e.s19
+SHA-256        40C9BCB2D31BD15483FF09AF52A856DBCF1993B3DC6597FD0BAC0C47C09AEE8A
+records        385
+range / S9     $C000-$EFFF / $C000
+resident end   $EEB2
+margin         $014E
+```
+
+Three initial automation attempts stopped before the installer command because
+they did not wait through the complete six-second reset quarantine and live
+selector boundary. They reached no bank, range, S19, or commit phase, so flash
+was untouched. The corrected token-driven run waited for the live selector,
+entered the STR8-N shell, and completed the guarded transaction:
+
+```text
+RST S
+
+STR8-N 1.32
+0-2 C W S: S
+I L C W J
+STR8-N>I
+B0-3: 3
+RANGE: C-E
+I B3 C-E WRITE? Y: Y
+S19
+..COMMIT? Y: Y.
+OK
+STR8-N>
+```
+
+The shell then cold-entered the new image and HIMON's resident catalog returned
+the new SYS record with its expected stable hash, callable address, kind, and
+text:
+
+```text
+STR8-N>C
+BOOT COLD
+
+HIMON V 00.0910(1612)
+># SYS_WRITE_HEX_BYTE
+A1722743 ENTRY=E6A1 K=05  WRITE HEX
+>
+```
+
+Result: the HIMON C-E update and `SYS_WRITE_HEX_BYTE` publication are accepted
+on COM4. The existing ASM-F2 image was deliberately preserved for the operator's
+MicroChess assembly session. MicroChess execution and physical-reset evidence
+remain separate pending gates.
+
+## 2026-09-10 MicroChess First Board Run: Hex-Service Y Regression
+
+The operator supplied a 10,000-line, 174,958-byte capture with SHA-256
+`C6A79072E01C1C5351576D7388DC815E7E2338F48ADA707BA0140C005E3D2F89`.
+It contains 4,999 repetitions of `|  |30`, 4,998 full horizontal borders, one
+truncated border, and a final physical `RST H`. This is a failed execution
+record, not MicroChess acceptance.
+
+The pattern identifies a register-contract regression in the newly published
+`SYS_WRITE_HEX_BYTE`. MicroChess keeps the board position in `Y`; `POUT12`
+formats the row from `Y` and the caller immediately reuses it. The original
+private formatter left `Y` unchanged, while the first SYS veneer preserved only
+`A/X` and allowed `COR_FTDI_WRITE_HEX_BYTE` to clobber `Y`. The resulting row
+advance repeatedly returned to the same board fragment.
+
+The corrected SYS veneer now brackets the COR call with `PHX`, `PHY`, `PLY`,
+and `PLX`, defining `A/X/Y` as preserved while retaining the backend carry
+status. The exact veneer bytes are host-asserted. `make -C SRC microchess`,
+`make -C SRC himon-io-led-check`, and the full `make -C SRC asm-test` suite
+pass; the MicroChess AP remains byte-identical at 1,510 bytes and therefore
+does not need to be reassembled for this correction.
+
+Corrected pending board image:
+
+```text
+artifact       SRC/BUILD/s19/himon-apv2-bank3-c-e.s19
+visible stamp  HIMON V 00.0910(1630)
+SHA-256        867546A70D6CA7E94F3900CF4C1AFAB9555B735F1798BF1982C2C43537850684
+records        385
+range / S9     $C000-$EFFF / $C000
+resident end   $EEB4
+margin         $014C
+```
+
+An attempted connection for the corrective install found COM4 owned by another
+terminal and stopped at port open with `Access to the port 'COM4' is denied.`
+No installer command or flash path was entered. Corrected C-E installation,
+MicroChess gameplay, `Q` return, and physical-reset recovery remain pending.
+
+## 2026-09-10 MicroChess Corrected HIMON Install And Gameplay
+
+After COM4 was released, the corrected HIMON image identified above was
+installed through the guarded STR8-N 1.32 Bank 3 C-E path. A first automation
+attempt stopped at the HIMON `RUN STR8 ... ?` confirmation because both prompt
+tokens arrived in one host read; it entered no STR8-N or flash path. The retry
+completed the reviewed two-stage transaction:
+
+```text
+STR8
+RUN STR8: BOOTLOADER @C15A K=03 ? Y
+RST S
+
+STR8-N 1.32
+0-2 C W S: S
+I L C W J
+STR8-N>I
+B0-3: 3
+RANGE: C-E
+I B3 C-E WRITE? Y: Y
+S19
+..COMMIT? Y: Y.
+OK
+STR8-N>C
+BOOT COLD
+
+HIMON V 00.0910(1630)
+># SYS_WRITE_HEX_BYTE
+A1722743 ENTRY=E6A1 K=05  WRITE HEX
+>
+```
+
+This selected only Bank 3 sectors C-E; ASM-F2 sectors 8-B and STR8-N sector F
+were not selected. The first MicroChess rerun proved that the SYS hex fix ended
+the infinite `$30` row loop, but exposed a separate application-level flag
+dependency: each initialized piece row stopped after `WK`. `POUT42` used `BNE`
+as a documented always-branch after `syschout`, while the imported BIO service
+does not promise N/Z and restores an X value of zero with `PLX` for the king.
+
+The port and its generator now encode `BRA POUT3`, removing that undocumented
+condition-code dependency without changing body or envelope length. The new
+BODY FNV is `$BA97DF23`. Host structural, runtime, and exact onboard-package
+checks pass.
+
+The corrected 657-line `.a` was then assembled on the installed ASM-F2. Exact
+seal/package identity and AP entry were observed:
+
+```text
+SEAL
+SEAL OK
+SEAL> PACKAGE MICROCHESS $3000
+PKG OK @=$3000 L=$05E6
+SEAL> .
+>AP $3000 $2000
+GO 2000
+```
+
+All eight files and ranks rendered completely. The exercised command stream
+was `C`, `P`, `6242`, Enter, `P`, `Q`: it initialized the standard position,
+made the canned opening move, accepted the human `$62->$42` move, performed a
+searched reply, and returned through HIMON:
+
+```text
+#GO# ENTRY=2000
+RET A=AC X=FB Y=80 P=B5 S=FD Nv-BdIzC
+>
+```
+
+Result: corrected HIMON installation, onboard assembly, column-wise AP-v2
+package generation, import binding, complete rendering, human/computer exchange,
+and clean `A=$AC/C=1` return are accepted. Operator-observed physical RESET and
+recovery through STR8-N/HIMON remains the final MicroChess gate.
+
+## 2026-09-10 MicroChess Carrier Install And Firmware Refresh
+
+The operator-supplied 1,406-line MicroChess transcript is 35,157 bytes with
+SHA-256 `FBE460CE423A7DE21746F3C02491DCC5186A0FC7AFD60E9A4805B0E3EEA72481`.
+It extends the corrected gameplay proof through a Bank-1 carrier install.
+
+The onboard source retained the complete upstream copyright/license notice and
+AI-adaptation disclosure. Assembly ended at `$2565` with `ASM OK`; packaging at
+`$3000` produced the expected `$05E6` envelope. `AP 3000 2000` linked all three
+imports, rendered complete boards, exercised the opening and searched-move
+paths, and returned `A=$AC` with carry set.
+
+Two deliberately tried noncanonical install forms were rejected as
+`INST OPERAND`. The accepted form then wrote and verified the first eligible
+Bank-1 carrier:
+
+```text
+SEAL> INSTALL 3000 B1
+INST B1 9000 L=05E6
+...
+APS 19 APC MICROCHESS L=05E6
+APS OK
+>AP B1 MICROCHESS
+AP LOAD B1 9000 -> 2000
+GO 2000
+```
+
+The later `#56AD7400# EXEC ERR=$03` is the documented ASM wrapper's sticky
+status from the rejected operand attempts; it is not an install or AP-loader
+failure. Result: MicroChess onboard assembly, RAM execution, Bank-1 install,
+named discovery, and installed execution are accepted. The supplied text does
+not contain a physical RESET after installation, so reset-persistence remains
+the only open MicroChess carrier gate.
+
+The board was then updated on COM4 in requested component order. Guarded STR8-N
+Top Update verified a fresh `B1:F` backup, programmed Bank 3 sector F, verified
+the candidate, and restarted through the new immediate banner:
+
+```text
+STR8-N 1.32 VERIFIED; RESET
+
+RST S
+
+STR8-N 1.32
+0-2 C W S:
+```
+
+The new top BIN SHA-256 is
+`A55142FC996C38BDAF3E64E1685E5EC361286D637AE757492D078282E88FC0A3`.
+The first HIMON-only C-E update completed with `OK`. An attempted ASM-only
+8-B update mistakenly used a stale release-tree component and was rejected as
+`FAIL` after three sector dots. Because STR8-N journals START before receiving
+S19, it correctly rejected subsequent partial retries as `BAD`. Recovery used
+the freshly regenerated, dense full writable Bank-3 `8-E` stream, reached
+`COMMIT? Y`, and completed with `OK`; protected sector F was outside that
+transaction.
+
+Final live identities and installed-carrier verification were:
+
+```text
+HIMON V 00.0910(1709)
+>ASM NEW
+ASM-F2 00.0910(1709)
+ASM>$2000: END
+ASM OK
+SEAL> .
+ASM BYE
+>APS B1 MICROCHESS
+APS B1 9000 APC MICROCHESS L=05E6 @2000
+>AP B1 MICROCHESS
+AP LOAD B1 9000 -> 2000
+GO 2000
+```
+
+The installed application rendered completely and `Q` returned to HIMON. The
+append-only serial JSONL is retained locally at
+`C:/SRC/STR8-N/BUILD/board/2026-09-10-str8-himon-asm-update.jsonl`, SHA-256
+`6B9C64259C8C73E3FC44ADD9E25C623A65AD4BA9C9DAEA7C39ED11EE38FB68C6`.
+
+## 2026-09-10 APMAN Bank/Sector LED Carrier Update On COM4
+
+The host-qualified APMAN candidate was installed into its approved B2:8
+carrier sector through the guarded STR8-N 1.32 path. Reviewed identities were:
+
+```text
+APMAN BODY             $7000-$7BFB; $0BFC bytes
+APMAN BODY FNV-1a      $2E7174F4
+APMAN package          $0C2A
+package SHA-256        7BDBF6BEED95958637750604F06698B5ED92DE03BA941A9AFC06D60FE53FD718
+dense S19 SHA-256      AC2774DCAC41FC49401935E101308DC94306B5E13A4065F81856DDC64DEA6A82
+```
+
+Before mutation, the current Bank Maintenance map identified B2:8 as the sole
+valid Bank-2 AP carrier, length `$0C23`, with B2:9-F erased and directory row
+`D2 A2 APC02 FFFF FCFFFFFF`. The operator path erased only B2:8 with the exact
+`ERASE 28` confirmation and received `. OK`. STR8-N then selected only `B2 8-8`,
+received the new dense S19, asked for the separate commit, programmed one
+sector, verified it, and returned `OK`:
+
+```text
+I B2 8-8 WRITE? Y: Y
+S19
+COMMIT? Y: Y.
+OK
+```
+
+A cold HIMON entry identified `HIMON V 00.0910(1709)`. Named status and
+read-only inspection found the exact new carrier:
+
+```text
+APS B2 8000 APC APMAN L=0C2A @7000
+APD B2 8000 APC APMAN L=0C2A @7000
+S 0005-0012
+R 0013-0016
+E 0017-0026
+I 0027-002A
+B 002B-0C29
+```
+
+Full `APS` classified B2:8 as `APC APMAN L=0C2A` and B2:9-F as erased.
+`AP L B1 BANKAUDIT` returned after loading at `$2000`; named `AP B1 BANKAUDIT`
+then completed all four read-only CRC rows, reported B2:8 CRC `$A5C2`, printed
+`BANKAUDIT OK; B3 RESTORED`, and returned to a responsive HIMON prompt.
+
+The serial functional update and bank-restoration rails pass. This transcript
+does not claim visual LED acceptance because the host cannot observe the eight
+physical lamps, and no physical RESET was performed after installation. Keep
+the feature-queue item open until the operator confirms both observations.

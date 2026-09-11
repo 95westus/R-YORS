@@ -6,6 +6,35 @@ Review this checklist before starting any ASM feature implementation. An item
 stays unchecked until its source, regression tests, documentation, resident
 size measurement, and required hardware proof are complete.
 
+### Candidate: APMAN bank/sector LED activity
+
+- [ ] Accept APMAN's banked-media activity display on hardware. The common
+  `APMAN_STAGE_RAW` path publishes `SECTOR|BANK` to PIA Port A before its
+  checked bank selection, so `AP`, `AP L`, `AP D`, and `APS` expose each
+  staged sector without delays or changes to the bank-selector ABI. The
+  focused linked-byte check and `make -C SRC apman` pass with BODY `$0BFC`,
+  end `$7BFC` exclusive, package `$0C2A`, and four bytes remaining below the
+  `$7C00` overlay limit. COM4 accepted the guarded B2:8 erase/install, exact
+  `$0C2A` discovery and inspection, full `APS`, `AP L`, named BANKAUDIT
+  execution, CRC report, Bank-3 restoration, and return to HIMON on 2026-09-10.
+  Remaining board proof: operator-observed Bank 0-2/sector LED changes and a
+  physical-reset recovery.
+
+### Candidate: Peter Jennings Microchess AP
+
+- [ ] Accept the fixed-load `$2000` Microchess AP on hardware. The port retains
+  Peter Jennings' copyright, redistribution conditions, disclaimer, Daryl
+  Rictor serial adaptation credit, and Bill Forster OCR-correction credit. The
+  WDC source and onboard `.a`, `$0565`-byte BODY, `$05E6` AP-v2 envelope,
+  package FNV32 `$BA97DF23`, three published HIMON console imports, complete
+  routine guide, exact host/onboard package comparison, structural checks, and
+  py65 opening/human/off-book-search runtime smoke agree. COM4 proof now covers
+  exact onboard assembly, `PKG OK @=$3000 L=$05E6`, load
+  at `$3000`, complete board rendering, opening and human moves, searched reply,
+  and `Q` return with `A=$AC/C=1`. Remaining proof: physically reset and confirm
+  recovery through STR8-N/HIMON. See
+  [MICROCHESS_AP.md](../ASM/MICROCHESS_AP.md).
+
 ### Accepted: live HIMON USB indication
 
 - [x] Replace HIMON's private blocking input call with cooperative nonblocking
