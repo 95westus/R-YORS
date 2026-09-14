@@ -76,14 +76,14 @@ ASMF_CMD_PTR_HI        EQU             $83
 ; HIMON retains the canonical top-level command in its fixed input buffer.
 ASMF_HIM_CMD_ARG      EQU             $7A04
 
-HIM_SVC_FLASH_INSTALL_LO EQU           $7E25
-HIM_SVC_FLASH_INSTALL_HI EQU           $7E26
-HIM_FLASH_SRC_LO       EQU             $7E27
-HIM_FLASH_SRC_HI       EQU             $7E28
-HIM_FLASH_DST_LO       EQU             $7E29
-HIM_FLASH_DST_HI       EQU             $7E2A
-HIM_FLASH_LEN_LO       EQU             $7E2B
-HIM_FLASH_LEN_HI       EQU             $7E2C
+HIM_SVC_FLASH_INSTALL_LO EQU           ASM_ABI_FLASH_INSTALL
+HIM_SVC_FLASH_INSTALL_HI EQU           ASM_ABI_FLASH_INSTALL+$01
+HIM_FLASH_SRC_LO       EQU             ASM_ABI_FLASH_INSTALL+$02
+HIM_FLASH_SRC_HI       EQU             ASM_ABI_FLASH_INSTALL+$03
+HIM_FLASH_DST_LO       EQU             ASM_ABI_FLASH_INSTALL+$04
+HIM_FLASH_DST_HI       EQU             ASM_ABI_FLASH_INSTALL+$05
+HIM_FLASH_LEN_LO       EQU             ASM_ABI_FLASH_INSTALL+$06
+HIM_FLASH_LEN_HI       EQU             ASM_ABI_FLASH_INSTALL+$07
 HIM_SVC_AP_LO          EQU             ASM_ABI_AP_SERVICE
 HIM_SVC_AP_HI          EQU             ASM_ABI_AP_SERVICE+$01
 HIM_AP_OP              EQU             ASM_ABI_AP_OP

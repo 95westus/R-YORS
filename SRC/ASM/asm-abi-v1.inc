@@ -9,6 +9,7 @@
 ASM_ABI_VERSION             EQU             $01
 
 ; HIMON resident service-vector block.
+ASM_ABI_HASH_ACQUIRE        EQU             $7E00
 ASM_ABI_SVC_SIG0            EQU             $7E02
 ASM_ABI_SVC_SIG1            EQU             $7E03
 ASM_ABI_SVC_VERSION         EQU             $7E04

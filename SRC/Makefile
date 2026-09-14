@@ -723,7 +723,7 @@ release-files: board-s19-check apman bank-audit bank-dump life pia-led-show rom-
 asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show microchess asm-ap-v2-check asm-error-check
 	@echo "ASM v1 smoke checks passed."
 
-asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
+asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(ASM_V1_FLASH_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_ABI_CHECK) -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)"
 
 asm-terminal-check: $(ASM_TERMINAL_CHECK) ../DOC/GUIDES/ASM/SAMPLES/terminal-answerback-vt100-3000.a ../DOC/GUIDES/ASM/SAMPLES/vt102-exerciser-7000.a ../DOC/GUIDES/ASM/SAMPLES/vt525-exerciser-7000.a

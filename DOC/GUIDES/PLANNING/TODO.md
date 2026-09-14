@@ -213,6 +213,15 @@ B1:F backup, and `Q` rejection through `HSH_NF!`.
   later decisions. This item does not mark the AP Store consolidation or
   scoped FNV-search gates complete.
 
+  The first narrow boundary slice is complete on the host: the ASM ABI include
+  is now the sole literal owner for HIMON/ASM published `$7E00-$7E40`
+  addresses, the core/wrapper/HIMON names are checked aliases, and the focused
+  interface ledger records initialization, calls, clobbers, RAM effects,
+  banking, and failure side effects. Frozen-stamp before/after ASM and HIMON
+  S19 files are byte-identical; `asm-test` passes. This establishes one Phase 0
+  contract baseline but does not complete the wider byte-ownership audit or AP
+  source extraction.
+
 - [x] Add the simple carrier path `SEAL> INSTALL package Bn` for Banks 0-2.
   The proven implementation finds the first completely erased and unreserved 4K
   sector, keeps exactly one complete AP v2 envelope there, treats `Bn` as the

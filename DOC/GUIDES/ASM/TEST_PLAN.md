@@ -64,6 +64,23 @@ make -C SRC microchess
 make -C SRC str8-readonly-bank-tools-check
 ```
 
+### HIMON/ASM ABI single-source gate
+
+`asm-abi-check` treats `SRC/ASM/asm-abi-v1.inc` as the sole literal-address
+authority for the published `$7E00-$7E40` HIMON/ASM boundary. It verifies the
+fixed values and AP-v2 package contract, exact HIMON service-vector order, and
+the aliases used by HIMON, the ASM core, and the flash wrapper. It also rejects
+any new literal `EQU` in that range outside the canonical ABI include.
+
+The 2026-09-14 zero-byte cleanup was built before and after with frozen visible
+stamp `0914(1200)`. Both builds produced identical ASM S19 SHA-256
+`EE0F64FBEA17B14625242A2B5FE8325FEFF8EE44F830EBA825D61453C2A5B385`
+and identical HIMON S19 SHA-256
+`91FFD858A5460F10C8D1CF67A893DAE4E9144FF8C1A95C59D0FC75D59C5D7558`.
+ASM remains `_END_DATA=$BD95`; HIMON remains `_END_DATA=$EEF6`. Because no
+emitted byte, RAM allocation, command behavior, or bank behavior changed, the
+existing hardware evidence remains applicable and no new board gate is opened.
+
 ## APMAN Bank/Sector LED Host Qualification
 
 Status: host-qualified; COM4 functional paths accepted; visual LED observation

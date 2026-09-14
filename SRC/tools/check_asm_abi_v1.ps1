@@ -1,6 +1,7 @@
 param(
     [string]$ContractPath = "ASM/asm-abi-v1.inc",
     [string]$AsmSourcePath = "ASM/asm-v1-core.asm",
+    [string]$AsmFlashSourcePath = "ASM/asm-v1-flash.asm",
     [string]$HimonSourcePath = "HIMON/himon.asm",
     [string]$HimonSharedPath = "HIMON/himon-shared-eq.inc",
     [string]$PackagePath = "BUILD/bin/asm-session-report-v1.2-7000.ap.bin"
@@ -18,18 +19,49 @@ function Read-Equ([string]$Text, [string]$Name) {
     return [int][char]$token[1]
 }
 
-foreach ($path in @($ContractPath, $AsmSourcePath, $HimonSourcePath,
+function Read-EquRhs([string]$Text, [string]$Name) {
+    $pattern = '(?m)^' + [regex]::Escape($Name) + '\s+EQU\s+([^;\r\n]+)'
+    $match = [regex]::Match($Text, $pattern)
+    if (-not $match.Success) { Fail "missing alias $Name" }
+    return ($match.Groups[1].Value -replace '\s+', '').Trim()
+}
+
+function Assert-Aliases([string]$Text, [System.Collections.IDictionary]$Aliases,
+        [string]$Owner) {
+    foreach ($entry in $Aliases.GetEnumerator()) {
+        $actual = Read-EquRhs $Text $entry.Key
+        if ($actual -ne $entry.Value) {
+            Fail "$Owner $($entry.Key) uses $actual, expected $($entry.Value)"
+        }
+    }
+}
+
+function Assert-NoPublishedLiteralEqu([string]$Text, [string]$Owner) {
+    $matches = [regex]::Matches(
+        $Text,
+        '(?mi)^\s*([A-Z][A-Z0-9_]*)\s+EQU\s+\$([0-9A-F]{4})\s*(?:;.*)?$')
+    foreach ($match in $matches) {
+        $value = [Convert]::ToInt32($match.Groups[2].Value, 16)
+        if ($value -ge 0x7E00 -and $value -le 0x7E40) {
+            Fail "$Owner duplicates published address in $($match.Groups[1].Value)"
+        }
+    }
+}
+
+foreach ($path in @($ContractPath, $AsmSourcePath, $AsmFlashSourcePath, $HimonSourcePath,
         $HimonSharedPath, $PackagePath)) {
     if (-not (Test-Path -LiteralPath $path)) { Fail "missing input $path" }
 }
 
 $contract = [IO.File]::ReadAllText((Resolve-Path $ContractPath))
 $asm = [IO.File]::ReadAllText((Resolve-Path $AsmSourcePath))
+$asmFlash = [IO.File]::ReadAllText((Resolve-Path $AsmFlashSourcePath))
 $himon = [IO.File]::ReadAllText((Resolve-Path $HimonSourcePath))
 $shared = [IO.File]::ReadAllText((Resolve-Path $HimonSharedPath))
 
 $expected = [ordered]@{
     ASM_ABI_VERSION = 1
+    ASM_ABI_HASH_ACQUIRE = 0x7E00
     ASM_ABI_SVC_SIG0 = 0x7E02; ASM_ABI_SVC_SIG1 = 0x7E03
     ASM_ABI_SVC_VERSION = 0x7E04; ASM_ABI_SVC_COUNT = 0x7E05
     ASM_ABI_SVC_FIRST_VECTOR = 0x7E06; ASM_ABI_SVC_CHECKSUM = 0x7E1C
@@ -45,6 +77,7 @@ $expected = [ordered]@{
     ASM_ABI_AP_INSTALL = 0x7E3D; ASM_ABI_AP_RELOC_PTR = 0x7E3F
     ASM_ABI_AP_OP_PARSE = 0; ASM_ABI_AP_OP_LOAD = 1
     ASM_ABI_AP_OP_SUGGEST = 2; ASM_ABI_AP_OP_LINK = 3
+    ASM_ABI_AP_OP_MANAGER = 4
     ASM_ABI_STATUS_OK = 0; ASM_ABI_STATUS_BAD_RANGE = 6
     ASM_ABI_STATUS_BAD_LINE = 7; ASM_ABI_STATUS_BAD_FIX = 9
     ASM_ABI_AP_SIG0_VALUE = [int][char]'A'; ASM_ABI_AP_SIG1_VALUE = [int][char]'P'
@@ -64,29 +97,136 @@ foreach ($entry in $expected.GetEnumerator()) {
     if ($actual -ne $entry.Value) { Fail "$($entry.Key)=$actual, expected $($entry.Value)" }
 }
 
-foreach ($text in @($asm, $himon)) {
+foreach ($text in @($asm, $asmFlash, $himon)) {
     if (-not $text.Contains('INCLUDE         "ASM/asm-abi-v1.inc"')) {
         Fail 'ASM and HIMON must include the canonical contract'
     }
 }
 
-$addressPairs = [ordered]@{
+$himonAliases = [ordered]@{
+    RJOIN_EXEC_XY_LO = 'ASM_ABI_HASH_ACQUIRE'
+    RJOIN_EXEC_XY_HI = 'ASM_ABI_HASH_ACQUIRE+$01'
     HIM_SVC_SIG0 = 'ASM_ABI_SVC_SIG0'; HIM_SVC_SIG1 = 'ASM_ABI_SVC_SIG1'
     HIM_SVC_VERSION = 'ASM_ABI_SVC_VERSION'; HIM_SVC_COUNT = 'ASM_ABI_SVC_COUNT'
-    HIM_SVC_JOIN_LO = 'ASM_ABI_SVC_FIRST_VECTOR'; HIM_SVC_CHECKSUM = 'ASM_ABI_SVC_CHECKSUM'
-    HIM_SVC_PACK40_ASCII_LO = 'ASM_ABI_PACK40_ASCII'; HIM_SVC_PACK40_PACK3_LO = 'ASM_ABI_PACK40_PACK3'
-    HIM_AP_IMPORT_LO = 'ASM_ABI_AP_IMPORT_PTR'; HIM_SVC_FLASH_INSTALL_LO = 'ASM_ABI_FLASH_INSTALL'
-    HIM_SVC_AP_LO = 'ASM_ABI_AP_SERVICE'; HIM_AP_OP = 'ASM_ABI_AP_OP'
+    HIM_SVC_JOIN_LO = 'ASM_ABI_SVC_FIRST_VECTOR'
+    HIM_SVC_JOIN_HI = 'ASM_ABI_SVC_FIRST_VECTOR+$01'
+    HIM_SVC_WRITE_BYTE_LO = 'ASM_ABI_SVC_FIRST_VECTOR+$02'
+    HIM_SVC_WRITE_BYTE_HI = 'ASM_ABI_SVC_FIRST_VECTOR+$03'
+    HIM_SVC_WRITE_CSTRING_LO = 'ASM_ABI_SVC_FIRST_VECTOR+$04'
+    HIM_SVC_WRITE_CSTRING_HI = 'ASM_ABI_SVC_FIRST_VECTOR+$05'
+    HIM_SVC_WRITE_HEX_BYTE_LO = 'ASM_ABI_SVC_FIRST_VECTOR+$06'
+    HIM_SVC_WRITE_HEX_BYTE_HI = 'ASM_ABI_SVC_FIRST_VECTOR+$07'
+    HIM_SVC_WRITE_CRLF_LO = 'ASM_ABI_SVC_FIRST_VECTOR+$08'
+    HIM_SVC_WRITE_CRLF_HI = 'ASM_ABI_SVC_FIRST_VECTOR+$09'
+    HIM_SVC_READ_CSTRING_LO = 'ASM_ABI_SVC_FIRST_VECTOR+$0A'
+    HIM_SVC_READ_CSTRING_HI = 'ASM_ABI_SVC_FIRST_VECTOR+$0B'
+    HIM_SVC_HEX_NIB_LO = 'ASM_ABI_SVC_FIRST_VECTOR+$0C'
+    HIM_SVC_HEX_NIB_HI = 'ASM_ABI_SVC_FIRST_VECTOR+$0D'
+    HIM_SVC_FNV_INIT_LO = 'ASM_ABI_SVC_FIRST_VECTOR+$0E'
+    HIM_SVC_FNV_INIT_HI = 'ASM_ABI_SVC_FIRST_VECTOR+$0F'
+    HIM_SVC_FNV_UPDATE_LO = 'ASM_ABI_SVC_FIRST_VECTOR+$10'
+    HIM_SVC_FNV_UPDATE_HI = 'ASM_ABI_SVC_FIRST_VECTOR+$11'
+    HIM_SVC_UPPER_LO = 'ASM_ABI_SVC_FIRST_VECTOR+$12'
+    HIM_SVC_UPPER_HI = 'ASM_ABI_SVC_FIRST_VECTOR+$13'
+    HIM_SVC_WRITE_HBSTRING_LO = 'ASM_ABI_SVC_FIRST_VECTOR+$14'
+    HIM_SVC_WRITE_HBSTRING_HI = 'ASM_ABI_SVC_FIRST_VECTOR+$15'
+    HIM_SVC_CHECKSUM = 'ASM_ABI_SVC_CHECKSUM'
+    HIM_SVC_PACK40_ASCII_LO = 'ASM_ABI_PACK40_ASCII'
+    HIM_SVC_PACK40_ASCII_HI = 'ASM_ABI_PACK40_ASCII+$01'
+    HIM_SVC_PACK40_PACK3_LO = 'ASM_ABI_PACK40_PACK3'
+    HIM_SVC_PACK40_PACK3_HI = 'ASM_ABI_PACK40_PACK3+$01'
+    HIM_AP_IMPORT_LO = 'ASM_ABI_AP_IMPORT_PTR'
+    HIM_AP_IMPORT_HI = 'ASM_ABI_AP_IMPORT_PTR+$01'
+    HIM_SVC_FLASH_INSTALL_LO = 'ASM_ABI_FLASH_INSTALL'
+    HIM_SVC_FLASH_INSTALL_HI = 'ASM_ABI_FLASH_INSTALL+$01'
+    HIM_FLASH_SRC_LO = 'ASM_ABI_FLASH_INSTALL+$02'
+    HIM_FLASH_SRC_HI = 'ASM_ABI_FLASH_INSTALL+$03'
+    HIM_FLASH_DST_LO = 'ASM_ABI_FLASH_INSTALL+$04'
+    HIM_FLASH_DST_HI = 'ASM_ABI_FLASH_INSTALL+$05'
+    HIM_FLASH_LEN_LO = 'ASM_ABI_FLASH_INSTALL+$06'
+    HIM_FLASH_LEN_HI = 'ASM_ABI_FLASH_INSTALL+$07'
+    HIM_SVC_AP_LO = 'ASM_ABI_AP_SERVICE'
+    HIM_SVC_AP_HI = 'ASM_ABI_AP_SERVICE+$01'
+    HIM_AP_OP = 'ASM_ABI_AP_OP'
     HIM_AP_STATUS = 'ASM_ABI_AP_STATUS'; HIM_AP_SRC_LO = 'ASM_ABI_AP_SRC'
-    HIM_AP_DST_LO = 'ASM_ABI_AP_DST'; HIM_AP_PKG_LEN_LO = 'ASM_ABI_AP_PACKAGE_LEN'
-    HIM_AP_BODY_LO = 'ASM_ABI_AP_BODY'; HIM_AP_BODY_LEN_LO = 'ASM_ABI_AP_BODY_LEN'
+    HIM_AP_SRC_HI = 'ASM_ABI_AP_SRC+$01'
+    HIM_AP_DST_LO = 'ASM_ABI_AP_DST'; HIM_AP_DST_HI = 'ASM_ABI_AP_DST+$01'
+    HIM_AP_PKG_LEN_LO = 'ASM_ABI_AP_PACKAGE_LEN'
+    HIM_AP_PKG_LEN_HI = 'ASM_ABI_AP_PACKAGE_LEN+$01'
+    HIM_AP_BODY_LO = 'ASM_ABI_AP_BODY'; HIM_AP_BODY_HI = 'ASM_ABI_AP_BODY+$01'
+    HIM_AP_BODY_LEN_LO = 'ASM_ABI_AP_BODY_LEN'
+    HIM_AP_BODY_LEN_HI = 'ASM_ABI_AP_BODY_LEN+$01'
     HIM_AP_RELOC_COUNT = 'ASM_ABI_AP_RELOC_COUNT'; HIM_AP_IMPORT_COUNT = 'ASM_ABI_AP_IMPORT_COUNT'
-    HIM_AP_INSTALL_LO = 'ASM_ABI_AP_INSTALL'; HIM_AP_REL_LO = 'ASM_ABI_AP_RELOC_PTR'
+    HIM_AP_INSTALL_LO = 'ASM_ABI_AP_INSTALL'; HIM_AP_INSTALL_HI = 'ASM_ABI_AP_INSTALL+$01'
+    HIM_AP_REL_LO = 'ASM_ABI_AP_RELOC_PTR'; HIM_AP_REL_HI = 'ASM_ABI_AP_RELOC_PTR+$01'
+    HIM_AP_OP_PARSE = 'ASM_ABI_AP_OP_PARSE'; HIM_AP_OP_LOAD = 'ASM_ABI_AP_OP_LOAD'
+    HIM_AP_OP_SUGGEST = 'ASM_ABI_AP_OP_SUGGEST'; HIM_AP_OP_LINK = 'ASM_ABI_AP_OP_LINK'
+    HIM_AP_OP_MANAGER = 'ASM_ABI_AP_OP_MANAGER'
 }
-foreach ($entry in $addressPairs.GetEnumerator()) {
-    $actual = Read-Equ $shared $entry.Key
-    if ($actual -ne $expected[$entry.Value]) { Fail "$($entry.Key) moved" }
+Assert-Aliases $shared $himonAliases 'HIMON'
+
+$asmAliases = [ordered]@{
+    ASM_SEED_HASH_ACQUIRE_LO = 'ASM_ABI_HASH_ACQUIRE'
+    ASM_SEED_HASH_ACQUIRE_HI = 'ASM_ABI_HASH_ACQUIRE+$01'
+    ASM_HIM_SVC_SIG0 = 'ASM_ABI_SVC_SIG0'
+    ASM_HIM_SVC_SIG1 = 'ASM_ABI_SVC_SIG1'
+    ASM_HIM_SVC_VERSION = 'ASM_ABI_SVC_VERSION'
+    ASM_HIM_SVC_COUNT = 'ASM_ABI_SVC_COUNT'
+    ASM_HIM_SVC_JOIN_LO = 'ASM_ABI_SVC_FIRST_VECTOR'
+    ASM_HIM_SVC_CHECKSUM = 'ASM_ABI_SVC_CHECKSUM'
+    ASM_HIM_SVC_PACK40_ASCII_LO = 'ASM_ABI_PACK40_ASCII'
+    ASM_HIM_SVC_PACK40_ASCII_HI = 'ASM_ABI_PACK40_ASCII+$01'
+    ASM_HIM_SVC_PACK40_PACK3_LO = 'ASM_ABI_PACK40_PACK3'
+    ASM_HIM_SVC_PACK40_PACK3_HI = 'ASM_ABI_PACK40_PACK3+$01'
+    ASM_HIM_SVC_AP_LO = 'ASM_ABI_AP_SERVICE'
+    ASM_HIM_SVC_AP_HI = 'ASM_ABI_AP_SERVICE+$01'
+    ASM_HIM_AP_OP = 'ASM_ABI_AP_OP'
+    ASM_HIM_AP_STATUS = 'ASM_ABI_AP_STATUS'
+    ASM_HIM_AP_SRC_LO = 'ASM_ABI_AP_SRC'
+    ASM_HIM_AP_SRC_HI = 'ASM_ABI_AP_SRC+$01'
+    ASM_HIM_AP_DST_LO = 'ASM_ABI_AP_DST'
+    ASM_HIM_AP_DST_HI = 'ASM_ABI_AP_DST+$01'
+    ASM_HIM_AP_PKG_LEN_LO = 'ASM_ABI_AP_PACKAGE_LEN'
+    ASM_HIM_AP_PKG_LEN_HI = 'ASM_ABI_AP_PACKAGE_LEN+$01'
+    ASM_HIM_AP_BODY_LO = 'ASM_ABI_AP_BODY'
+    ASM_HIM_AP_BODY_HI = 'ASM_ABI_AP_BODY+$01'
+    ASM_HIM_AP_BODY_LEN_LO = 'ASM_ABI_AP_BODY_LEN'
+    ASM_HIM_AP_BODY_LEN_HI = 'ASM_ABI_AP_BODY_LEN+$01'
+    ASM_HIM_AP_RELOC_COUNT = 'ASM_ABI_AP_RELOC_COUNT'
+    ASM_HIM_AP_IMPORT_COUNT = 'ASM_ABI_AP_IMPORT_COUNT'
+    ASM_HIM_AP_INSTALL_LO = 'ASM_ABI_AP_INSTALL'
+    ASM_HIM_AP_INSTALL_HI = 'ASM_ABI_AP_INSTALL+$01'
+    ASM_HIM_AP_REL_LO = 'ASM_ABI_AP_RELOC_PTR'
+    ASM_HIM_AP_REL_HI = 'ASM_ABI_AP_RELOC_PTR+$01'
+    ASM_HIM_AP_OP_PARSE = 'ASM_ABI_AP_OP_PARSE'
+    ASM_HIM_AP_OP_LOAD = 'ASM_ABI_AP_OP_LOAD'
+    ASM_HIM_AP_OP_SUGGEST = 'ASM_ABI_AP_OP_SUGGEST'
+    ASM_HIM_SVC_SIG0_VAL = 'ASM_ABI_SVC_SIG0_VALUE'
+    ASM_HIM_SVC_SIG1_VAL = 'ASM_ABI_SVC_SIG1_VALUE'
+    ASM_HIM_SVC_VERSION_1 = 'ASM_ABI_SVC_VERSION_VALUE'
+    ASM_HIM_SVC_VECTOR_COUNT = 'ASM_ABI_SVC_VECTOR_COUNT'
+    ASM_HIM_SVC_VECTOR_BYTES = 'ASM_ABI_SVC_VECTOR_COUNT*2'
 }
+Assert-Aliases $asm $asmAliases 'ASM core'
+
+$asmFlashAliases = [ordered]@{
+    HIM_SVC_FLASH_INSTALL_LO = 'ASM_ABI_FLASH_INSTALL'
+    HIM_SVC_FLASH_INSTALL_HI = 'ASM_ABI_FLASH_INSTALL+$01'
+    HIM_FLASH_SRC_LO = 'ASM_ABI_FLASH_INSTALL+$02'
+    HIM_FLASH_SRC_HI = 'ASM_ABI_FLASH_INSTALL+$03'
+    HIM_FLASH_DST_LO = 'ASM_ABI_FLASH_INSTALL+$04'
+    HIM_FLASH_DST_HI = 'ASM_ABI_FLASH_INSTALL+$05'
+    HIM_FLASH_LEN_LO = 'ASM_ABI_FLASH_INSTALL+$06'
+    HIM_FLASH_LEN_HI = 'ASM_ABI_FLASH_INSTALL+$07'
+    HIM_SVC_AP_LO = 'ASM_ABI_AP_SERVICE'
+    HIM_SVC_AP_HI = 'ASM_ABI_AP_SERVICE+$01'
+    HIM_AP_OP = 'ASM_ABI_AP_OP'
+}
+Assert-Aliases $asmFlash $asmFlashAliases 'ASM flash wrapper'
+
+Assert-NoPublishedLiteralEqu $asm 'ASM core'
+Assert-NoPublishedLiteralEqu $asmFlash 'ASM flash wrapper'
+Assert-NoPublishedLiteralEqu $shared 'HIMON shared map'
 
 $bootOrder = @('THE_JOIN_EXEC_XY','HIM_IO_WRITE_BYTE_ACTIVITY','HIM_IO_WRITE_CSTRING_ACTIVITY',
     'HIM_IO_WRITE_HEX_BYTE_ACTIVITY','HIM_IO_WRITE_CRLF_ACTIVITY','HIM_READ_LINE_ECHO',
@@ -114,4 +254,4 @@ foreach ($tag in @('S','R','E','I','B')) {
 }
 if ($cursor -ne $bytes.Length) { Fail 'AP package has trailing or truncated data' }
 
-Write-Host 'ASM ABI v1 check passed.'
+Write-Host 'ASM ABI v1 check passed; published $7E00-$7E40 addresses have one literal owner.'
