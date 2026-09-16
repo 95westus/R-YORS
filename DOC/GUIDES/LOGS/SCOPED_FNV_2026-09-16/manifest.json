@@ -1,0 +1,67 @@
+{
+  "scope": "Host-qualified banked AP_EXPORT integration candidate; not flashed; no board policy enrollment",
+  "validation": {
+    "command": "make -C SRC asm-test board-s19-check HIMON_VISIBLE_STAMP='0915(2324)'",
+    "result": "PASS",
+    "policy_cases": 65536,
+    "linked_integration_cases": 54,
+    "himon_bytes": 12280,
+    "himon_free": 8,
+    "apman_body_bytes": 3059,
+    "apman_free": 13,
+    "apman_envelope_bytes": 3105,
+    "asm_body_unchanged": true,
+    "carried_worker_unchanged": true,
+    "carried_worker_bytes": 555,
+    "carried_worker_sha256": "ffcdb4201c913fc9b3e3f3d438a98940f76967c5e62f843a2dc32cff1d1ad1b2"
+  },
+  "limitations": [
+    "RAM-provider and HREC-format requests rejected",
+    "AM02/HIMON coordinated board installation and policy proof remain open",
+    "Serial tests cannot close the separate bank/sector LED observation gate"
+  ],
+  "sources": {
+    "SRC/AP/ap-core.inc": "c8e107b53dd1a8fe8c2c8cff9e56e6e6ec45be1039465223885399417dfbaf11",
+    "SRC/AP/ap-manager.inc": "95f40cc36a21ae4dae376a2c1ab6ab7e2476126339520e72f3b4e26fc34ef7d0",
+    "SRC/AP/fnv-scope-card.inc": "dcbd7e67d9be9515a2d0d8aab8c704d23e397964bb5a87dd8e848d435ceaa9ec",
+    "SRC/AP/fnv-scope-policy.inc": "21f8c8e12a5b10af993a5b60b1324e151614521a2c430f67fb37248310850075",
+    "SRC/AP/fnv-scope-find.inc": "4f477dccd74c8638bd512917de16bb0ad83e0a1421e023d61c82cf0cd7473120",
+    "SRC/HIMON/himon-fnv-fallback.inc": "e082eed43117f0939a39f91f741d7435ad82028db0540ba7e3908802f2190271",
+    "SRC/HIMON/himon.asm": "d62378ed3412b6a2169125f8e8dc4420d00497f58d22e0fd6de867094747237a",
+    "SRC/APPS/apman-7000.asm": "cc45bf79211e5171f10b0056b71a7b97880021e6126f15125a980699aa2d3e18",
+    "SRC/ASM/apman-v1.inc": "3fea5a7af32eefcb18b6ad01d00458337769c8f34a226d1b9c9235cdb5868980",
+    "SRC/Makefile": "e5b019c45cffc1d38b9db40a356c1178c2d4949bf07fd195dd0a76bcf214bf10",
+    "SRC/tools/check_fnv_scope.py": "acd9a88d374940660c04870e7f5525bd78d34823669e878dbabf60014c387a0f",
+    "SRC/tools/check_fnv_scope_policy.py": "0317bd9b81beab22d806e3c72d7f28fa0093e1780e366f440137a2b64ad7b039",
+    "SRC/tools/audit_himon_ap_contracts.py": "ea0ac6a2cf23d2d92aec09e161dbb017dd16092e96c19ff60ff898deed742e46",
+    "SRC/tools/check_external_str8n.ps1": "4703b6b2b52e306b49d66a21bd5bbf54b90c8867609b8947db727b939ef78bc7"
+  },
+  "str8_sources": {
+    "src/str8-config-eq.inc": "e4072e67609ef830169e56797064036b44763f763a1149ea1859ba33d4e1c040",
+    "tools/write_str8n_manifest.ps1": "da4ef312467b28b7c3feae07a0245763f536cca99aba614e93e1ef232d54fb2d",
+    "tools/write_str8n_public_contract.ps1": "418754f86880a2fce181f87d9c5d5992496dab41ed4cba4232a074a7841927b5"
+  },
+  "default_top_sha256": "9538d97854ba9d5d76143cba0fedb3b2e7ce18f977ce89557406e63404026cb7",
+  "files": {
+    "apman-7000.map": "f86118474a59bc2bc00981f0b6c30f1a6592ef6b008c8c391c4de2e46bb40a5f",
+    "apman-7000.s19": "f61c4246f9e40b89803698d838bf8d54112879f07cf6beeba93dfefeb5aa2ef7",
+    "apman-size.json": "7ea5380c75b2b61c37a30d0a31bc197192a45bb55726e56d3645a1e7960bef80",
+    "apman-v1-bank2-8000.bin": "0b5fe1df0b300593aef1ebcbdcc521df6aece1ce62118539b0af74d2afa08c58",
+    "apman-v1-bank2-8000.s19": "00c225dec70b218dae33f6beff6d1dc7fca51914fb9773bfb6834b560c0c0298",
+    "apman-v1.ap": "8eab3baec9d6c4ae62f788b294a461a9871dd48c2641fd269696d513d180d7b7",
+    "check_fnv_scope.py": "acd9a88d374940660c04870e7f5525bd78d34823669e878dbabf60014c387a0f",
+    "check_fnv_scope_policy.py": "0317bd9b81beab22d806e3c72d7f28fa0093e1780e366f440137a2b64ad7b039",
+    "fnv-scope-policy.json": "5fde728246029f14106c2040dde661d9a8bf4a673ec02a8077a6a99e5e806a57",
+    "fnv-scope.json": "3af404b86893a32f5267a5c0dc1e572e6f89f6482b88ff8c5cb5464129029a5c",
+    "himon-ap-boundary.json": "7bb3e75065d9e9fea0bd8e3ac29e3405b1a0ed7b5663053ffb1eefe605ad86ff",
+    "himon-ap-contracts.json": "7a29a54f42c8cccd3d3cf05067cb0bf93edfe41d0894bda6959c47c2cfa5eac8",
+    "himon-ap-init.json": "a2d008b798dfee364860e8a138b8e418c0e53d6b136a979b2dabcaf24bf32c78",
+    "himon-ap-ranges.json": "f4497f2602db45e1d6b4be81b8e5b6977082d9d26343affd627eed08888b264c",
+    "himon-rom-c000-install-8000.s19": "dba7a69e0fe0ac31c2540134d37c9961e9babe868f4eaa0d50a2e1e4e42b9864",
+    "himon-rom-c000.map": "fa9be00659c4d7c9cd91f56cf92537a14949ad82da6706d91d8e80d68e44d436",
+    "himon-rom-c000.s19": "cc08b1099f3bf76a45c0f1efff119d6f5766209f028b03cc95e2ce4a7a2ad6e6",
+    "qualification.log": "756d9ebca3f75abb0269b565688b3bc7e18c03c5f16605553e140822e685e71c",
+    "str8n-public.inc": "a1df86c1a7b132e3178012335aef9fd24d983e624f931af8bcc0d5e3a73d5e79",
+    "str8n.lock.json": "c5c830837b49b723a5be7ca9adad81e8562e304a2fda70f0de569d75f6965232"
+  }
+}

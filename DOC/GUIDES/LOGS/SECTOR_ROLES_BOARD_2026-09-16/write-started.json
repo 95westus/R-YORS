@@ -1,0 +1,8 @@
+{
+  "updater_sha256": "5bfd81f11ed50f0ba11bc42b27e462949a183689846b0675ed3f913381b3904e",
+  "targets": [
+    "B2:F",
+    "B3:F"
+  ],
+  "old_b1f": "retain unchanged"
+}

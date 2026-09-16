@@ -1,8 +1,8 @@
 # Current Capability Matrix
 
 This is the short authority for the supported STR8-N, HIMON, and ASM-F2 command
-surfaces. The latest COM4 workbench installation, after the resident AP
-parser initialization reduction on 2026-09-16, is:
+surfaces. The latest COM4 workbench installation, after scoped HIMON/AM02
+installation and the step-2 smoke pass on 2026-09-16, is:
 
 ```text
 STR8-N 1.34
@@ -10,14 +10,39 @@ HIMON   00.0915(2324) in Bank-3 sectors C-E
 ASM-F2  00.0915(2324) in Bank-3 sectors 8-B
 ```
 
-The [initialization-size record](LOGS/HIMON_AP_INIT_SIZE_2026-09-16.md) identifies
-the exact installed image: HIMON is 11,838 bytes with 450 bytes free. Host
-gates, all 30 board workflows, physical reset and final four-bank isolation
-qualification pass. APMAN at B2:8 retains its 3,031-byte
-BODY and 41-byte overlay reserve; APTEST remains at B2:9. The preceding
-[manager qualification](LOGS/APMAN_SIZE_2026-09-16.md) records its physical-reset
-proof. The capability tables require the named components and carriers to be
-installed. ASM-F2 occupies the former Bank-3 WDCMONV2 region.
+The [step-2 board record](LOGS/SCOPED_SMOKE_BOARD_2026-09-16.md) identifies
+the exact installed image: HIMON is 12,280 bytes with 8 bytes free. AM02 at
+B2:8 has a 3,059-byte BODY and 13-byte overlay reserve; APTEST remains at B2:9.
+Full host gates, bounded board smoke, physical reset and final four-bank
+isolation pass. The earlier [initialization-size record](LOGS/HIMON_AP_INIT_SIZE_2026-09-16.md)
+and [manager qualification](LOGS/APMAN_SIZE_2026-09-16.md) describe the previous
+HIMON/AM01 pair; their full board matrices are not new-image qualification.
+The capability tables require the named components and carriers to be installed.
+ASM-F2 occupies the former Bank-3 WDCMONV2 region.
+
+The [scoped FNV candidate](AP/HIMON_SCOPED_FNV_IMPLEMENTATION_2026-09-16.md)
+adds banked AP lookup after a resident command miss and requires AM02. The pair
+is installed with `$FFF2=$A6`. Named and bare APTEST launch, disabled-policy
+refusal, B0 named refusal, direct RAM execution and ASM smoke pass. The [banked AP qualification](LOGS/SCOPED_QUALIFICATION_2026-09-16.md) now passes B1/B2 BANKDUMP,
+malformed/duplicate refusal, resident precedence, role guards, paced LED/PCR
+observation, physical reset and exact final isolation. BANKDUMP is retained at B2:A.
+Integrated RAM-provider lookup remains unimplemented. A separate
+[RAM HREC inspector](AP/RAM_HREC_PROOF_2026-09-16.md) validates bounded record
+metadata in existing `$3000-$3FFF` RAM without executing providers. SPI SRAM
+is not installed; SPI support and WORK allocation remain deferred.
+The subsequent [RAM AP uniqueness inspector](AP/RAM_AP_UNIQUENESS_2026-09-16.md)
+validates bounded AP envelopes and combines RAM/eligible-bank counts, rejecting
+cross-source duplicates. It returns metadata only and requires its pinned
+HIMON/AM02 images; integrated RAM command execution remains open.
+
+The later [sector-role update](AP/SECTOR_ROLES_AND_RAM_TRANSIENTS_2026-09-16.md)
+removes flash WORK and protects B2:F for backup. Its top-level RAM-transient
+collection is generated locally. The role update is installed: `$FFF0/$FFF1/$FFF2`
+are now `$FF/$2F/$A6`. The [original role migration](LOGS/SECTOR_ROLES_BOARD_2026-09-16.md)
+changed only B2:F/B3:F. The later scoped installation also changed B2:8 and
+B3:C-E, with expected B2/B3 journal advances. Immutable directory metadata,
+the old B1:F backup, ASM, and unrelated sectors are retained. B2:F now backs
+up the paired pre-policy top. Physical reset and final isolation pass.
 
 The published local release ZIPs contain HIMON and ASM-F2 `00.0915(2324)`.
 Those published artifacts are separate from this later workbench qualification;
@@ -71,7 +96,7 @@ that transcript.
 | Assemble W65C02 source on the board | ASM-F2 | Current; hardware-accepted | Bounded line, symbol, fixup, relocation, import/export, and RAM budgets |
 | Seal, relocate, package, load, and link AP v2 programs | ASM-F2 + HIMON | Current; hardware-accepted | Loader destinations and package/body ranges must not overlap protected workspaces |
 | Install one named AP carrier per Bank 0-2 sector and use it after reset | APMAN + HIMON | Current; hardware-accepted | Envelope maximum is one 4K sector; this is not packed AP Store storage |
-| Launch the installed MicroChess carrier with bare `MICROCHESS` | HIMON + APMAN | Current; hardware-accepted except physical-reset repetition | Fixed alias for `AP B1 MICROCHESS`; requires the current carrier in Bank 1 |
+| Launch the installed MicroChess carrier with bare `MICROCHESS` | HIMON + APMAN | Current; hardware-accepted, including physical-reset repetition | Fixed alias for `AP B1 MICROCHESS`; requires the current carrier in Bank 1; [reset proof](LOGS/AP_FNV_FOLLOWUP_2026-09-16.md) |
 | Inspect one AP carrier by name or sector address without loading or executing it | APMAN + HIMON `AP D` | Current; hardware-accepted | Prints validated metadata, five section ranges, and exactly the first `$40` envelope bytes |
 | Inventory carrier/store/media roles without mutation | `APS`, BANKAUDIT, BANKDUMP | Current; hardware-accepted | Some deeper inspection is supplied by installed APC utilities, not a resident HIMON dump command |
 | Append, chain, reconstruct, validate, load, and tombstone AP Store objects | AP Store V1 tools | Proven tooling | Focused transient tools and cards are accepted; a consolidated operator manager is not current |

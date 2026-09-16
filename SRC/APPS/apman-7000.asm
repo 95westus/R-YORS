@@ -22,6 +22,7 @@
                         INCLUDE         "ASM/asm-abi-v1.inc"
                         INCLUDE         "ASM/ap-store-v1.inc"
                         INCLUDE         "ASM/apman-v1.inc"
+                        INCLUDE         "AP/fnv-scope-card.inc"
 
 HIM_SVC_WRITE_BYTE_LO   EQU             $7E08
 HIM_SVC_WRITE_CSTRING_LO EQU            $7E0A
@@ -93,12 +94,16 @@ FLAG_DUMP               EQU             $04
 ; The four bytes following the entry branch are the bootstrap identity. The
 ; resident scanner checks them only after the AP v2 envelope validates.
 APMAN:                  BRA             APMAN_DISPATCH
-                        DB              'A','M','0','1'
+                        DB              'A','M','0','2'
 
 APMAN_DISPATCH:         STZ             ASM_ABI_SESSION_RESUME
                         STZ             APMAN_STATUS
                         STZ             APMAN_FAIL_PHASE
                         LDA             APMAN_MODE
+                        CMP             #APMAN_MODE_SCOPE
+                        BNE             APMAN_DISPATCH_LEGACY
+                        JMP             APMAN_SCOPE_COMMAND
+APMAN_DISPATCH_LEGACY:
                         CMP             #APMAN_MODE_AP
                         BEQ             APMAN_COMMAND_AP
                         CMP             #APMAN_MODE_APS
@@ -111,6 +116,27 @@ APMAN_DISPATCH_NOT_APS:
 APMAN_DISPATCH_BAD:
                         LDA             #APMAN_STATUS_BAD_COMMAND
                         JMP             APMAN_FAIL_A
+
+APMAN_SCOPE_COMMAND:
+                        LDA             FNV_NAME_LO
+                        STA             PTRL
+                        LDA             FNV_NAME_HI
+                        STA             PTRH
+                        STZ             FLAGS
+                        JSR             APMAN_PARSE_NAME
+                        BCC             APMAN_DISPATCH_BAD
+                        JSR             APMAN_SKIP_SPACES
+                        LDY             #$00
+                        LDA             (PTRL),Y
+                        BNE             APMAN_DISPATCH_BAD
+                        LDA             PTRL
+                        STA             TAIL_LO
+                        LDA             PTRH
+                        STA             TAIL_HI
+                        JSR             APMAN_FIND_REQUEST
+                        BCC             APMAN_SCOPE_RETURN
+                        JMP             APMAN_AP_HAVE
+APMAN_SCOPE_RETURN:     RTS
 
 ; ---------------------------------------------------------------------------
 ; AP Bn name|s000 [destination]
@@ -149,9 +175,6 @@ APMAN_AP_BANK_OK:
                         LDA             (PTRL),Y
                         SEC
                         SBC             #'0'
-                        BCS             APMAN_AP_BANK_NONNEG
-                        JMP             APMAN_BAD_COMMAND
-APMAN_AP_BANK_NONNEG:
                         CMP             #$03
                         BCC             APMAN_AP_BANK_RANGE
                         JMP             APMAN_BAD_COMMAND
@@ -316,9 +339,6 @@ APMAN_APS_BANK_OK:
                         LDA             (PTRL),Y
                         SEC
                         SBC             #'0'
-                        BCS             APMAN_APS_BANK_NONNEG
-                        JMP             APMAN_BAD_COMMAND
-APMAN_APS_BANK_NONNEG:
                         CMP             #$03
                         BCC             APMAN_APS_BANK_RANGE
                         JMP             APMAN_BAD_COMMAND
@@ -477,43 +497,25 @@ APMAN_INSTALL_UNCONFIRMED:
 ; ---------------------------------------------------------------------------
 ; Carrier scan, AP v2 validation, and entry-export metadata.
 ; ---------------------------------------------------------------------------
-APMAN_FIND_NAMED:      STZ             APMAN_MATCH_COUNT
-                        LDA             #$80
-                        STA             SECTOR
-APMAN_FIND_NAME_LOOP:  JSR             APMAN_STAGE_VALIDATE
-                        BCC             APMAN_FIND_NAME_NEXT
-                        JSR             APMAN_FIND_ENTRY_ROW
-                        BCC             APMAN_FIND_NAME_NEXT
-                        LDY             #$03
-                        LDX             #$00
-APMAN_FIND_HASH_LOOP:  LDA             (ROW_LO),Y
-                        CMP             APMAN_NAME_HASH0,X
-                        BNE             APMAN_FIND_NAME_NEXT
-                        INY
-                        INX
-                        CPX             #$04
-                        BNE             APMAN_FIND_HASH_LOOP
-                        INC             APMAN_MATCH_COUNT
-                        LDA             APMAN_MATCH_COUNT
-                        CMP             #$01
-                        BNE             APMAN_FIND_NAME_NEXT
-                        LDA             SECTOR
-                        STA             APMAN_FOUND_SECTOR_HI
-APMAN_FIND_NAME_NEXT:  JSR             APMAN_NEXT_SECTOR
-                        BCC             APMAN_FIND_NAME_LOOP
-                        LDA             APMAN_MATCH_COUNT
-                        BEQ             APMAN_FIND_NAME_FAIL
-                        CMP             #$01
-                        BEQ             APMAN_FIND_NAME_UNIQUE
-                        JMP             APMAN_DUPLICATE
-APMAN_FIND_NAME_UNIQUE:
-                        LDA             APMAN_FOUND_SECTOR_HI
-                        STA             SECTOR
-                        JSR             APMAN_STAGE_VALIDATE
-                        BCC             APMAN_FIND_NAME_FAIL
-                        JSR             APMAN_FIND_ENTRY_ROW
-                        RTS
-APMAN_FIND_NAME_FAIL:  JMP             APMAN_NOT_FOUND
+APMAN_FIND_NAMED:      LDX             BANK
+                        LDA             APMAN_BANK_BITS,X
+                        STA             FNV_REQUEST_BANKS
+                        LDA             #$FF
+                        STA             FNV_BANK_WINDOWS
+                        STZ             FNV_RAM_ENABLE
+                        LDA             #FNV_FORMAT_AP_EXPORT
+                        STA             FNV_FORMAT
+APMAN_FIND_REQUEST:     LDA             #<APMAN_SCOPE_CANDIDATE
+                        STA             FNV_VALIDATE_LO
+                        LDA             #>APMAN_SCOPE_CANDIDATE
+                        STA             FNV_VALIDATE_HI
+                        LDA             #FNV_SCOPE_FIND_OP
+                        STA             HIM_AP_OP
+                        JSR             APMAN_CALL_AP
+                        BCS             APMAN_FIND_RETURN
+                        JMP             APMAN_FAIL_A
+APMAN_FIND_RETURN:      RTS
+APMAN_BANK_BITS:        DB              $01,$02,$04
 
 APMAN_STAGE_VALIDATE:  JSR             APMAN_STAGE_RAW
                         BCC             APMAN_STAGE_VALID_FAIL
@@ -524,6 +526,14 @@ APMAN_STAGE_VALIDATE:  JSR             APMAN_STAGE_RAW
                         STA             HIM_AP_OP
                         JSR             APMAN_CALL_AP
 APMAN_STAGE_VALID_FAIL: RTS
+
+APMAN_SCOPE_CANDIDATE: JSR             APMAN_LOCATION_PROTECTED
+                        BCS             APMAN_SCOPE_INVALID
+                        JSR             APMAN_STAGE_VALIDATE
+                        BCC             APMAN_STAGE_VALID_FAIL
+                        JMP             APMAN_FIND_ENTRY_ROW
+APMAN_SCOPE_INVALID:    CLC
+                        RTS
 
 ; Locate the one entry export. ROW points at its flags byte.
 APMAN_FIND_ENTRY_ROW:  LDA             #<STAGE_BASE+$05
@@ -559,7 +569,16 @@ APMAN_ENTRY_ROW_LOOP:  LDA             COUNT
                         JSR             APMAN_PTR_ADD_A
                         DEC             COUNT
                         BRA             APMAN_ENTRY_ROW_LOOP
-APMAN_ENTRY_FOUND:     SEC
+APMAN_ENTRY_FOUND:     LDY             #$02
+                        LDA             (ROW_LO),Y
+                        CMP             HIM_AP_BODY_LEN_HI
+                        BCC             APMAN_ENTRY_VALID
+                        BNE             APMAN_ENTRY_FAIL
+                        DEY
+                        LDA             (ROW_LO),Y
+                        CMP             HIM_AP_BODY_LEN_LO
+                        BCS             APMAN_ENTRY_FAIL
+APMAN_ENTRY_VALID:     SEC
                         RTS
 APMAN_ENTRY_FAIL:      CLC
                         RTS
@@ -611,31 +630,9 @@ APMAN_SET_PACKAGE_FACTS:
 ; recursively invoke itself. Reject any selected carrier with the bootstrap
 ; body identity before printing AP LOAD or touching destination RAM.
 APMAN_SELECTED_IS_MANAGER:
-                        LDA             HIM_AP_BODY_LO
-                        STA             PTRL
-                        LDA             HIM_AP_BODY_HI
-                        STA             PTRH
-                        LDY             #$02
-                        LDA             (PTRL),Y
-                        CMP             #'A'
-                        BNE             APMAN_SELECTED_NOT_MANAGER
-                        INY
-                        LDA             (PTRL),Y
-                        CMP             #'M'
-                        BNE             APMAN_SELECTED_NOT_MANAGER
-                        INY
-                        LDA             (PTRL),Y
-                        CMP             #'0'
-                        BNE             APMAN_SELECTED_NOT_MANAGER
-                        INY
-                        LDA             (PTRL),Y
-                        CMP             #'1'
-                        BNE             APMAN_SELECTED_NOT_MANAGER
-                        SEC
-                        RTS
-APMAN_SELECTED_NOT_MANAGER:
-                        CLC
-                        RTS
+                        LDA             #FNV_SCOPE_MANAGER_OP
+                        STA             HIM_AP_OP
+                        JMP             APMAN_CALL_AP
 
 ; APMAN remains live at $7000 while it asks HIMON to copy/fix the selected
 ; body. Keep the loaded body in ordinary foreground RAM below the manager.
@@ -700,10 +697,14 @@ APMAN_STAGE_BYTE:      LDA             (PTRL),Y
                         SEC
                         RTS
 APMAN_STAGE_SELECT_FAIL:
+APMAN_STAGE_RESTORE_FAIL:
+; A failed restore cannot return into resident ROM. Retry from RAM first.
                         LDA             #$03
                         JSR             STR8_SELECT_RAM
-APMAN_STAGE_RESTORE_FAIL:
+                        BCC             APMAN_STAGE_SELECT_FAIL
                         PLP
+                        LDA             #APMAN_STATUS_RESTORE_FAIL
+                        STA             HIM_AP_STATUS
                         CLC
                         RTS
 
@@ -1148,10 +1149,8 @@ APMAN_PRINT_PACK40_CODE:
 APMAN_PACK40_ALPHA:    CLC
                         ADC             #'@'
                         JMP             APMAN_PUTC
-APMAN_PACK40_DIGIT:    SEC
-                        SBC             #$1B
-                        CLC
-                        ADC             #'0'
+APMAN_PACK40_DIGIT:    CLC
+                        ADC             #('0'-$1B)
                         JMP             APMAN_PUTC
 APMAN_PACK40_UNDER:    LDA             #'_'
                         JMP             APMAN_PUTC
@@ -1173,6 +1172,10 @@ APMAN_PARSE_SELECTOR:  LDA             PTRL
                         STA             PTRL
                         LDA             TAIL_HI
                         STA             PTRH
+APMAN_PARSE_NAME:       LDA             PTRL
+                        STA             FNV_NAME_LO
+                        LDA             PTRH
+                        STA             FNV_NAME_HI
                         JSR             APMAN_FNV_INIT
                         STZ             COUNT
 APMAN_SELECTOR_NAME:   LDY             #$00
@@ -1187,10 +1190,14 @@ APMAN_SELECTOR_NAME:   LDY             #$00
 APMAN_SELECTOR_NAME_DONE:
                         LDA             COUNT
                         BEQ             APMAN_SELECTOR_FAIL
+                        CMP             #$20
+                        BCS             APMAN_SELECTOR_FAIL
+                        STA             FNV_NAME_LEN
                         LDX             #$03
 APMAN_SELECTOR_HASH_SAVE:
                         LDA             FNV_HASH0,X
                         STA             APMAN_NAME_HASH0,X
+                        STA             FNV_WANTED_HASH0,X
                         DEX
                         BPL             APMAN_SELECTOR_HASH_SAVE
                         SEC

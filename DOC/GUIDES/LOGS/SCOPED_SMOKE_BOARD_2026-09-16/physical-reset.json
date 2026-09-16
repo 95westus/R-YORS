@@ -1,0 +1,6 @@
+{
+  "result": "PASS",
+  "hardware_reset": true,
+  "policy": "A6",
+  "aptest_after_reset": true
+}

@@ -1,0 +1,47 @@
+{
+  "status": "PASS: step 2 host gates only; NOT FLASHED",
+  "build_stamp": "0915(2324)",
+  "checks": {
+    "asm_test": "PASS",
+    "board_s19_identity": "PASS",
+    "policy_cases": 65536,
+    "scoped_cases": 59,
+    "maintenance_role_cases": 432,
+    "updater_variants": 4,
+    "frozen_step1_evidence_cases": 33,
+    "ram_images": 40
+  },
+  "limits": {
+    "himon_bytes": 12280,
+    "himon_end": "EFF8",
+    "himon_free": 8,
+    "am02_body_bytes": 3059,
+    "am02_end": "7BF3",
+    "am02_free": 13
+  },
+  "frozen_inputs_unchanged": true,
+  "canonical_policy": "FF",
+  "intended_board_policy": "A6",
+  "board_access": false,
+  "files": {
+    "apman-size.json": "2ec85ab5f0e440b98a30ad5c692c0e602bc1bf3f986e723739e097e20d7f8fed",
+    "apman.map": "f86118474a59bc2bc00981f0b6c30f1a6592ef6b008c8c391c4de2e46bb40a5f",
+    "candidate-am02-b2-8.bin": "0b5fe1df0b300593aef1ebcbdcc521df6aece1ce62118539b0af74d2afa08c58",
+    "candidate-himon-b3-c-e.bin": "48102f7485b239cbff73e4cb5219d59df844165fa9a1709ce4c6c13ceff7c44a",
+    "canonical-top.bin": "959c0142d9bf012c13dddba5aa35c5bcfe30c729a4e6370096e899a418b8266a",
+    "fnv-scope-policy.json": "5fde728246029f14106c2040dde661d9a8bf4a673ec02a8077a6a99e5e806a57",
+    "fnv-scope.json": "775fae79a7634b30982666d1babccd5ea4638ef7a4fe442ad163ba664be50b5b",
+    "himon-ap-boundary.json": "57e23d3a660caab3fdd620f2ceb0439c01c024c3f88586d4c73a824f70079831",
+    "himon-ap-contracts.json": "69e6be294e104b6101e39fe072011a9e6df4ecb160e5bc5fcbf4cae654c54aa4",
+    "himon-ap-init.json": "966611739fe163bf5ff3de3e9b1737f27d9bac07ee3ef7518f0a094513a0a85f",
+    "himon-ap-ranges.json": "e342256f30681582563d83b892d96ce313049a35d1f4ab58baf9a422735e16aa",
+    "himon.map": "dceeb69adb4bf28a8c1f08a72d0664100e792e70fbcd2e6035a7ece5fda80931",
+    "ram-transients-manifest.json": "4cdeb4954eabf76d904e2ff4966ae4423944018d3008b3b22fe4713ab1de0ed8",
+    "retain.py": "69a8f2e3e18958fe54b86b17fa8a752e5546ffdb3892c4628eb072b3dadd98f3",
+    "ryors-host.log": "d52334add31f54eb13b422505a4c261e15b4e107d3575ef34cb73a3e7eeb3b4a",
+    "step1-host-check.json": "2cdea65223308d3f03eea307ebb2cbeec4995e8f7d284ca782a8fe4201a71477",
+    "step1-manifest.json": "b8ef456093b6822b5607311cabccbdc62bfd750177ba747c9f7528a21ada82c9",
+    "str8-host.log": "68e5492a0d545d79f219e696f056dc25f338a1e5e8eaf2beef457b4267630e86",
+    "str8n.lock.json": "c83ec2c69c0634a09b812b2227b00ab83d0ed7d613812bf481c674df766cb398"
+  }
+}

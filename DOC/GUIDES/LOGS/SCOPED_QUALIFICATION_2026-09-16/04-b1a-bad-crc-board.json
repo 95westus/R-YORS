@@ -1,0 +1,8 @@
+{
+  "result": "PASS",
+  "bank": 1,
+  "sector": "A",
+  "fixture": "bad-crc",
+  "actual_sha256": "6fcb98a4a3a4b042d1ac24d760c51854bc32d6bd998ea6d539fa7cd69e43ec2d",
+  "top_exact": true
+}

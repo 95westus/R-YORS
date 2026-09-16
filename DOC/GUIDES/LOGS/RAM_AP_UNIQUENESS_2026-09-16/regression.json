@@ -1,0 +1,8 @@
+{
+  "command": "make -C SRC HIMON_VISIBLE_STAMP=0915(2324) asm-test",
+  "result": "PASS",
+  "exit_code": 0,
+  "scoped_integration_cases": 59,
+  "ram_hrec_cases": 72,
+  "ram_ap_cases": 43
+}

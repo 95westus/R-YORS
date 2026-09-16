@@ -1,0 +1,8 @@
+{
+  "result": "PASS",
+  "bank": 1,
+  "sector": "A",
+  "fixture": "bankdump",
+  "actual_sha256": "d21c6b82935aa0662f73b68ea9c1e9ea40dab18ae671b3d90ef6dee7c12f63af",
+  "top_exact": true
+}

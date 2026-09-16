@@ -1,0 +1,10 @@
+{
+  "result": "PASS",
+  "cases": [
+    {
+      "command": "BANKDUMP",
+      "status": 211,
+      "output": "BANKDUMP\r\nAPMAN ERR=$D3\r\n>"
+    }
+  ]
+}

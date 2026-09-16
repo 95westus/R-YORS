@@ -1,0 +1,586 @@
+{
+  "result": "PASS",
+  "source_sha256": "8c0b0472df69b5edaa33bec6f8e61c518d0f8e360178b48b6b8255f8796e5bda",
+  "binary_sha256": "dc0a54a873ef44ae1b304f29597a3fbb784472870b719b90f1131a6b43a6de58",
+  "bytes": 333,
+  "end_exclusive": "214D",
+  "contract": "RAM-only metadata inspection; no execution or command integration",
+  "cases": [
+    {
+      "case": "empty",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "inline-3000",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "steps": 54111,
+      "provider_reads": 4088
+    },
+    {
+      "case": "inline-30FC",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "steps": 54111,
+      "provider_reads": 4088
+    },
+    {
+      "case": "inline-3FEF",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "steps": 54111,
+      "provider_reads": 4088
+    },
+    {
+      "case": "inline-3FF7",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "steps": 54111,
+      "provider_reads": 4095
+    },
+    {
+      "case": "pointer-3-3000",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "steps": 54289,
+      "provider_reads": 4088
+    },
+    {
+      "case": "pointer-3-3FF4",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "steps": 54295,
+      "provider_reads": 4096
+    },
+    {
+      "case": "pointer-5-3000",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "steps": 54293,
+      "provider_reads": 4088
+    },
+    {
+      "case": "pointer-5-3FF4",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "steps": 54299,
+      "provider_reads": 4096
+    },
+    {
+      "case": "unsupported-kind-0",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54004,
+      "provider_reads": 4088
+    },
+    {
+      "case": "unsupported-kind-2",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54004,
+      "provider_reads": 4088
+    },
+    {
+      "case": "unsupported-kind-4",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54004,
+      "provider_reads": 4088
+    },
+    {
+      "case": "unsupported-kind-6",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54004,
+      "provider_reads": 4088
+    },
+    {
+      "case": "unsupported-kind-7",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54004,
+      "provider_reads": 4088
+    },
+    {
+      "case": "unsupported-kind-129",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54004,
+      "provider_reads": 4088
+    },
+    {
+      "case": "unsupported-kind-255",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54004,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-entry-0000",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54040,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-extra-0000",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54049,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-entry-2FFF",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54040,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-extra-2FFF",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54049,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-entry-4000",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54042,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-extra-4000",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54051,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-entry-7F00",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54042,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-extra-7F00",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54051,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-entry-8000",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54042,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-extra-8000",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54051,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-entry-FFFF",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54042,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-extra-FFFF",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54051,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-text-00",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54061,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-text-80",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54061,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-text-ff",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54063,
+      "provider_reads": 4088
+    },
+    {
+      "case": "bad-text-41424300",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54097,
+      "provider_reads": 4088
+    },
+    {
+      "case": "unterminated-at-boundary",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54071,
+      "provider_reads": 4089
+    },
+    {
+      "case": "terminated-at-boundary",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "steps": 54221,
+      "provider_reads": 4089
+    },
+    {
+      "case": "truncated-pointer-3FF5",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54010,
+      "provider_reads": 4093
+    },
+    {
+      "case": "truncated-pointer-3FF6",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54010,
+      "provider_reads": 4094
+    },
+    {
+      "case": "truncated-pointer-3FF7",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 54010,
+      "provider_reads": 4095
+    },
+    {
+      "case": "truncated-pointer-3FF8",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-pointer-3FF9",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-pointer-3FFA",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-pointer-3FFB",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-pointer-3FFC",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-pointer-3FFD",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-pointer-3FFE",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-pointer-3FFF",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-inline-3FF8",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-inline-3FF9",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-inline-3FFA",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-inline-3FFB",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-inline-3FFC",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-inline-3FFD",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-inline-3FFE",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "truncated-inline-3FFF",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "wrong-hash",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53971,
+      "provider_reads": 4088
+    },
+    {
+      "case": "wrong-signature-0",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "wrong-signature-1",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53962,
+      "provider_reads": 4088
+    },
+    {
+      "case": "wrong-signature-2",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53966,
+      "provider_reads": 4088
+    },
+    {
+      "case": "loose-hash",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "ap-is-not-hrec",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "steps": 53958,
+      "provider_reads": 4088
+    },
+    {
+      "case": "duplicate-2",
+      "result": "PASS",
+      "status": "D2",
+      "count": 2,
+      "steps": 54081,
+      "provider_reads": 4088
+    },
+    {
+      "case": "duplicate-3",
+      "result": "PASS",
+      "status": "D2",
+      "count": 2,
+      "steps": 54138,
+      "provider_reads": 4088
+    },
+    {
+      "case": "duplicate-20",
+      "result": "PASS",
+      "status": "D2",
+      "count": 2,
+      "steps": 55107,
+      "provider_reads": 4088
+    },
+    {
+      "case": "disabled",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "steps": 44,
+      "provider_reads": 0
+    },
+    {
+      "case": "no-window",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "steps": 47,
+      "provider_reads": 0
+    },
+    {
+      "case": "wrong-window",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "steps": 47,
+      "provider_reads": 0
+    },
+    {
+      "case": "mixed-window",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "steps": 47,
+      "provider_reads": 0
+    },
+    {
+      "case": "ap-format",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "steps": 42,
+      "provider_reads": 0
+    },
+    {
+      "case": "bad-format",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "steps": 42,
+      "provider_reads": 0
+    },
+    {
+      "case": "bank-request",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "steps": 42,
+      "provider_reads": 0
+    },
+    {
+      "case": "policy-does-not-enable-ram-FF",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "steps": 44,
+      "provider_reads": 0
+    },
+    {
+      "case": "policy-does-not-enable-ram-A6",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "steps": 44,
+      "provider_reads": 0
+    },
+    {
+      "case": "policy-does-not-enable-ram-A7",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "steps": 44,
+      "provider_reads": 0
+    }
+  ]
+}

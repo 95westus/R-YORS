@@ -41,6 +41,8 @@ DOC/s34
 /BUILD/
 /SRC/BUILD/
 /SRC/ROM_IMAGES/
+# Reproducible RAM-transient collection; retain README/manifest and folders.
+/RAM-TRANSIENTS/A/*.a
 /RELEASE/**
 !/RELEASE/
 !/RELEASE/ARTIFACTS/

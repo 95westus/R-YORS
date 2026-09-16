@@ -84,6 +84,7 @@ def run_suite(build, top, fixtures):
 
     def make():
         machine = Machine(build, top)
+        machine.m.banks[3][0x7FF2] = 0xA7  # Explicit emulator enrollment for legacy workflows.
         machine.m.banks[2][:0x1000] = carrier
         machine.m.ram[0x7E6A] = 1
         return machine

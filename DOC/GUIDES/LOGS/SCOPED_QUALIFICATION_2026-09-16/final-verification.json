@@ -1,0 +1,25 @@
+{
+  "result": "PASS",
+  "sha256": "8a9977c675364f95a53b58b23067ba469d3595026064a2530e7c3e9db3096f4b",
+  "baseline_sha256": "8e75c342dcee502c1fcf5c1f2e5e024f88f4f91551bf6b4a0b9440379afff45e",
+  "changed_sectors": [
+    "B2:A",
+    "B3:F"
+  ],
+  "exact_expected": true,
+  "b1a_erased": true,
+  "roles_policy": "FF 2F A6",
+  "top_changed_addresses": [
+    "FFC0",
+    "FFC4",
+    "FFC5",
+    "FFC6",
+    "FFC7",
+    "FFC8",
+    "FFC9",
+    "FFCC",
+    "FFCD",
+    "FFDC",
+    "FFDD"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "result": "PASS",
+  "stale_pin_rejected": true,
+  "private_artifacts_not_written": true,
+  "error": "('stale private image pin', 's19/himon-rom-c000.s19')"
+}

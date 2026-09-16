@@ -1,0 +1,214 @@
+{
+  "result": "PASS",
+  "board_access": false,
+  "cases": [
+    {
+      "case": "policy-A6",
+      "result": "PASS",
+      "backup_exact": true,
+      "live_journal_preserved": true,
+      "retry_and_restore": true,
+      "only_mutations": [
+        "B2:F",
+        "B3:F"
+      ]
+    },
+    {
+      "case": "policy-A6-reject-FFF0-1E",
+      "result": "PASS"
+    },
+    {
+      "case": "policy-A6-reject-FFF1-1F",
+      "result": "PASS"
+    },
+    {
+      "case": "policy-A6-reject-FFF2-A6",
+      "result": "PASS"
+    },
+    {
+      "case": "policy-A6-reject-FFF2-A7",
+      "result": "PASS"
+    },
+    {
+      "case": "policy-A6-cancel-both-prompts",
+      "result": "PASS"
+    },
+    {
+      "case": "policy-FF",
+      "result": "PASS",
+      "backup_exact": true,
+      "live_journal_preserved": true,
+      "retry_and_restore": true,
+      "only_mutations": [
+        "B2:F",
+        "B3:F"
+      ]
+    },
+    {
+      "case": "policy-FF-reject-FFF0-1E",
+      "result": "PASS"
+    },
+    {
+      "case": "policy-FF-reject-FFF1-1F",
+      "result": "PASS"
+    },
+    {
+      "case": "policy-FF-reject-FFF2-FF",
+      "result": "PASS"
+    },
+    {
+      "case": "policy-FF-reject-FFF2-A7",
+      "result": "PASS"
+    },
+    {
+      "case": "policy-FF-cancel-both-prompts",
+      "result": "PASS"
+    },
+    {
+      "case": "candidate-am02-b2-8.s19",
+      "result": "PASS",
+      "bank": 2,
+      "bytes": 4096,
+      "scope": "linked dense receiver; worker and console intercepted"
+    },
+    {
+      "case": "candidate-himon-b3-c-e.s19",
+      "result": "PASS",
+      "bank": 3,
+      "bytes": 12288,
+      "scope": "linked dense receiver; worker and console intercepted"
+    },
+    {
+      "case": "recovery-new-b2-8-f-after-a6.s19",
+      "result": "PASS",
+      "bank": 2,
+      "bytes": 32768,
+      "scope": "linked dense receiver; worker and console intercepted"
+    },
+    {
+      "case": "recovery-new-b2-8-f-after-ff.s19",
+      "result": "PASS",
+      "bank": 2,
+      "bytes": 32768,
+      "scope": "linked dense receiver; worker and console intercepted"
+    },
+    {
+      "case": "recovery-new-b2-8-f.s19",
+      "result": "PASS",
+      "bank": 2,
+      "bytes": 32768,
+      "scope": "linked dense receiver; worker and console intercepted"
+    },
+    {
+      "case": "recovery-new-b3-8-e.s19",
+      "result": "PASS",
+      "bank": 3,
+      "bytes": 28672,
+      "scope": "linked dense receiver; worker and console intercepted"
+    },
+    {
+      "case": "recovery-old-b2-8-f-after-a6.s19",
+      "result": "PASS",
+      "bank": 2,
+      "bytes": 32768,
+      "scope": "linked dense receiver; worker and console intercepted"
+    },
+    {
+      "case": "recovery-old-b2-8-f-after-ff.s19",
+      "result": "PASS",
+      "bank": 2,
+      "bytes": 32768,
+      "scope": "linked dense receiver; worker and console intercepted"
+    },
+    {
+      "case": "recovery-old-b2-8-f.s19",
+      "result": "PASS",
+      "bank": 2,
+      "bytes": 32768,
+      "scope": "linked dense receiver; worker and console intercepted"
+    },
+    {
+      "case": "recovery-old-b3-8-e.s19",
+      "result": "PASS",
+      "bank": 3,
+      "bytes": 28672,
+      "scope": "linked dense receiver; worker and console intercepted"
+    },
+    {
+      "case": "rollback-am01-b2-8.s19",
+      "result": "PASS",
+      "bank": 2,
+      "bytes": 4096,
+      "scope": "linked dense receiver; worker and console intercepted"
+    },
+    {
+      "case": "rollback-himon-b3-c-e.s19",
+      "result": "PASS",
+      "bank": 3,
+      "bytes": 12288,
+      "scope": "linked dense receiver; worker and console intercepted"
+    },
+    {
+      "case": "command-candidate-am02-b2-8",
+      "result": "PASS",
+      "accepted": true,
+      "output": "\r\nB0-3: 2\r\nRANGE: 8\r\nI B2 8-8 WRITE? Y: Y\r\nS19\r\nCOMMIT? Y: Y.\r\nOK\r\n"
+    },
+    {
+      "case": "command-candidate-himon-b3-c-e",
+      "result": "PASS",
+      "accepted": true,
+      "output": "\r\nB0-3: 3\r\nRANGE: C-E\r\nI B3 C-E WRITE? Y: Y\r\nS19\r\n..COMMIT? Y: Y.\r\nOK\r\n"
+    },
+    {
+      "case": "command-rollback-himon-b3-c-e",
+      "result": "PASS",
+      "accepted": true,
+      "output": "\r\nB0-3: 3\r\nRANGE: C-E\r\nI B3 C-E WRITE? Y: Y\r\nS19\r\n..COMMIT? Y: Y.\r\nOK\r\n"
+    },
+    {
+      "case": "command-rollback-am01-b2-8",
+      "result": "PASS",
+      "accepted": true,
+      "output": "\r\nB0-3: 2\r\nRANGE: 8\r\nI B2 8-8 WRITE? Y: Y\r\nS19\r\nCOMMIT? Y: Y.\r\nOK\r\n"
+    },
+    {
+      "case": "command-rollback-am01-b2-8",
+      "result": "PASS",
+      "accepted": false,
+      "output": "\r\nB0-3: 2\r\nRANGE: 8\r\nBAD\r\n"
+    },
+    {
+      "case": "command-recovery-old-b2-8-f",
+      "result": "PASS",
+      "accepted": true,
+      "output": "\r\nB0-3: 2\r\nRANGE: 8-F\r\nI B2 8-F WRITE? Y: Y\r\nS19\r\n.......COMMIT? Y: Y.\r\nOK\r\n"
+    },
+    {
+      "case": "command-rollback-himon-b3-c-e",
+      "result": "PASS",
+      "accepted": false,
+      "output": "\r\nB0-3: 3\r\nRANGE: C-E\r\nBAD\r\n"
+    },
+    {
+      "case": "command-recovery-old-b3-8-e",
+      "result": "PASS",
+      "accepted": true,
+      "output": "\r\nB0-3: 3\r\nRANGE: 8-E\r\nI B3 8-E WRITE? Y: Y\r\nS19\r\n......COMMIT? Y: Y.\r\nOK\r\n"
+    },
+    {
+      "case": "paired-journal-isolation",
+      "result": "PASS",
+      "changed_top_addresses": [
+        "0xffdc",
+        "0xffdd",
+        "0xffed",
+        "0xffee"
+      ]
+    }
+  ],
+  "limitations": [
+    "No electrical proof; pair command tests intercept physical worker and directory byte writes",
+    "Select the B2 full recovery image for the actual backup generation; fresh archive must match the checkpoint"
+  ]
+}

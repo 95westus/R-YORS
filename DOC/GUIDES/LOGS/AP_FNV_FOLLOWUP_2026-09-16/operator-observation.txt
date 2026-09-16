@@ -1,0 +1,4 @@
+Operator response after three APS scans each for B0, B1, B2:
+i saw the lights changing, but was not able to identify the sequences
+
+Recorded as visible activity only; sequence-identification gate remains open.

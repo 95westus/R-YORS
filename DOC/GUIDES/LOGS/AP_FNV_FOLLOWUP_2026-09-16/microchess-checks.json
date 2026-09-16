@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "receive-only RST H and HIMON recovery",
+    "post-reset B1:9000 MICROCHESS 06A6 discovery",
+    "bare MICROCHESS GO 2000",
+    "C initializes board",
+    "three exact H help lines",
+    "Q returns to HIMON",
+    "post-child APMAN B2:8000 0C05 discovery"
+  ],
+  "scope": "serial lifecycle; no flash writes; visual LEDs pending"
+}

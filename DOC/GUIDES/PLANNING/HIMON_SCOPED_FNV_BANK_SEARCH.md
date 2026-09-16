@@ -4,6 +4,22 @@ Status: accepted design direction; not current command behavior. No source,
 RAM address, Bank-3 configuration byte, operator command, host check, or board
 proof is complete merely because this contract is documented.
 
+The [scoped RAM contract](../AP/HIMON_AP_SCOPED_RAM_CONTRACT.md) freezes current
+ownership and the private `$7D40-$7D5F` card. The
+[integration candidate](../AP/HIMON_SCOPED_FNV_IMPLEMENTATION_2026-09-16.md)
+now includes banked AP traversal, full carrier/canonical-name validation,
+duplicate rejection, AM02 manager integration and resident-miss dispatch.
+Run `make -C SRC fnv-scope-policy-check fnv-scope-check`. The
+[banked AP board qualification](../LOGS/SCOPED_QUALIFICATION_2026-09-16.md)
+now passes with live policy `$A6` and BANKDUMP at B2:A. The
+[initial RAM HREC inspector](../AP/RAM_HREC_PROOF_2026-09-16.md) adds a private,
+metadata-only proof in existing RAM. The subsequent
+[RAM AP proof](../AP/RAM_AP_UNIQUENESS_2026-09-16.md) adds sealed AP validation
+and combined RAM/bank duplicate refusal. Integrated RAM-provider command
+execution remains open. SPI SRAM is not installed; defer SPI support and WORK allocation until
+the operator confirms installation. The original design below retains its
+historical starting-state descriptions.
+
 Scope: this is the bounded first external-discovery proof for current HIMON and
 AP carriers. It intentionally preserves resident-first lookup and rejects
 duplicate external names. It is not the final generation-aware replacement
@@ -52,7 +68,7 @@ fields replaces record/container validation.
 
 ## Persistent External-Bank Eligibility
 
-The accepted future use of Bank-3 configuration byte `$FFF2` is:
+The STR8-owned configuration contract assigns Bank-3 byte `$FFF2` as follows:
 
 ```text
 bits 7-3  %10100      scoped AP/FNV bank-policy signature/version 0
@@ -82,8 +98,9 @@ diagnostics remain available; automatic external discovery does not guess.
 
 The initial board policy will become `$A6` only through a separately specified,
 host-checked, full Bank-3:F update and board proof. Until that happens,
-`$FFF2-$FFF9` remain physically erased and unassigned under the current
-implemented configuration contract.
+`$FFF2-$FFF9` remain physically erased on the board. Source constants and
+integration metadata now assign `$FFF2` with default `$FF`; `$FFF3-$FFF9`
+remain unassigned. The default top-sector binary is unchanged.
 
 B0, B1, and B2 are symmetric in the policy encoding. `$A6` is the initial
 choice because the present B0 contains opaque WDCMONv2; it is not a permanent
@@ -129,8 +146,8 @@ labels or bytes of code, is frozen by this design.
 
 ## RAM Request And Result Card
 
-The live scanner uses a RAM card. Exact addresses are deliberately not assigned
-until the HIMON/APMAN overlay audit is complete. The card must survive FNV
+The first host proof uses the private card at `$7D40-$7D5F` under the linked
+RAM contract above; this is not a published service ABI. The card must survive FNV
 updates, AP parsing, sector staging, and calls that clobber shared zero page.
 
 Minimum request fields:
@@ -313,7 +330,10 @@ B2 plus RAM $2000-$2FFF
 
 ## BANKDUMP Resolution
 
-The intended successful path on the present board is:
+The intended successful path below is a future fixture arrangement.
+The 2026-09-16 board has APTEST at B2:9,
+not BANKDUMP. Preserve that carrier; select an erased eligible location and
+record its actual address when preparing the BANKDUMP board proof.
 
 ```text
 operator supplies BANKDUMP

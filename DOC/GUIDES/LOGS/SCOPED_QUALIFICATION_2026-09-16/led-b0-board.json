@@ -1,0 +1,8 @@
+{
+  "result": "PASS",
+  "mode": "led-b0",
+  "expected_display": [],
+  "result_bytes": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d1b40000000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "pcr_samples": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "visual_gate": "requires separate operator observation; serial/RAM samples alone do not close it"
+}

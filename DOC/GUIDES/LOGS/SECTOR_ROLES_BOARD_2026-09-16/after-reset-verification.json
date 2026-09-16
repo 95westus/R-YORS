@@ -1,0 +1,12 @@
+{
+  "result": "PASS",
+  "changed_sectors": [
+    "B2:F",
+    "B3:F"
+  ],
+  "old_b1f_retained": true,
+  "b2f_exact_old_live_top": true,
+  "directory_preserved": true,
+  "himon_asm_apman_unchanged": true,
+  "flash_sha256": "3266041931068fd5a03db030eaef902be61bf2678fa75f1c559cee6df70741dc"
+}

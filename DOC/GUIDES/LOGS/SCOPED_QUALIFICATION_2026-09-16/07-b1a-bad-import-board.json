@@ -1,0 +1,8 @@
+{
+  "result": "PASS",
+  "bank": 1,
+  "sector": "A",
+  "fixture": "bad-import",
+  "actual_sha256": "61ea36d6296eaa57b34d4443297b9d6f585412d306fd5d34f3cf8d7dfd766e83",
+  "top_exact": true
+}

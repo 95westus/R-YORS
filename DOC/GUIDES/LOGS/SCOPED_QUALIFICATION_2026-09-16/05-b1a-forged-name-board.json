@@ -1,0 +1,8 @@
+{
+  "result": "PASS",
+  "bank": 1,
+  "sector": "A",
+  "fixture": "forged-name",
+  "actual_sha256": "4c7220e1147fa6e8a322c8492b379abebcd6aaf1dd979338d055b71a72ce5c87",
+  "top_exact": true
+}

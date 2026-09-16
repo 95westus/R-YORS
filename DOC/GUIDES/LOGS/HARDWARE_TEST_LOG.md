@@ -26727,3 +26727,87 @@ COM4 closed at HIMON in Bank 3. See the
 [qualification record](HIMON_AP_INIT_SIZE_2026-09-16.md) and
 [hashed evidence](HIMON_AP_INIT_SIZE_2026-09-16/manifest.json).
 No release was published. Visual LED acceptance and NMI remain separate.
+
+## 2026-09-16 - Microchess reset closure and AP/FNV follow-up
+
+Receive-only COM4 capture recorded `RST H`, STR8-N 1.34 and warm HIMON
+`00.0915(2324)`. `APS B1 MICROCHESS` then rediscovered the `$06A6` carrier at
+B1:$9000; bare `MICROCHESS`, `C`, exact three-line `H`, and `Q` return passed.
+Subsequent APMAN discovery passed. This closes the Microchess persistence gate.
+
+Repeated read-only B0/B1/B2 APS scans produced visible LED changes. The
+operator could not identify the sequences, so the exact bank/sector visual
+gate remains open. No flash-programming commands were issued. COM4 closed
+at HIMON. The first 28-byte scoped-policy primitive is host-only and changes
+neither production firmware nor `$FFF2`.
+
+See the [follow-up record](AP_FNV_FOLLOWUP_2026-09-16.md) and
+[hashed evidence](AP_FNV_FOLLOWUP_2026-09-16/manifest.json), including the
+initial post-Q harness prompt mismatch and corrected passing rerun.
+
+## 2026-09-16 ? no flash WORK / B2:F backup installation
+
+Two fresh four-bank archives matched and B2:F was erased. The ordinary
+STR8-N 1.34 updater verified the B2:F backup, installed roles FF/2F/FF,
+and returned through software reset. Full readback proves only B2:F/B3:F
+changed; directory, old B1:F backup, HIMON, ASM and AM01 are unchanged.
+Physical RESET remains pending. Scoped HIMON/AM02 remains uninstalled.
+See the [board record](SECTOR_ROLES_BOARD_2026-09-16.md) and its hashed evidence.
+
+Follow-up: physical RESET (`RST H`) was captured and passed, including
+HIMON return and exact top readback. A final four-bank archive equals the
+post-install archive byte for byte; step 2 qualification is now complete.
+
+## 2026-09-16 ? scoped HIMON/AM02 step-2 smoke
+
+The operator extended host revalidation to include board smoke and flashing.
+Full host gates pass; COM4 now has scoped HIMON (12,280 bytes), AM02 at B2:8,
+and guarded policy A6. Disabled/enabled APTEST checks, direct RAM AP, ASM,
+B0 named refusal, physical RESET and final four-bank isolation pass. Only
+B2:8/F and B3:C/D/E/F changed, including expected directory journal bits.
+B0/B1, B2:9 APTEST, ASM and all other carriers are intact. Two harness
+corrections and their original transcripts are retained: direct AP BODY-base
+entry versus APTEST export+2, and the manager-domain D1 diagnostic spelling.
+Broader BANKDUMP/B1/malformed/duplicate/LED gates remain open. See the
+[host record](SCOPED_HOST_GATES_2026-09-16.md) and
+[board record](SCOPED_SMOKE_BOARD_2026-09-16.md) with hashed evidence.
+
+
+## 2026-09-16 — scoped banked AP qualification complete
+
+[Full report and retained evidence](SCOPED_QUALIFICATION_2026-09-16.md). Ten fixture transitions pass
+on host and COM4: unique B2/B1 BANKDUMP, named/bare launch and real imports,
+duplicate/malformed/import refusal, resident precedence and cleanup. Four
+RAM diagnostics pass role predicates, B0 exclusion and actual PCR restoration.
+The operator confirmed B2 `82 92 A2 B2 C2 D2 E2` then `43`, and confirmed
+B1 `81 91 A1 B1 C1 D1 E1 F1` after a requested repeat. Physical RESET,
+post-reset APTEST/BANKDUMP and exact four-bank isolation pass. Final SHA256
+is `8a9977c675364f95a53b58b23067ba469d3595026064a2530e7c3e9db3096f4b`.
+Only B2:A and expected B3:F directory/journal bytes differ from step-2 baseline;
+B1:A is erased. BANKDUMP remains B2:A, roles/policy `FF 2F A6`.
+RAM-provider/HREC lookup and SPI SRAM WORK remain open.
+
+
+## 2026-09-16 — initial RAM HREC inspector
+
+[Contract, results and evidence](RAM_HREC_PROOF_2026-09-16.md): 333-byte
+metadata-only transient, 72 linked-byte host cases and seven RAM-only COM4
+cases pass. Full asm-test passes. Inline/pointer records, confirmation kind,
+duplicates, malformed pointers and disabled/wrong-format requests are covered.
+All provider windows and the complete 128 KiB flash image remain unchanged.
+Final flash SHA256: `8a9977c675364f95a53b58b23067ba469d3595026064a2530e7c3e9db3096f4b`.
+No provider execution or command integration. SPI SRAM is not installed;
+SPI support and WORK allocation remain deferred.
+
+
+## 2026-09-16 — RAM AP validation and combined uniqueness
+
+[Contract, results and evidence](RAM_AP_UNIQUENESS_2026-09-16.md): 476-byte
+image-pinned metadata inspector. Forty-three linked-byte host cases, eight
+RAM-only COM4 cases and full asm-test pass. A valid RAM BANKDUMP and B2:A
+carrier produce duplicate refusal; malformed/disabled RAM and sector masks
+select the correct unique source. No provider load/link/entry. Provider windows
+and all flash remain exact. Final 128 KiB SHA256:
+`8a9977c675364f95a53b58b23067ba469d3595026064a2530e7c3e9db3096f4b`.
+No flashing; SPI SRAM/WORK remain deferred. Load/link ownership and command
+entry remain the next separate gate.

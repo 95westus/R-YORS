@@ -1,0 +1,10 @@
+{
+  "result": "PASS",
+  "physical_reset": true,
+  "policy": "A6",
+  "aptest_entry": "5002",
+  "aptest_body_exact": true,
+  "bankdump_bare_b2a": true,
+  "bankdump_map_return": true,
+  "top_exact": true
+}

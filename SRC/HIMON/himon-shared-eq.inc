@@ -337,7 +337,8 @@ FREE_BUF_END               EQU             $7DBF
 ; - $0200-$09FF 2K RAM flash worker/RJOIN code tray
 ; - $0A00-$19FF 4K sector staging buffer:
 ;                  flash-sector mirror/update image or retained AP package
-; - $1A00-$1FFF user-free low RAM; firmware and maintained tools do not claim it
+; - $1A00-$1AFF APMAN command shadow during manager use
+; - $1B00-$1FFF application RAM; Microchess uses $1B00 for caller SP
 ; - $7C00-$7DBF foreground High Tool Overlay
 ; - $7DC0-$7DC7 HIMON AP-link scratch
 ; - $7DE9-$7DFF STR8 worker/update state board

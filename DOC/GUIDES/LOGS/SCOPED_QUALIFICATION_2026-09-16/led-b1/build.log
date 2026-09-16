@@ -1,0 +1,9 @@
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     002000  002000      609H (  1545)
+Total                        609H (  1545)
+

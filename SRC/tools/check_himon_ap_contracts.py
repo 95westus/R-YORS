@@ -25,6 +25,8 @@ def main():
 
     def make():
         m = Machine(build, top)
+        m.m.banks[3][0x7FF2] = 0xA7  # Explicit emulator enrollment for legacy workflows.
+        m.m.banks[3][0x7FF0:0x7FF2] = bytes((0x1E, 0x1F))  # legacy role fixture
         assert m.m.ram[0x7E6A] == 0, 'reset must prohibit stale resume'
         m.m.ram[0x7E6A] = 1
         return m

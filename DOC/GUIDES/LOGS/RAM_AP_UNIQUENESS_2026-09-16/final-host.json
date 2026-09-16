@@ -1,0 +1,1655 @@
+{
+  "result": "PASS",
+  "bytes": 476,
+  "end_exclusive": "21DC",
+  "binary_sha256": "069fed2920c7f8a92193a6a6de8036458f36759690fff8cb35dc146da4971d5d",
+  "private_addresses": {
+    "HIM_FNV_MATCH_NAME": 57381,
+    "APMAN_SCOPE_CANDIDATE": 29580,
+    "APMAN_FIND_ENTRY_ROW": 29595
+  },
+  "inputs": {
+    "s19/himon-rom-c000.s19": "cc08b1099f3bf76a45c0f1efff119d6f5766209f028b03cc95e2ce4a7a2ad6e6",
+    "s19/apman-7000.s19": "f61c4246f9e40b89803698d838bf8d54112879f07cf6beeba93dfefeb5aa2ef7"
+  },
+  "cases": [
+    {
+      "case": "empty",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 70545
+    },
+    {
+      "case": "unique-ram-3000",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 76424
+    },
+    {
+      "case": "unique-ram-30FD",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 76426
+    },
+    {
+      "case": "unique-ram-3FCC",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 76432
+    },
+    {
+      "case": "ram-unique-with-empty-banks",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3
+      ],
+      "stages": [
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          176
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          208
+        ],
+        [
+          2,
+          224
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          208
+        ],
+        [
+          1,
+          224
+        ],
+        [
+          1,
+          240
+        ]
+      ],
+      "steps": 330545
+    },
+    {
+      "case": "ram-flash-duplicate",
+      "result": "PASS",
+      "status": "D2",
+      "count": 2,
+      "selector_requests": [
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        2,
+        2,
+        3
+      ],
+      "stages": [
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          176
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          208
+        ],
+        [
+          2,
+          224
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          208
+        ],
+        [
+          1,
+          224
+        ],
+        [
+          1,
+          240
+        ],
+        [
+          2,
+          144
+        ]
+      ],
+      "steps": 348928
+    },
+    {
+      "case": "ram-two-duplicate",
+      "result": "PASS",
+      "status": "D2",
+      "count": 2,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 76438
+    },
+    {
+      "case": "twenty-ram-saturates",
+      "result": "PASS",
+      "status": "D2",
+      "count": 2,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 129340
+    },
+    {
+      "case": "entry-offset-metadata",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 76424
+    },
+    {
+      "case": "unresolved-import-is-not-linked",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 77018
+    },
+    {
+      "case": "three-plus-bank-saturates",
+      "result": "PASS",
+      "status": "D2",
+      "count": 2,
+      "selector_requests": [
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3
+      ],
+      "stages": [
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          176
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          208
+        ],
+        [
+          2,
+          224
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          208
+        ],
+        [
+          1,
+          224
+        ],
+        [
+          1,
+          240
+        ],
+        [
+          1,
+          144
+        ]
+      ],
+      "steps": 354809
+    },
+    {
+      "case": "bank-duplicate-with-ram",
+      "result": "PASS",
+      "status": "D2",
+      "count": 2,
+      "selector_requests": [
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3
+      ],
+      "stages": [
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          176
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          208
+        ],
+        [
+          2,
+          224
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          208
+        ],
+        [
+          1,
+          224
+        ],
+        [
+          1,
+          240
+        ]
+      ],
+      "steps": 332002
+    },
+    {
+      "case": "bad-crc",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 72672
+    },
+    {
+      "case": "forged-name",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 73046
+    },
+    {
+      "case": "bad-entry",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 72783
+    },
+    {
+      "case": "bad-kind",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 71777
+    },
+    {
+      "case": "bad-pack40",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 73046
+    },
+    {
+      "case": "bad-sections",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 70809
+    },
+    {
+      "case": "malformed-ram-valid-bank",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        2,
+        2,
+        3
+      ],
+      "stages": [
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          176
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          208
+        ],
+        [
+          2,
+          224
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          208
+        ],
+        [
+          1,
+          224
+        ],
+        [
+          1,
+          240
+        ],
+        [
+          2,
+          144
+        ]
+      ],
+      "steps": 348079
+    },
+    {
+      "case": "bank-only",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3
+      ],
+      "stages": [
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          176
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          208
+        ],
+        [
+          2,
+          224
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          208
+        ],
+        [
+          1,
+          224
+        ],
+        [
+          1,
+          240
+        ],
+        [
+          1,
+          160
+        ]
+      ],
+      "steps": 275606
+    },
+    {
+      "case": "disabled-ram-not-counted",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        2,
+        2,
+        3
+      ],
+      "stages": [
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          176
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          208
+        ],
+        [
+          2,
+          224
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          208
+        ],
+        [
+          1,
+          224
+        ],
+        [
+          1,
+          240
+        ],
+        [
+          2,
+          144
+        ]
+      ],
+      "steps": 275606
+    },
+    {
+      "case": "window-excludes-bank-duplicate",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [
+        2,
+        2,
+        3,
+        1,
+        1,
+        3
+      ],
+      "stages": [
+        [
+          2,
+          128
+        ],
+        [
+          1,
+          128
+        ]
+      ],
+      "steps": 110434
+    },
+    {
+      "case": "request-excludes-bank-duplicate",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3
+      ],
+      "stages": [
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          208
+        ],
+        [
+          1,
+          224
+        ],
+        [
+          1,
+          240
+        ]
+      ],
+      "steps": 211932
+    },
+    {
+      "case": "policy-FF-ram-independent",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 76422
+    },
+    {
+      "case": "policy-A0-ram-independent",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 76424
+    },
+    {
+      "case": "policy-00-ram-independent",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 76422
+    },
+    {
+      "case": "policy-E6-ram-independent",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 76422
+    },
+    {
+      "case": "excluded-b0-does-not-duplicate",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3
+      ],
+      "stages": [
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          176
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          208
+        ],
+        [
+          2,
+          224
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          208
+        ],
+        [
+          1,
+          224
+        ],
+        [
+          1,
+          240
+        ]
+      ],
+      "steps": 330545
+    },
+    {
+      "case": "enrolled-b0-duplicates",
+      "result": "PASS",
+      "status": "D2",
+      "count": 2,
+      "selector_requests": [
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        0,
+        0,
+        3,
+        0,
+        0,
+        3,
+        0,
+        0,
+        3,
+        0,
+        0,
+        3,
+        0,
+        0,
+        3,
+        0,
+        0,
+        3,
+        0,
+        0,
+        3,
+        0,
+        0,
+        3,
+        0,
+        0,
+        3
+      ],
+      "stages": [
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          176
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          208
+        ],
+        [
+          2,
+          224
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          208
+        ],
+        [
+          1,
+          224
+        ],
+        [
+          1,
+          240
+        ],
+        [
+          0,
+          128
+        ],
+        [
+          0,
+          144
+        ],
+        [
+          0,
+          160
+        ],
+        [
+          0,
+          176
+        ],
+        [
+          0,
+          192
+        ],
+        [
+          0,
+          208
+        ],
+        [
+          0,
+          224
+        ],
+        [
+          0,
+          240
+        ],
+        [
+          0,
+          144
+        ]
+      ],
+      "steps": 484436
+    },
+    {
+      "case": "protected-backup-not-counted",
+      "result": "PASS",
+      "status": "AC",
+      "count": 1,
+      "selector_requests": [
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3
+      ],
+      "stages": [
+        [
+          2,
+          128
+        ],
+        [
+          2,
+          144
+        ],
+        [
+          2,
+          160
+        ],
+        [
+          2,
+          176
+        ],
+        [
+          2,
+          192
+        ],
+        [
+          2,
+          208
+        ],
+        [
+          2,
+          224
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          1,
+          192
+        ],
+        [
+          1,
+          208
+        ],
+        [
+          1,
+          224
+        ],
+        [
+          1,
+          240
+        ]
+      ],
+      "steps": 330545
+    },
+    {
+      "case": "bad-length-3FFD-415002",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 70545
+    },
+    {
+      "case": "bad-length-3FFB-4150020600",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 70575
+    },
+    {
+      "case": "bad-length-3000-415002ffff",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 70567
+    },
+    {
+      "case": "bad-length-3000-4150020000",
+      "result": "PASS",
+      "status": "D1",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 70563
+    },
+    {
+      "case": "hrec-format",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 97
+    },
+    {
+      "case": "invalid-format",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 97
+    },
+    {
+      "case": "no-window",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 112
+    },
+    {
+      "case": "extra-window",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 112
+    },
+    {
+      "case": "unstable-name",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 102
+    },
+    {
+      "case": "empty-name",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 104
+    },
+    {
+      "case": "long-name",
+      "result": "PASS",
+      "status": "D4",
+      "count": 0,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 106
+    },
+    {
+      "case": "restore-failure-overrides-ram",
+      "result": "PASS",
+      "status": "D9",
+      "count": 0,
+      "selector_requests": [
+        2,
+        2,
+        3
+      ],
+      "stages": [
+        [
+          2,
+          128
+        ]
+      ],
+      "steps": 73830
+    },
+    {
+      "case": "ram-revalidation-fails",
+      "result": "PASS",
+      "status": "D1",
+      "count": 1,
+      "selector_requests": [],
+      "stages": [],
+      "steps": 73512
+    }
+  ]
+}

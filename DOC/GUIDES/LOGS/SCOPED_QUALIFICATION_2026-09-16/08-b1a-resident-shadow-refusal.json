@@ -1,0 +1,15 @@
+{
+  "result": "PASS",
+  "cases": [
+    {
+      "command": "FNV1A_INIT",
+      "status": null,
+      "output": "FNV1A_INIT\r\n>"
+    },
+    {
+      "command": "BANKDUMP",
+      "status": 209,
+      "output": "BANKDUMP\r\nAPMAN ERR=$D1\r\n>"
+    }
+  ]
+}

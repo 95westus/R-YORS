@@ -1,0 +1,86 @@
+RESIDENT            = $F000-$FCF1; 3314 bytes
+UNUSED MARGIN        = $FCF2-$FD77; 134 bytes (minimum 128)
+UNIFIED WORKER       = run $0200-$0437; store $FD78-$FFAF; 568 bytes
+SELECTOR PREFIX      = $0200-$0226; 39 bytes
+WORKER S19 SHA-256   = 485BA4C3ADCD622EAE90D74DE6FEB5BA8EBE0EAD6FC764CB9DBE6133B51324CC
+DIRECTORY/CONFIG/VEC = $FFB0-$FFEF / $FFF0-$FFF9 / $FFFA-$FFFF
+PUBLIC RESIDENT ABI  = INIT $F003; QUERY $F006; CHARIN $F013; CHAROUT $F019; READY $F03E
+RAM ABI              = $12; LOW USER $1A00-$1FFF; STR8 STATE $7DE7-$7DFF
+LAYOUT CHECK         = PASS
+STR8 RESIDENT       = $F000-$FCF1
+UNIFIED WORKER      = run $0200-$0437; stored $FD78-$FFAF
+NEW DIRECTORY       = $FFB0-$FFEF; all FF
+SECTOR ROLES        = $FFF0=$FF no WORK; $FFF1=$2F B2:F B3:F backup; $FFF2-$FFF9 all FF
+VECTORS FFFA-FFFF   = CF F0 00 F0 E3 F0
+CPU RANGE           = $F000-$FFFF; 4096 bytes
+SST39SF010A B3 PHYS = $1F000-$1FFFF; file offset $000-$FFF
+SHA-256             = 959C0142D9BF012C13DDDBA5AA35C5BCFE30C729A4E6370096E899A418B8266A
+T48 BIN             = BUILD/v1.34/bin/str8n-v1.34-bank3-f000-ffff.bin
+TOP UPDATE IMAGE    = BUILD/v1.34/generated/str8n-v1.34-top-image.inc; sum=$75B2; SHA256=959C0142D9BF012C13DDDBA5AA35C5BCFE30C729A4E6370096E899A418B8266A
+wdc02as -G -L -S -W -I tools/bank-maint -I tools/top-update -I BUILD/v1.34/generated -DSTR8_IN65_BANK_MAINT=0 -DSTR8_IN65_VERSION_134=1 tools/bank-maint/str8n-v1.23-bank-maint-menu-2000.asm
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+        1 file(s) moved.
+        1 file(s) moved.
+wdcln -g -s -t -hm19 -j -o BUILD/v1.34/s19/str8n-v1.34-bank-maint-menu-2000.s19 BUILD/obj/str8n-v1.34-bank-maint-menu-2000.obj
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     002000  002000     3000H ( 12288)
+Total                       3000H ( 12288)
+
+BANK MAINT MENU S19   = PASS
+S1 RECORDS          = 768
+DATA BYTES          = 12288
+ADDRESS SPAN        = $2000-$4FFF
+S9 EXECUTION        = $2000
+PRIVATE WORKER      = FFCDB4201C913FC9B3E3F3D438A98940F76967C5E62F843A2DC32CFF1D1AD1B2
+SHA256              = A3AEE8E295EA0DAE666AFC0F43530D1AA2F6CB286433B14E1C58B83E0856E7B4
+TOP UPDATE S19        = PASS; bytes=12288; S9=$2000; SHA256=A3AEE8E295EA0DAE666AFC0F43530D1AA2F6CB286433B14E1C58B83E0856E7B4
+BANK MAINT MENU .A = tools/bank-maint/str8n-v1.34-bank-maint-menu-2000.a; bytes=12288; spans=$2000-$4FFF
+python tools/test_bank_maint_roles.py
+BANK MAINT ROLE STARTUP: 432 linked cases PASS; roles read from B3, entry bank restored, no worker dispatch or flash writes
+RAM ABI SOURCE CHECK = PASS; $1A00-$1FFF has no active allocation
+S19 RANGE MATRIX    = PASS
+BANKS 0-2 SIZES     = 4K, 8K, 12K, 16K, 20K, 24K, 28K, 32K
+BANK 3 SIZES        = 4K, 8K, 12K, 16K, 20K, 24K, 28K
+MATRIX ARTIFACTS    = C:\SRC\STR8-N\BUILD\v1.34\test\range-matrix
+RAM LOAD CONTRACT   = PASS
+S1 DESTINATIONS     = $2000-$7AFF, complete record span
+S9 EXECUTION        = $2000-$7AFF, automatic after nonempty load
+FAILURE QUENCH      = validated S9 or Ctrl-C
+LINKED L COMMAND    = $F27E
+wdc02as -G -L -S -W -I BUILD/v1.34/generated -DSTR8_TOP_EMBED=0 -DSTR8_DIRECTORY_REFRESH=0 -DSTR8_IN65_VERSION_134=1 tools/top-update/str8n-v1.23-top-update-2000.asm
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+        1 file(s) moved.
+        1 file(s) moved.
+wdcln -g -s -t -hm19 -j -o BUILD/v1.34/s19/str8n-v1.34-top-update-2000.s19 BUILD/obj/str8n-v1.34-top-update-2000.obj
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     002000  002000     3000H ( 12288)
+Total                       3000H ( 12288)
+
+TOP UPDATE S19        = PASS; bytes=12288; S9=$2000; SHA256=5BFD81F11ED50F0BA11BC42B27E462949A183689846B0675ED3F913381B3904E
+wdc02as -G -L -S -W -I BUILD/v1.34/generated -DSTR8_TOP_EMBED=0 -DSTR8_DIRECTORY_REFRESH=1 -DSTR8_IN65_VERSION_134=1 tools/top-update/str8n-v1.23-top-update-2000.asm
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+        1 file(s) moved.
+        1 file(s) moved.
+wdcln -g -s -t -hm19 -j -o BUILD/v1.34/s19/str8n-v1.34-directory-refresh-2000.s19 BUILD/obj/str8n-v1.34-directory-refresh-2000.obj
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     002000  002000     3000H ( 12288)
+Total                       3000H ( 12288)
+
+DIRECTORY REFRESH S19 = PASS; bytes=12288; S9=$2000; SHA256=B71C3888C39FF3D960D8E84DE7319AFF8F2D10DD796D9901F208238AC6A8D303
+python tools/test_top_backup_roles.py
+top-update: B2:F backup and B3:F recovery PASS; new roles installed; old roles restored; B0/B1 unchanged
+directory-refresh: B2:F backup and B3:F recovery PASS; new roles installed; old roles restored; B0/B1 unchanged
+str8-in65-top-update: B2:F backup and B3:F recovery PASS; new roles installed; old roles restored; B0/B1 unchanged
+bank-maint-menu: B2:F backup and B3:F recovery PASS; new roles installed; old roles restored; B0/B1 unchanged

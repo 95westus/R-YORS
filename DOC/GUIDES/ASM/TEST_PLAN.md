@@ -25,6 +25,61 @@ those gates agree.
 
 ## Host Gate
 
+The [RAM AP/combined uniqueness proof](../AP/RAM_AP_UNIQUENESS_2026-09-16.md)
+adds `make -C SRC fnv-ram-ap-check` to `asm-test`. Require bounded full-envelope
+copy before PARSE, canonical-name and entry validation, duplicate saturation
+across RAM/banks, exact policy/window/role intersections, safe restore-error
+propagation and unique-location revalidation. Assert provider immutability,
+no provider load/link/entry, no out-of-window reads and no foreign ROM fetch.
+Board proof uses existing flash carriers, temporary RAM envelopes and complete
+before/after flash archives. Pin private helper addresses and image identities
+in exported metadata; keep command-execution acceptance separate.
+
+The [initial RAM HREC proof](../AP/RAM_HREC_PROOF_2026-09-16.md) adds
+`make -C SRC fnv-ram-hrec-check` to `asm-test`. Require linked-byte validation
+of the one-window request, supported HREC shapes, all record/pointer boundary
+cases, terminated text, duplicate saturation and cleared failure results.
+The memory model must reject provider writes, I/O/flash access and execution
+outside the inspector. Board proof uses RAM-only drivers and exact before/after
+four-bank archives; this is not acceptance of integrated RAM command lookup.
+
+The [scoped FNV integration candidate](../AP/HIMON_SCOPED_FNV_IMPLEMENTATION_2026-09-16.md)
+has two `asm-test` prerequisites. Run
+`make -C SRC fnv-scope-policy-check fnv-scope-check`.
+Require every policy/request byte pair, invalid/erased-policy refusal,
+`$A6` and every additional bit-clear excluding B0, only the three declared
+card writes, bounded code/stack/card reads, and balanced return for the 28-byte
+policy primitive. The linked check must also cover traversal order, bank and
+sector intersections, protected roles, AM01 refusal/AM02 bootstrap, resident
+precedence, canonical name and entry bounds, malformed/duplicate refusal,
+unique revalidation, real BANKDUMP import linking and RAM-safe bank restoration.
+Require no flash writes and no instruction fetch from foreign-bank ROM.
+RAM-provider/HREC search remains an implementation gate. Coordinated
+installation, policy provisioning, physical reset and final flash isolation
+remain required board gates.
+
+The subsequent no-WORK/B2:F role candidate must also prove B1:E/F are ordinary
+locations, B2:F is excluded from discovery and manager bootstrap, and all 24
+APMAN role-guard locations leave exactly B2:F protected. STR8's
+`bank-maint-role-check` retains both layouts; `top-backup-role-check` executes
+backup and recovery for all updater variants. Before board migration preserve
+readbacks, inspect B2:F, and retain the old B1:F backup until the new one verifies.
+These migration/readback gates now pass on COM4; physical reset and final four-bank isolation pass
+([evidence](../LOGS/SECTOR_ROLES_BOARD_2026-09-16.md)). Scoped discovery and all 24 AM02 role-guard board tests now pass. The pair is now installed with `$A6`;
+[step-2 smoke](../LOGS/SCOPED_SMOKE_BOARD_2026-09-16.md) passes disabled/enabled
+APTEST, direct RAM AP, ASM, physical reset and exact final isolation. The [wider banked AP matrix](../LOGS/SCOPED_QUALIFICATION_2026-09-16.md) now passes:
+B1/B2 BANKDUMP and imports, malformed/duplicate refusal, resident precedence,
+paced operator LED confirmation with actual PCR samples, reset and final
+four-bank isolation. Only B2:A and expected B3:F directory/journal bytes differ
+from the step-2 baseline; B1:A is restored erased.
+
+The [2026-09-16 follow-up](../LOGS/AP_FNV_FOLLOWUP_2026-09-16.md) completes
+Microchess's physical-reset discovery/bare-launch gate. Repeated B0/B1/B2
+APS scans produced operator-observed LED activity; exact bank/sector sequence
+identification was still open in that earlier record. The later qualification
+closes the scoped B1/B2 display gate with separately recorded human
+observations; serial output alone is not visual proof.
+
 The [2026-09-16 AP interface/RAM audit](../AP/HIMON_AP_INTERFACE_RAM_AUDIT_2026-09-16.md)
 adds a separate 23-case characterization run against the frozen Step-1 images:
 
@@ -212,7 +267,7 @@ the new image hashes and separate serial transcript.
 
 ## APMAN Bank/Sector LED Host Qualification
 
-Status: host-qualified; COM4 functional paths accepted; visual LED observation
+Historical status of the original build: host-qualified; COM4 functional paths accepted; visual LED observation
 and physical-reset recovery pending.
 
 APMAN writes `SECTOR|BANK` to PIA Port A immediately before the checked bank

@@ -1,0 +1,27 @@
+{
+  "serial_log": "C:\\SRC\\R-YORS\\LOCAL\\scoped-smoke-board-20260916\\serial-com4.jsonl",
+  "helper_sha256": "f15a35a26b88bc2d4a5eab83ed27f13a14007ec4fe25ac456631cf544efb7952",
+  "banks": {
+    "0": {
+      "bytes": 32768,
+      "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8",
+      "reset": "F818"
+    },
+    "1": {
+      "bytes": 32768,
+      "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211",
+      "reset": "F000"
+    },
+    "2": {
+      "bytes": 32768,
+      "sha256": "67763a7054e4c9ba1df4a20b341c6466b07b45e99a5447030b93ebe3d1aa2888",
+      "reset": "F000"
+    },
+    "3": {
+      "bytes": 32768,
+      "sha256": "8bd6a057b06c896cdf3c4d195ae8c9e393fc7ef2003de49f2f706750d6bbe247",
+      "reset": "F000"
+    }
+  },
+  "flash_sha256": "3266041931068fd5a03db030eaef902be61bf2678fa75f1c559cee6df70741dc"
+}

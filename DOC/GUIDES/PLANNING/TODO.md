@@ -76,9 +76,19 @@ size measurement, and required hardware proof are complete.
   The LED item remains unchecked
   until the operator-observed display gate is also satisfied.
 
-### Candidate: Peter Jennings Microchess AP
+  The 2026-09-16 follow-up repeated read-only B0/B1/B2 scans. The operator
+  saw lights changing but could not identify the sequences. Activity is
+  observed; exact bank/sector display acceptance was still open at that point. See
+  [the follow-up record](../LOGS/AP_FNV_FOLLOWUP_2026-09-16.md).
 
-- [ ] Accept the fixed-load `$2000` Microchess AP on hardware. The port retains
+  The later [scoped qualification](../LOGS/SCOPED_QUALIFICATION_2026-09-16.md) closes the current
+  B1/B2 scoped-display gate with operator-confirmed paced sequences and actual
+  PCR samples; B0 is excluded by `$A6`. This bounded instrumented proof does
+  not retroactively qualify every original uninstrumented B0 command path.
+
+### Accepted: Peter Jennings Microchess AP
+
+- [x] Accept the fixed-load `$2000` Microchess AP on hardware. The port retains
   Peter Jennings' copyright, redistribution conditions, disclaimer, Daryl
   Rictor serial adaptation credit, and Bill Forster OCR-correction credit. The
   WDC source and onboard `.a`, `$0625`-byte BODY, `$06A6` AP-v2 envelope,
@@ -94,7 +104,9 @@ size measurement, and required hardware proof are complete.
   named execution, exact `H`, and `Q`. HIMON `00.0910(2121)` then proved its
   bare `MICROCHESS` launcher through the same carrier. The final K05 form also
   makes bare `#` display the `MICROCHESS` name. Remaining
-  proof: physically reset, then repeat discovery and bare launch. See
+  proof was completed by the [2026-09-16 follow-up](../LOGS/AP_FNV_FOLLOWUP_2026-09-16.md):
+  receive-only `RST H`, rediscovery, bare launch, `C`, exact `H`, and `Q` return.
+  See
   [MICROCHESS_AP.md](../ASM/MICROCHESS_AP.md).
 
 ### Candidate: shared FNV AP-alias launcher
@@ -259,6 +271,14 @@ The 2026-08-26 Slice 7 transcript confirms `$FFF0-$FFF9 = 1E 1F FF FF FF FF
 FF FF FF FF`, the complete compact 24-row `APS` display, warm reset, retained
 B1:F backup, and `Q` rejection through `HSH_NF!`.
 
+The 2026-09-16 [role-change candidate](../AP/SECTOR_ROLES_AND_RAM_TRANSIENTS_2026-09-16.md)
+removes flash WORK (`$FFF0=$FF`) and moves the backup to B2:F (`$FFF1=$2F`).
+It adds the top-level RAM-transient collection and tests both role layouts.
+Board migration and full readback now pass; physical reset and final four-bank isolation pass.
+Only B2:F/B3:F changed, with the old B1:F backup retained. The evidence above
+describes the previous layout; see the [new board record](../LOGS/SECTOR_ROLES_BOARD_2026-09-16.md).
+SPI SRAM WORK is not yet allocated.
+
 ### Next major pass: consolidated AP tooling
 
 - [ ] Modularize STR8-N / AP handling / HIMON / ASM using
@@ -347,8 +367,39 @@ B1:F backup, and `Q` rejection through `HSH_NF!`.
   enrolls B1+B2 while excluding the present WDCMONv2 Bank 0; `$FF` or an invalid
   policy disables automatic external search. Required gates include config
   decode, request/allow intersection, proof that `$06` never selects B0,
-  format-specific HREC/AP validation, BANKDUMP B2:9 unique resolution, malformed
+  format-specific HREC/AP validation, BANKDUMP unique resolution, malformed
   and duplicate rejection, size measurement, docs, and board proof.
+
+  The [integration candidate](../AP/HIMON_SCOPED_FNV_IMPLEMENTATION_2026-09-16.md)
+  implements banked AP traversal, carrier/canonical-name validation, uniqueness,
+  AM02 manager integration and resident-miss dispatch using the frozen private
+  card. HIMON ends at `$EFF8` (8 bytes free); APMAN BODY ends at `$7BF3`
+  (13 bytes free). STR8 exports the `$FFF2` policy constant with default `$FF`;
+  canonical defaults remain unchanged, while live board policy is now `$A6`. The exhaustive
+  policy check and linked traversal check are `asm-test` prerequisites.
+  Coordinated installation and [banked AP board qualification](../LOGS/SCOPED_QUALIFICATION_2026-09-16.md)
+  pass, including B1/B2 BANKDUMP/imports, malformed/duplicate refusal, resident
+  precedence, role guards, paced LED/PCR observation, reset and isolation.
+  RAM-provider/HREC search remains open, so this combined checkbox stays
+  unchecked. BANKDUMP is retained at B2:A; APTEST remains at B2:9.
+  The completed banked AP pass is the [scoped-discovery board slice](SCOPED_FNV_BOARD_SLICE_2026-09-16.md):
+  prepare guarded policy provisioning and recovery, qualify the HIMON/AM02
+  pair, and retain reset/isolation evidence before extending RAM discovery.
+  Step 1 now has [offline policy and paired recovery artifacts](../AP/SCOPED_POLICY_AND_PAIR_RECOVERY_2026-09-16.md)
+  with 33 focused checks passing. The operator selected `$A6` and expanded
+  step 2 to include flashing and smoke. [Host revalidation](../LOGS/SCOPED_HOST_GATES_2026-09-16.md)
+  and [board smoke](../LOGS/SCOPED_SMOKE_BOARD_2026-09-16.md) now pass, including
+  paired deployment, `$A6` provisioning, physical reset and final isolation.
+
+  The next [RAM HREC slice](../AP/RAM_HREC_PROOF_2026-09-16.md) adds a standalone
+  333-byte inspector for explicitly selected `$3000-$3FFF`, with shape/pointer
+  bounds, duplicate refusal and metadata-only results. It does not execute
+  providers or extend monitor dispatch. The subsequent
+  [RAM AP slice](../AP/RAM_AP_UNIQUENESS_2026-09-16.md) implements bounded AP
+  validation and combined RAM/bank uniqueness as a 476-byte, image-pinned
+  metadata inspector. Load/link ownership and command entry remain open;
+  this combined checkbox stays unchecked. SPI SRAM is not installed; defer SPI support and
+  WORK allocation until the operator confirms installation.
 - [ ] After the scoped-search proof, implement only a separately frozen bridge
   to the R-YORS II Dynamic FNV Provider Registry. Its proposal lives in the
   sibling `R-YORS-II` repository at

@@ -1,0 +1,33 @@
+{
+  "result": "PASS",
+  "mode": "roles",
+  "expected_display": [
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "00",
+    "01"
+  ],
+  "result_bytes": "00000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000ac000000000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "pcr_samples": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "visual_gate": "requires separate operator observation; serial/RAM samples alone do not close it"
+}

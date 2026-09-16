@@ -35,6 +35,7 @@ APMAN_NAME_HASH3           EQU             APMAN_CARD_BASE+$13
 APMAN_MODE_AP              EQU             $01
 APMAN_MODE_APS             EQU             $02
 APMAN_MODE_INSTALL         EQU             $03
+APMAN_MODE_SCOPE           EQU             $04
 
 APMAN_CONFIRM_INSTALL      EQU             $A5
 

@@ -1,0 +1,9 @@
+{
+  "images": 40,
+  "files": {
+    "A": 42,
+    "S19": 40,
+    "BIN": 40
+  },
+  "result": "PASS hashes, S19 checksums, A byte reconstruction, BIN ranges and entries"
+}

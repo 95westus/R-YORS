@@ -48,6 +48,7 @@
                         INCLUDE         "ASM/asm-abi-v1.inc"
                         INCLUDE         "ASM/ap-store-v1.inc"
                         INCLUDE         "ASM/apman-v1.inc"
+                        INCLUDE         "AP/fnv-scope-card.inc"
                         INCLUDE         "HIMON/himon-image-eq.inc"
                         INCLUDE         "HIMON/himon-led-eq.inc"
                         INCLUDE         "HIMON/himon-shared-eq.inc"
@@ -2213,6 +2214,10 @@ HIM_PACK40_MUL40_SHIFT32:
 
                         INCLUDE         "AP/ap-space.inc"
 
+                        INCLUDE         "AP/fnv-scope-policy.inc"
+                        INCLUDE         "AP/fnv-scope-find.inc"
+                        INCLUDE         "HIMON/himon-fnv-fallback.inc"
+
 L_NOTE_S1_ADDR:
                         LDA             LOAD_HAVE_DATA
                         BNE             L_NOTE_S1_ADDR_HAVE_DATA
@@ -2312,12 +2317,15 @@ CMD_DISPATCH_SCAN_NEXT:
                         JSR             CMD_HASH_SCAN_ADV
                         BRA             CMD_DISPATCH_SCAN_LOOP
 CMD_DISPATCH_SCAN_MISS:
+                        JSR             HIM_FNV_FALLBACK
+                        JMP             MAIN_LOOP
+HIM_FNV_RESIDENT_MISS:
                         JSR             MON_PRINT_HASH
                         LDX             #<MSG_HASH_NF
                         LDY             #>MSG_HASH_NF
                         JSR             HIM_WRITE_HBSTRING
                         JSR             SYS_WRITE_CRLF
-                        JMP             MAIN_LOOP
+                        RTS
 
 ; ----------------------------------------------------------------------------
 ; THE_JOIN_EXEC_XY / THE_JOIN_EXEC -- resident executable-record join.

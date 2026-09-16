@@ -1,0 +1,11 @@
+wdc02as -G -L -S -W -I . -DSTR8_TOP_EMBED=0 -DSTR8_DIRECTORY_REFRESH=0 -DSTR8_IN65_VERSION_134=1 policy.asm
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+wdcln -g -s -t -hm19 -j -o policy.s19 policy.obj
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     002000  002000     3000H ( 12288)
+Total                       3000H ( 12288)
+

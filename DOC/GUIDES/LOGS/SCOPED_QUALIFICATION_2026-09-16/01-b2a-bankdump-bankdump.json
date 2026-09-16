@@ -1,0 +1,22 @@
+{
+  "result": "PASS",
+  "bank": 2,
+  "cases": [
+    {
+      "command": "AP B2 BANKDUMP",
+      "action": "header",
+      "output": "AP B2 BANKDUMP\r\nAP LOAD B2 A000 -> 2000\r\nGO 2000\r\n\r\nBANKDUMP READ-ONLY\r\nBANK 0-3 OR M=MAP> 2\r\nSECTOR 8-F> 8\r\nH=APC HEADER P=PAGE A=ALL Q=QUIT> H\r\n\r\nBANKDUMP B2:8000 CRC16=88EB\r\nAPC V=02 PKG=0C21 BASE=7000 END=7BF3 BODY=0BF3 FNV=927E95F9\r\n\r\n8000: 41 50 02 21 0C 53 0B 00 01 00 70 F3 7B F3 0B F9 |AP.!.S....p.{...|\r\n8010: 95 7E 92 52 01 00 00 45 0D 00 01 81 00 00 20 86 |.~.R...E...... .|\r\n8020: 16 9A 05 CD 08 70 08 49 01 00 00 42 F3 0B 80 04 |.....p.I...B....|\r\n8030: 41 4D 30 32 9C 6A 7E 9C 61 7C 9C 6E 7C AD 60 7C |AM02.j~.a|.n|.`||\r\n8040: C9 04 D0 03 4C 30 70 C9 01 F0 3E C9 02 D0 03 4C |....L0p...>....L|\r\n8050: D7 71 C9 03 D0 03 4C 88 72 A9 D0 4C 40 79 AD 53 |.q....L.r..L@y.S|\r\n8060: 7D 85 A0 AD 54 7D 85 A1 64 A9 20 24 78 90 EA 20 |}...T}..d. $x.. |\r\n8070: E5 78 A0 00 B1 A0 D0 E1 A5 A0 85 AA A5 A1 85 AB |.x..............|\r\n8080: 20 5B 73 90 03 4C E1 70 60 A9 02 85 A0 A9 1A 85 | [s..L.p`.......|\r\n8090: A1 64 A9 20 E5 78 A0 00 B1 A0 C9 4C D0 0C A9 01 |.d. .x.....L....|\r\n80A0: 85 A9 20 F3 78 20 E5 78 80 0E C9 44 D0 0A A9 04 |.. .x .x...D....|\r\n80B0: 85 A9 20 F3 78 20 E5 78 A0 00 B1 A0 C9 42 F0 03 |.. .x .x.....B..|\r\n80C0: 4C 26 79 20 F3 78 A0 00 B1 A0 38 E9 30 C9 03 90 |L&y .x....8.0...|\r\n80D0: 03 4C 26 79 85 A7 20 F3 78 20 E5 78 20 0F 78 B0 |.L&y.. .x .x .x.|\r\n80E0: 03 4C 26 79 A5 A0 85 AA A5 A1 85 AB A9 02 8D 6E |.L&y...........n|\r\n80F0: 7C A5 A9 29 02 F0 12 20 76 73 B0 03 4C 2A 79 20 ||..)... vs..L*y |\r\n\r\nBANKDUMP OK; B3 RESTORED\r\n>"
+    },
+    {
+      "command": "BANKDUMP",
+      "action": "map",
+      "output": "BANKDUMP\r\nAP LOAD B2 A000 -> 2000\r\nGO 2000\r\n\r\nBANKDUMP READ-ONLY\r\nBANK 0-3 OR M=MAP> M\r\n\r\nB# 8 9 A B C D E F\r\n\r\nB0 U U U U U U U U\r\nB1 U A E E E E E U\r\nB2 A A A E E E E B\r\nB3 U U U U U U U P\r\nE=ERASED U=USED A=AP VALID\r\nW=WORK B=B3F BKUP P=B3F PROTECTED\r\nBANKDUMP MAP OK; B3 RESTORED\r\n>"
+    },
+    {
+      "command": "AP B2 BANKDUMP",
+      "action": "page",
+      "output": "AP B2 BANKDUMP\r\nAP LOAD B2 A000 -> 2000\r\nGO 2000\r\n\r\nBANKDUMP READ-ONLY\r\nBANK 0-3 OR M=MAP> 2\r\nSECTOR 8-F> 8\r\nH=APC HEADER P=PAGE A=ALL Q=QUIT> P\r\nPAGE 0-F> 0\r\n\r\nBANKDUMP B2:8000 CRC16=88EB\r\n\r\n8000: 41 50 02 21 0C 53 0B 00 01 00 70 F3 7B F3 0B F9 |AP.!.S....p.{...|\r\n8010: 95 7E 92 52 01 00 00 45 0D 00 01 81 00 00 20 86 |.~.R...E...... .|\r\n8020: 16 9A 05 CD 08 70 08 49 01 00 00 42 F3 0B 80 04 |.....p.I...B....|\r\n8030: 41 4D 30 32 9C 6A 7E 9C 61 7C 9C 6E 7C AD 60 7C |AM02.j~.a|.n|.`||\r\n8040: C9 04 D0 03 4C 30 70 C9 01 F0 3E C9 02 D0 03 4C |....L0p...>....L|\r\n8050: D7 71 C9 03 D0 03 4C 88 72 A9 D0 4C 40 79 AD 53 |.q....L.r..L@y.S|\r\n8060: 7D 85 A0 AD 54 7D 85 A1 64 A9 20 24 78 90 EA 20 |}...T}..d. $x.. |\r\n8070: E5 78 A0 00 B1 A0 D0 E1 A5 A0 85 AA A5 A1 85 AB |.x..............|\r\n8080: 20 5B 73 90 03 4C E1 70 60 A9 02 85 A0 A9 1A 85 | [s..L.p`.......|\r\n8090: A1 64 A9 20 E5 78 A0 00 B1 A0 C9 4C D0 0C A9 01 |.d. .x.....L....|\r\n80A0: 85 A9 20 F3 78 20 E5 78 80 0E C9 44 D0 0A A9 04 |.. .x .x...D....|\r\n80B0: 85 A9 20 F3 78 20 E5 78 A0 00 B1 A0 C9 42 F0 03 |.. .x .x.....B..|\r\n80C0: 4C 26 79 20 F3 78 A0 00 B1 A0 38 E9 30 C9 03 90 |L&y .x....8.0...|\r\n80D0: 03 4C 26 79 85 A7 20 F3 78 20 E5 78 20 0F 78 B0 |.L&y.. .x .x .x.|\r\n80E0: 03 4C 26 79 A5 A0 85 AA A5 A1 85 AB A9 02 8D 6E |.L&y...........n|\r\n80F0: 7C A5 A9 29 02 F0 12 20 76 73 B0 03 4C 2A 79 20 ||..)... vs..L*y |\r\n\r\nBANKDUMP OK; B3 RESTORED\r\n>"
+    }
+  ],
+  "imports_exact": true
+}

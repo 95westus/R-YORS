@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "two_readbacks_identical": true,
+  "flash_sha256": "a0af5849bcb4985699b58f22daa1a801262469e2172bb15827189990cf5bf1cc",
+  "b2f": "4096 erased bytes",
+  "old_b1f_sha256": "5dddc4d0ec70afa5d154cf1ffccab8c2d70bf72b21cd49f3b99c4c9fd55099a0",
+  "old_top_sha256": "fb3aad6d9e8f6402f318100685f39a5ee4eb8eb2cda2927c5e82965e693dd250",
+  "expected_top_sha256": "abc71e61edd8e065f8995a89ca958c77fdda3d7d2a200d943d6bf36c36934e21",
+  "updater_sha256": "5bfd81f11ed50f0ba11bc42b27e462949a183689846b0675ed3f913381b3904e",
+  "changed_top_addresses": [
+    "FFF0",
+    "FFF1"
+  ]
+}

@@ -16,6 +16,14 @@ HIM_AP_SERVICE_CHECK_LINK:
                         BNE             HIM_AP_SERVICE_CHECK_MANAGER
                         JMP             HIM_AP_SERVICE_LINK
 HIM_AP_SERVICE_CHECK_MANAGER:
+                        CMP             #FNV_SCOPE_FIND_OP
+                        BNE             HIM_AP_SERVICE_NOT_SCOPE
+                        JMP             HIM_FNV_FIND
+HIM_AP_SERVICE_NOT_SCOPE:
+                        CMP             #FNV_SCOPE_MANAGER_OP
+                        BNE             HIM_AP_SERVICE_NOT_ID
+                        JMP             HIM_AP_IS_MANAGER
+HIM_AP_SERVICE_NOT_ID:
                         CMP             #HIM_AP_OP_MANAGER
                         BNE             HIM_AP_SERVICE_BAD_OP
                         JMP             HIM_APMAN_BOOTSTRAP

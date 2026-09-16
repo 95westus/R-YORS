@@ -337,8 +337,8 @@ if ($source.Contains('HIM_APMAN_BOOTSTRAP:')) {
         Fail 'APMAN package BODY is missing or malformed'
     }
     if ($body[2] -ne [byte][char]'A' -or $body[3] -ne [byte][char]'M' -or
-            $body[4] -ne [byte][char]'0' -or $body[5] -ne [byte][char]'1') {
-        Fail 'APMAN package BODY does not carry the AM01 manager identity'
+            $body[4] -ne [byte][char]'0' -or $body[5] -ne [byte][char]'2') {
+        Fail 'APMAN package BODY does not carry the AM02 scoped manager identity'
     }
     $apHave = $apman.IndexOf('APMAN_AP_HAVE:')
     $apLoad = $apman.IndexOf('APMAN_AP_LOAD:')

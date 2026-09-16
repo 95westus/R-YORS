@@ -1,0 +1,35 @@
+{
+  "result": "PASS",
+  "tools": 42,
+  "inspector": {
+    "name": "fnv-ram-ap-2000",
+    "kind": "private image-pinned RAM AP uniqueness proof",
+    "source_repository": "R-YORS",
+    "source": "SRC/BUILD/s19/fnv-ram-ap-2000.s19",
+    "load_address": "2000",
+    "last_address": "21DB",
+    "s19_entry": "2000",
+    "data_bytes": 476,
+    "bin_bytes": 476,
+    "hole_fill": "FF",
+    "requirements": "Requires matching HIMON/AM02 images and a freshly loaded AM02 overlay; pinned private helpers, not a public ABI. Initialize $7D40 card, format=1, stable name at $2F00, RAM window=$08 when enabled. Owns $2E00 state and staging tray. Metadata only; no load/link/entry. See DOC/GUIDES/AP/RAM_AP_UNIQUENESS_2026-09-16.md and BUILD/tmp/fnv-ram-ap.json image identities.",
+    "native_source": null,
+    "files": {
+      "A/fnv-ram-ap-2000.a": "5296182bf642df746583083ede144c81f082bf959c240196f1ae5f747121a148",
+      "S19/fnv-ram-ap-2000.s19": "aeb7ccacfa079e1c4639ef735094866cf69b49a6c86f8da0aec8aef0cb65e63b",
+      "BIN/fnv-ram-ap-2000.bin": "069fed2920c7f8a92193a6a6de8036458f36759690fff8cb35dc146da4971d5d"
+    },
+    "image_pins": {
+      "inputs": {
+        "s19/himon-rom-c000.s19": "cc08b1099f3bf76a45c0f1efff119d6f5766209f028b03cc95e2ce4a7a2ad6e6",
+        "s19/apman-7000.s19": "f61c4246f9e40b89803698d838bf8d54112879f07cf6beeba93dfefeb5aa2ef7"
+      },
+      "private_addresses": {
+        "HIM_FNV_MATCH_NAME": 57381,
+        "APMAN_SCOPE_CANDIDATE": 29580,
+        "APMAN_FIND_ENTRY_ROW": 29595
+      }
+    }
+  },
+  "board_fixtures_match_export": true
+}

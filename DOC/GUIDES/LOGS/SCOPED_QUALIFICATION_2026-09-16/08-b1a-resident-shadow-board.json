@@ -1,0 +1,8 @@
+{
+  "result": "PASS",
+  "bank": 1,
+  "sector": "A",
+  "fixture": "resident-shadow",
+  "actual_sha256": "edcd31c456b9d2e1fc091ef6c86cff9a97ecc555e1868b1135a3f15ce8e899c7",
+  "top_exact": true
+}

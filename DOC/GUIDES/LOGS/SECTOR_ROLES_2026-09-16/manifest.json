@@ -1,0 +1,52 @@
+{
+  "scope": "Host qualification only; no board flash or SPI SRAM allocation",
+  "build_note": "ASM tests passed; export initially stopped on an unquoted Windows make path. Quoting was fixed and ram-transients/board-s19-check resumed with the completed asm-test, life and fnv1a-hbstr prerequisites marked old.",
+  "roles": {
+    "work": "FF / none",
+    "top_backup": "2F / B2:F",
+    "fnv_policy": "FF / disabled"
+  },
+  "changed_top_addresses": [
+    "FFF0",
+    "FFF1"
+  ],
+  "previous_top_sha256": "9538d97854ba9d5d76143cba0fedb3b2e7ce18f977ce89557406e63404026cb7",
+  "top_sha256": "959c0142d9bf012c13dddba5aa35c5bcfe30c729a4e6370096e899a418b8266a",
+  "himon_and_apman_unchanged": true,
+  "checks": {
+    "asm_test": "PASS",
+    "board_s19_identity": "PASS",
+    "policy_cases": 65536,
+    "scoped_cases": 59,
+    "updater_backup_and_recovery_variants": 4,
+    "maintenance_role_startup_cases": 432,
+    "ram_images": 40
+  },
+  "sources": {
+    "SRC\\tools\\export_ram_transients.py": "479fb5d619deec2f2f505a2bd8a5e429359982532a702981452dbdfb710b3d07",
+    "SRC\\tools\\check_fnv_scope.py": "74c72b339739b060ae1ecc692065e92fe568e0c79fc7ed8129d0b6d7f03594c4"
+  },
+  "str8_sources": {
+    "src/str8-config-eq.inc": "485fde3bca3b2889de1d22316546d09fbf9459c1cab42db0b5e89b25f58a3de7",
+    "tools/top-update/str8n-v1.23-top-update-2000.asm": "9722cbc22068615373553bd67acf0a158df7b471ebb0a884326db4793f3bf5e4",
+    "tools/build_str8n_top_bin.ps1": "4b3b51bc8372b881f162c54e475c2ed6eca36540a33a27dce833f52b35e00d6b",
+    "tools/write_str8n_manifest.ps1": "d32e33568e968e0e43767dec719178ce6614c3974f5f9c50d657a104413caebf",
+    "tools/test_top_backup_roles.py": "d77bdf1934e084dbf35909b866acc74124f63980e72713a292db479c7908e0ed",
+    "tools/test_bank_maint_roles.py": "1b24d01eb0bf6aed41df7cf7c809a7190625fd49e7406fb4d89c115fc7bd905e"
+  },
+  "files": {
+    "collection-check.json": "cc970aff588b62cce81eca8afad0e14ca13b5f733f559909a6a34bcc1a3e8159",
+    "export-build.log": "d33afc5e7d74fb95621b689abbf83150cc3e2a535a7db11476c6641c021ae687",
+    "fnv-scope-policy.json": "5fde728246029f14106c2040dde661d9a8bf4a673ec02a8077a6a99e5e806a57",
+    "fnv-scope.json": "775fae79a7634b30982666d1babccd5ea4638ef7a4fe442ad163ba664be50b5b",
+    "qualification.log": "9221d4b1d570f2be9bda6868f2f7f4d1b60cb19f31e96dfc2230fa12fee43efc",
+    "ram-transients-manifest.json": "4cdeb4954eabf76d904e2ff4966ae4423944018d3008b3b22fe4713ab1de0ed8",
+    "str8n-manifest.json": "cb871e63ce6def578817a6ee214a0b90e88c16be0b6851a6f1d55d71065f8179",
+    "str8n-public.inc": "fc7672f4ce73898ffd4db2278cafa5b88c0ea690c6481dbe21ea9b6391b4f7c7",
+    "str8n-v1.34-bank3-f000-ffff.bin": "959c0142d9bf012c13dddba5aa35c5bcfe30c729a4e6370096e899a418b8266a",
+    "str8n.lock.json": "c83ec2c69c0634a09b812b2227b00ab83d0ed7d613812bf481c674df766cb398",
+    "test_bank_maint_roles.py": "1b24d01eb0bf6aed41df7cf7c809a7190625fd49e7406fb4d89c115fc7bd905e",
+    "test_top_backup_roles.py": "d77bdf1934e084dbf35909b866acc74124f63980e72713a292db479c7908e0ed",
+    "top-backup-check.log": "d3520312dac1b5756cba9c25761bbbcac426eea23115610414b096e2ab0dbdfa"
+  }
+}

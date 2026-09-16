@@ -1,0 +1,7 @@
+{
+  "result": "PASS",
+  "backup_verified": true,
+  "software_reset": true,
+  "live_top_sha256": "abc71e61edd8e065f8995a89ca958c77fdda3d7d2a200d943d6bf36c36934e21",
+  "roles": "ff 2f ff"
+}

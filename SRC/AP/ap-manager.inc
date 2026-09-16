@@ -26,13 +26,40 @@ HIM_APMAN_SOURCE_BAD:
                         CLC
                         RTS
 HIM_APMAN_BEGIN:
+                        LDA             STR8_CONFIG_FNV_POLICY
+                        LDX             FNV_REQUEST_BANKS
+                        JSR             FNV_SCOPE_POLICY
+                        LDA             FNV_ALLOWED_BANKS
+                        BNE             HIM_APMAN_POLICY_OK
+                        JMP             HIM_APMAN_NOT_FOUND
+HIM_APMAN_POLICY_OK:
                         STZ             HIM_ASM_SESSION_RESUME
                         INCLUDE         "HIMON/himon-ap-manager-shadow.inc"
                         LDA             #$02
                         STA             CMD_IO_TMP
-?BANK:                  LDA             #$80
+?BANK:                  LDX             CMD_IO_TMP
+                        LDA             HIM_FNV_BANK_BITS,X
+                        AND             FNV_ALLOWED_BANKS
+                        BEQ             ?NEXT_BANK
+                        LDA             #$80
                         STA             CMDP_START_HI
-?SECTOR:                STZ             CMDP_START_LO
+?SECTOR:                LDA             CMDP_START_HI
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        LSR             A
+                        STA             CMDP_ADDR_LO
+                        LDA             CMD_IO_TMP
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ASL             A
+                        ORA             CMDP_ADDR_LO
+                        CMP             $FFF0
+                        BEQ             ?NEXT
+                        CMP             $FFF1
+                        BEQ             ?NEXT
+                        STZ             CMDP_START_LO
                         JSR             HIM_AP_STAGE_BANK_SOURCE
                         BCC             ?NEXT
                         LDA             #HIM_AP_OP_PARSE
@@ -45,26 +72,8 @@ HIM_APMAN_BEGIN:
                         BNE             ?NEXT
                         LDA             HIM_AP_BODY_LEN_LO
                         BNE             ?NEXT
-?SIZE_OK:               LDA             HIM_AP_BODY_LO
-                        STA             CMDP_PTR_LO
-                        LDA             HIM_AP_BODY_HI
-                        STA             CMDP_PTR_HI
-                        LDY             #$02
-                        LDA             (CMDP_PTR_LO),Y
-                        CMP             #'A'
-                        BNE             ?NEXT
-                        INY
-                        LDA             (CMDP_PTR_LO),Y
-                        CMP             #'M'
-                        BNE             ?NEXT
-                        INY
-                        LDA             (CMDP_PTR_LO),Y
-                        CMP             #'0'
-                        BNE             ?NEXT
-                        INY
-                        LDA             (CMDP_PTR_LO),Y
-                        CMP             #'1'
-                        BNE             ?NEXT
+?SIZE_OK:               JSR             HIM_AP_IS_MANAGER
+                        BCC             ?NEXT
                         STZ             HIM_AP_DST_LO
                         LDA             #>APMAN_ENTRY
                         STA             HIM_AP_DST_HI
@@ -78,14 +87,42 @@ HIM_APMAN_BEGIN:
                         ADC             #$10
                         STA             CMDP_START_HI
                         BNE             ?SECTOR
+?NEXT_BANK:
                         DEC             CMD_IO_TMP
                         BPL             ?BANK
+HIM_APMAN_NOT_FOUND:
                         INCLUDE         "HIMON/himon-ap-manager-missing.inc"
                         LDA             #APMAN_STATUS_NO_MANAGER
                         STA             APMAN_STATUS
                         STA             HIM_AP_STATUS
                         CLC
                         RTS
+
+; Shared manager identity check after PARSE; never read beyond a short BODY.
+HIM_AP_IS_MANAGER:
+                        LDA             HIM_AP_BODY_LEN_HI
+                        BNE             HIM_AP_MANAGER_ID_BODY
+                        LDA             HIM_AP_BODY_LEN_LO
+                        CMP             #$06
+                        BCC             HIM_AP_MANAGER_ID_FAIL
+HIM_AP_MANAGER_ID_BODY:
+                        LDA             HIM_AP_BODY_LO
+                        STA             CMDP_PTR_LO
+                        LDA             HIM_AP_BODY_HI
+                        STA             CMDP_PTR_HI
+                        LDY             #$05
+?BYTE:                  LDA             (CMDP_PTR_LO),Y
+                        CMP             HIM_AP_MANAGER_ID-2,Y
+                        BNE             HIM_AP_MANAGER_ID_FAIL
+                        DEY
+                        CPY             #$01
+                        BNE             ?BYTE
+                        SEC
+                        RTS
+HIM_AP_MANAGER_ID_FAIL: CLC
+                        RTS
+
+HIM_AP_MANAGER_ID:      DB              'A','M','0','2'
 
 HIM_AP_STAGE_BANK_SOURCE:
                         LDA             CMDP_START_HI

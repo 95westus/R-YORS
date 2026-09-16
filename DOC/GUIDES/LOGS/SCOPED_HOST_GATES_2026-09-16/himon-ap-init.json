@@ -1,0 +1,1544 @@
+{
+  "result": "PASS",
+  "clear_cases": 1024,
+  "clear_cycles": [
+    77
+  ],
+  "inputs": {
+    ".s19": "cc08b1099f3bf76a45c0f1efff119d6f5766209f028b03cc95e2ce4a7a2ad6e6",
+    ".map": "dceeb69adb4bf28a8c1f08a72d0664100e792e70fbcd2e6035a7ece5fda80931"
+  },
+  "cases": [
+    {
+      "name": "valid-0A00-1",
+      "input_x": 0,
+      "a": 0,
+      "x": 0,
+      "y": 10,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-0A00-1",
+      "input_x": 166,
+      "a": 0,
+      "x": 0,
+      "y": 10,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-0A00-1",
+      "input_x": 255,
+      "a": 0,
+      "x": 0,
+      "y": 10,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-0A00-255",
+      "input_x": 0,
+      "a": 0,
+      "x": 0,
+      "y": 10,
+      "p": 97,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-0A00-255",
+      "input_x": 166,
+      "a": 0,
+      "x": 0,
+      "y": 10,
+      "p": 97,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-0A00-255",
+      "input_x": 255,
+      "a": 0,
+      "x": 0,
+      "y": 10,
+      "p": 97,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-0A00-256",
+      "input_x": 0,
+      "a": 0,
+      "x": 0,
+      "y": 10,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-0A00-256",
+      "input_x": 166,
+      "a": 0,
+      "x": 0,
+      "y": 10,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-0A00-256",
+      "input_x": 255,
+      "a": 0,
+      "x": 0,
+      "y": 10,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-0A00-257",
+      "input_x": 0,
+      "a": 0,
+      "x": 0,
+      "y": 10,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-0A00-257",
+      "input_x": 166,
+      "a": 0,
+      "x": 0,
+      "y": 10,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-0A00-257",
+      "input_x": 255,
+      "a": 0,
+      "x": 0,
+      "y": 10,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-1900-1",
+      "input_x": 0,
+      "a": 0,
+      "x": 0,
+      "y": 25,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-1900-1",
+      "input_x": 166,
+      "a": 0,
+      "x": 0,
+      "y": 25,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-1900-1",
+      "input_x": 255,
+      "a": 0,
+      "x": 0,
+      "y": 25,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DC-1",
+      "input_x": 0,
+      "a": 0,
+      "x": 220,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DC-1",
+      "input_x": 166,
+      "a": 0,
+      "x": 220,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DC-1",
+      "input_x": 255,
+      "a": 0,
+      "x": 220,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DC-255",
+      "input_x": 0,
+      "a": 0,
+      "x": 220,
+      "y": 32,
+      "p": 97,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DC-255",
+      "input_x": 166,
+      "a": 0,
+      "x": 220,
+      "y": 32,
+      "p": 97,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DC-255",
+      "input_x": 255,
+      "a": 0,
+      "x": 220,
+      "y": 32,
+      "p": 97,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DC-256",
+      "input_x": 0,
+      "a": 0,
+      "x": 220,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DC-256",
+      "input_x": 166,
+      "a": 0,
+      "x": 220,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DC-256",
+      "input_x": 255,
+      "a": 0,
+      "x": 220,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DC-257",
+      "input_x": 0,
+      "a": 0,
+      "x": 220,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DC-257",
+      "input_x": 166,
+      "a": 0,
+      "x": 220,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DC-257",
+      "input_x": 255,
+      "a": 0,
+      "x": 220,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DE-1",
+      "input_x": 0,
+      "a": 0,
+      "x": 222,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DE-1",
+      "input_x": 166,
+      "a": 0,
+      "x": 222,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DE-1",
+      "input_x": 255,
+      "a": 0,
+      "x": 222,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DE-255",
+      "input_x": 0,
+      "a": 0,
+      "x": 222,
+      "y": 32,
+      "p": 97,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DE-255",
+      "input_x": 166,
+      "a": 0,
+      "x": 222,
+      "y": 32,
+      "p": 97,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DE-255",
+      "input_x": 255,
+      "a": 0,
+      "x": 222,
+      "y": 32,
+      "p": 97,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DE-256",
+      "input_x": 0,
+      "a": 0,
+      "x": 222,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DE-256",
+      "input_x": 166,
+      "a": 0,
+      "x": 222,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DE-256",
+      "input_x": 255,
+      "a": 0,
+      "x": 222,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DE-257",
+      "input_x": 0,
+      "a": 0,
+      "x": 222,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DE-257",
+      "input_x": 166,
+      "a": 0,
+      "x": 222,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-20DE-257",
+      "input_x": 255,
+      "a": 0,
+      "x": 222,
+      "y": 32,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-37F8-1",
+      "input_x": 0,
+      "a": 0,
+      "x": 248,
+      "y": 55,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-37F8-1",
+      "input_x": 166,
+      "a": 0,
+      "x": 248,
+      "y": 55,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-37F8-1",
+      "input_x": 255,
+      "a": 0,
+      "x": 248,
+      "y": 55,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-37F8-255",
+      "input_x": 0,
+      "a": 0,
+      "x": 248,
+      "y": 55,
+      "p": 97,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-37F8-255",
+      "input_x": 166,
+      "a": 0,
+      "x": 248,
+      "y": 55,
+      "p": 97,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-37F8-255",
+      "input_x": 255,
+      "a": 0,
+      "x": 248,
+      "y": 55,
+      "p": 97,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-37F8-256",
+      "input_x": 0,
+      "a": 0,
+      "x": 248,
+      "y": 55,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-37F8-256",
+      "input_x": 166,
+      "a": 0,
+      "x": 248,
+      "y": 55,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-37F8-256",
+      "input_x": 255,
+      "a": 0,
+      "x": 248,
+      "y": 55,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-37F8-257",
+      "input_x": 0,
+      "a": 0,
+      "x": 248,
+      "y": 55,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-37F8-257",
+      "input_x": 166,
+      "a": 0,
+      "x": 248,
+      "y": 55,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "valid-37F8-257",
+      "input_x": 255,
+      "a": 0,
+      "x": 248,
+      "y": 55,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "export",
+      "input_x": 0,
+      "a": 0,
+      "x": 0,
+      "y": 48,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "export",
+      "input_x": 166,
+      "a": 0,
+      "x": 0,
+      "y": 48,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "export",
+      "input_x": 255,
+      "a": 0,
+      "x": 0,
+      "y": 48,
+      "p": 33,
+      "status": 0,
+      "stack_peak": 8
+    },
+    {
+      "name": "bad-source-0000",
+      "input_x": 0,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-0000",
+      "input_x": 166,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-0000",
+      "input_x": 255,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-09FF",
+      "input_x": 0,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-09FF",
+      "input_x": 166,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-09FF",
+      "input_x": 255,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-1A00",
+      "input_x": 0,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-1A00",
+      "input_x": 166,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-1A00",
+      "input_x": 255,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-1FFF",
+      "input_x": 0,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-1FFF",
+      "input_x": 166,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-1FFF",
+      "input_x": 255,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-4FFF",
+      "input_x": 0,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-4FFF",
+      "input_x": 166,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-4FFF",
+      "input_x": 255,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-5000",
+      "input_x": 0,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-5000",
+      "input_x": 166,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-5000",
+      "input_x": 255,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-7FFF",
+      "input_x": 0,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-7FFF",
+      "input_x": 166,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-7FFF",
+      "input_x": 255,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-FF00",
+      "input_x": 0,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-FF00",
+      "input_x": 166,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "bad-source-FF00",
+      "input_x": 255,
+      "a": 6,
+      "x": 255,
+      "y": 55,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-0",
+      "input_x": 0,
+      "a": 7,
+      "x": 255,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-0",
+      "input_x": 166,
+      "a": 7,
+      "x": 255,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-0",
+      "input_x": 255,
+      "a": 7,
+      "x": 255,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-1",
+      "input_x": 0,
+      "a": 7,
+      "x": 255,
+      "y": 1,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-1",
+      "input_x": 166,
+      "a": 7,
+      "x": 255,
+      "y": 1,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-1",
+      "input_x": 255,
+      "a": 7,
+      "x": 255,
+      "y": 1,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-2",
+      "input_x": 0,
+      "a": 7,
+      "x": 255,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-2",
+      "input_x": 166,
+      "a": 7,
+      "x": 255,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-2",
+      "input_x": 255,
+      "a": 7,
+      "x": 255,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-5",
+      "input_x": 0,
+      "a": 7,
+      "x": 255,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-5",
+      "input_x": 166,
+      "a": 7,
+      "x": 255,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-5",
+      "input_x": 255,
+      "a": 7,
+      "x": 255,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-6",
+      "input_x": 0,
+      "a": 7,
+      "x": 255,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-6",
+      "input_x": 166,
+      "a": 7,
+      "x": 255,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-6",
+      "input_x": 255,
+      "a": 7,
+      "x": 255,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-8",
+      "input_x": 0,
+      "a": 7,
+      "x": 255,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-8",
+      "input_x": 166,
+      "a": 7,
+      "x": 255,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-8",
+      "input_x": 255,
+      "a": 7,
+      "x": 255,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-15",
+      "input_x": 0,
+      "a": 7,
+      "x": 0,
+      "y": 7,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-15",
+      "input_x": 166,
+      "a": 7,
+      "x": 0,
+      "y": 7,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-15",
+      "input_x": 255,
+      "a": 7,
+      "x": 0,
+      "y": 7,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-16",
+      "input_x": 0,
+      "a": 7,
+      "x": 1,
+      "y": 8,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-16",
+      "input_x": 166,
+      "a": 7,
+      "x": 1,
+      "y": 8,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-16",
+      "input_x": 255,
+      "a": 7,
+      "x": 1,
+      "y": 8,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-17",
+      "input_x": 0,
+      "a": 7,
+      "x": 2,
+      "y": 9,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-17",
+      "input_x": 166,
+      "a": 7,
+      "x": 2,
+      "y": 9,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-17",
+      "input_x": 255,
+      "a": 7,
+      "x": 2,
+      "y": 9,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-18",
+      "input_x": 0,
+      "a": 7,
+      "x": 3,
+      "y": 10,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-18",
+      "input_x": 166,
+      "a": 7,
+      "x": 3,
+      "y": 10,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-18",
+      "input_x": 255,
+      "a": 7,
+      "x": 3,
+      "y": 10,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-31",
+      "input_x": 0,
+      "a": 7,
+      "x": 0,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-31",
+      "input_x": 166,
+      "a": 7,
+      "x": 0,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-31",
+      "input_x": 255,
+      "a": 7,
+      "x": 0,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-32",
+      "input_x": 0,
+      "a": 7,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-32",
+      "input_x": 166,
+      "a": 7,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-32",
+      "input_x": 255,
+      "a": 7,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "corrupt-34",
+      "input_x": 0,
+      "a": 7,
+      "x": 0,
+      "y": 7,
+      "p": 96,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-34",
+      "input_x": 166,
+      "a": 7,
+      "x": 0,
+      "y": 7,
+      "p": 96,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-34",
+      "input_x": 255,
+      "a": 7,
+      "x": 0,
+      "y": 7,
+      "p": 96,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-290",
+      "input_x": 0,
+      "a": 7,
+      "x": 0,
+      "y": 7,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-290",
+      "input_x": 166,
+      "a": 7,
+      "x": 0,
+      "y": 7,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "corrupt-290",
+      "input_x": 255,
+      "a": 7,
+      "x": 0,
+      "y": 7,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 8
+    },
+    {
+      "name": "truncated-5",
+      "input_x": 0,
+      "a": 6,
+      "x": 255,
+      "y": 4,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-5",
+      "input_x": 166,
+      "a": 6,
+      "x": 255,
+      "y": 4,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-5",
+      "input_x": 255,
+      "a": 6,
+      "x": 255,
+      "y": 4,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-7",
+      "input_x": 0,
+      "a": 6,
+      "x": 255,
+      "y": 4,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-7",
+      "input_x": 166,
+      "a": 6,
+      "x": 255,
+      "y": 4,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-7",
+      "input_x": 255,
+      "a": 6,
+      "x": 255,
+      "y": 4,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-8",
+      "input_x": 0,
+      "a": 7,
+      "x": 255,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-8",
+      "input_x": 166,
+      "a": 7,
+      "x": 255,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-8",
+      "input_x": 255,
+      "a": 7,
+      "x": 255,
+      "y": 0,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-18",
+      "input_x": 0,
+      "a": 6,
+      "x": 255,
+      "y": 4,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-18",
+      "input_x": 166,
+      "a": 6,
+      "x": 255,
+      "y": 4,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-18",
+      "input_x": 255,
+      "a": 6,
+      "x": 255,
+      "y": 4,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-20",
+      "input_x": 0,
+      "a": 6,
+      "x": 255,
+      "y": 4,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-20",
+      "input_x": 166,
+      "a": 6,
+      "x": 255,
+      "y": 4,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-20",
+      "input_x": 255,
+      "a": 6,
+      "x": 255,
+      "y": 4,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-23",
+      "input_x": 0,
+      "a": 6,
+      "x": 0,
+      "y": 0,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-23",
+      "input_x": 166,
+      "a": 6,
+      "x": 0,
+      "y": 0,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-23",
+      "input_x": 255,
+      "a": 6,
+      "x": 0,
+      "y": 0,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-26",
+      "input_x": 0,
+      "a": 6,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-26",
+      "input_x": 166,
+      "a": 6,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-26",
+      "input_x": 255,
+      "a": 6,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-30",
+      "input_x": 0,
+      "a": 6,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-30",
+      "input_x": 166,
+      "a": 6,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-30",
+      "input_x": 255,
+      "a": 6,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-33",
+      "input_x": 0,
+      "a": 6,
+      "x": 0,
+      "y": 0,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-33",
+      "input_x": 166,
+      "a": 6,
+      "x": 0,
+      "y": 0,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-33",
+      "input_x": 255,
+      "a": 6,
+      "x": 0,
+      "y": 0,
+      "p": 32,
+      "status": 6,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-34",
+      "input_x": 0,
+      "a": 7,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-34",
+      "input_x": 166,
+      "a": 7,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-34",
+      "input_x": 255,
+      "a": 7,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-290",
+      "input_x": 0,
+      "a": 7,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-290",
+      "input_x": 166,
+      "a": 7,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    },
+    {
+      "name": "truncated-290",
+      "input_x": 255,
+      "a": 7,
+      "x": 0,
+      "y": 2,
+      "p": 32,
+      "status": 7,
+      "stack_peak": 6
+    }
+  ],
+  "tool_sha256": "c343e3cc1523f820a901fa242bfa094a2a5001dfa52ac4e65de6970e71f79b91"
+}

@@ -1,0 +1,217 @@
+20 |  ....~.... .... 
+
+FE60: 16 03 CA D0 F1 38 60 A5 | D1 8D A5 7E A5 D2 8D A6 | .....8`....~....
+
+FE70: 7E B2 D1 8D A7 7E A5 D3 | 8D A8 7E 18 60 AD 9E 7E | ~....~....~.`..~
+
+FE80: 85 D1 AD 9F 7E 85 D2 64 | CF A9 7B 85 D0 60 E6 D1 | ....~..d..{..`..
+
+FE90: D0 02 E6 D2 E6 CF 60 AD | EF 7D 20 14 02 20 3A 03 | ......`..} .. :.
+
+FEA0: B0 0F AD EA 7D 85 D1 AD | EB 7D 85 D2 20 D0 03 B0 | ....}....}.. ...
+
+FEB0: 01 60 64 CD AD E9 7D 85 | CE A0 00 B1 CD C9 FF D0 | .`d...}.........
+
+FEC0: 0D C8 D0 F7 E6 CE A5 CE | 29 0F D0 ED 38 60 98 8D | ........)...8`..
+
+FED0: EA 7D A5 CE 8D EB 7D 18 | 60 AD EF 7D 20 14 02 64 | .}....}.`..} ..d
+
+FEE0: D1 AD E9 7D 85 D2 64 CF | AD F6 7D 85 D0 B2 CF C9 | ...}..d...}.....
+
+FEF0: FF F0 13 85 D3 20 E7 03 | B0 0C A5 D1 8D EA 7D A5 | ..... ........}.
+
+FF00: D2 8D EB 7D 18 60 E6 D1 | E6 CF D0 E1 E6 D2 E6 D0 | ...}.`..........
+
+FF10: 20 C7 03 D0 D8 60 AD EF | 7D 20 14 02 64 CD AD E9 |  ....`..} ..d...
+
+FF20: 7D 85 CE 64 CF AD F6 7D | 85 D0 A0 00 B1 CD D1 CF | }..d...}........
+
+FF30: D0 9C C8 D0 F7 E6 CE E6 | D0 20 C7 03 D0 EC 60 AD | ......... ....`.
+
+FF40: F6 7D 18 69 10 C5 D0 60 | 20 21 04 A9 80 8D 55 D5 | .}.i...` !....U.
+
+FF50: 20 21 04 A9 30 92 D1 A9 | FF 85 D3 A9 08 80 1D B2 |  !..0...........
+
+FF60: D1 C5 D3 F0 16 25 D3 C5 | D3 D0 3E 20 21 04 A9 A0 | .....%....> !...
+
+FF70: 8D 55 D5 A5 D3 92 D1 A9 | 02 80 01 60 64 D4 64 D5 | .U.........`d.d.
+
+FF80: 85 D6 A0 00 B1 D1 C5 D3 | F0 0E C6 D4 D0 F4 C6 D5 | ................
+
+FF90: D0 F0 C6 D6 D0 EC 80 11 | 60 A9 F0 8D A0 7F A9 AA | ........`.......
+
+FFA0: 8D 55 D5 A9 55 8D AA AA | 60 A9 F0 8D 55 D5 18 60 | .U..U...`...U..`
+
+FFB0: FF FF FF FF 57 44 43 56 | 32 FE FF FF FC FF FF FF | ....WDCV2.......
+
+FFC0: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+
+FFD0: A2 FF FF FF 41 50 43 30 | 32 FE FF FF F0 FF FF FF | ....APC02.......
+
+FFE0: 5A FF FF FF 52 59 4F 52 | 53 FE 00 C0 00 C0 FF FF | Z...RYORS.......
+
+FFF0: FF 2F FF FF FF FF FF FF | FF FF CF F0 00 F0 E3 F0 | ./..............
+
+>
+STR8
+
+RUN STR8: BOOTLOADER @C15D K=03 ? 
+I
+
+B0-3: 
+2
+
+RANGE: 
+8
+
+I B2 8-8 WRITE? Y: 
+Y
+
+S19
+
+
+Sent 129 S19 records; received 11 bytes; tail: COMMIT? Y: 
+Y.
+
+OK
+
+STR8-N>
+I
+
+B0-3: 
+3
+
+RANGE: 
+C-E
+
+I B3 C-E WRITE? Y: 
+Y
+
+S19
+
+
+Sent 385 S19 records; received 13 bytes; tail: ..COMMIT? Y: 
+Y.
+
+OK
+
+STR8-N>
+C
+
+BOOT COLD
+
+
+
+HIMON V 00.0915(2324)
+
+>
+59 | TYSTXDEYTXABCCTY
+
+EE60: 41 54 58 53 4C 44 59 4C | 44 41 4C 44 58 54 41 59 | ATXSLDYLDALDXTAY
+
+EE70: 54 41 58 42 43 53 43 4C | 56 54 53 58 43 50 59 43 | TAXBCSCLVTSXCPYC
+
+EE80: 4D 50 49 4E 59 44 45 58 | 57 41 49 42 4E 45 43 4C | MPINYDEXWAIBNECL
+
+EE90: 44 50 48 58 53 54 50 43 | 50 58 53 42 43 49 4E 58 | DPHXSTPCPXSBCINX
+
+EEA0: 4E 4F 50 42 45 51 53 45 | 44 50 4C 58 52 4D 42 42 | NOPBEQSEDPLXRMBB
+
+EEB0: 42 52 53 4D 42 42 42 53 | 01 02 00 00 03 02 04 43 | BRSMBBBS.......C
+
+EEC0: 05 02 04 00 03 02 04 44 | 06 02 02 00 07 02 04 43 | .......D.......C
+
+EED0: 08 02 09 00 07 02 04 44 | 0A 0B 00 00 0C 0B 0D 43 | .......D.......C
+
+EEE0: 0E 0B 0D 00 0C 0B 0D 44 | 0F 0B 0B 00 0C 0B 0D 43 | .......D.......C
+
+EEF0: 10 0B 11 00 0C 0B 0D 44 | 12 13 00 00 00 13 14 43 | .......D.......C
+
+EF00: 15 13 14 00 16 13 14 44 | 17 13 13 00 00 13 14 43 | .......D.......C
+
+EF10: 18 13 19 00 00 13 14 44 | 1A 1B 00 00 1C 1B 1D 43 | .......D.......C
+
+EF20: 1E 1B 1D 00 16 1B 1D 44 | 1F 1B 1B 00 1C 1B 1D 43 | .......D.......C
+
+EF30: 20 1B 21 00 16 1B 1D 44 | 22 23 00 00 24 23 25 45 |  .!....D"#..$#%E
+
+EF40: 26 0C 27 00 24 23 25 46 | 28 23 23 00 24 23 25 45 | &.'.$#%F(##.$#%E
+
+EF50: 29 23 2A 00 1C 23 1C 46 | 2B 2C 2D 00 2B 2C 2D 45 | )#*..#.F+,-.+,-E
+
+EF60: 2E 2C 2F 00 2B 2C 2D 46 | 30 2C 2C 00 2B 2C 2D 45 | .,/.+,-F0,,.+,-E
+
+EF70: 31 2C 32 00 2B 2C 2D 46 | 33 34 00 00 33 34 11 45 | 1,2.+,-F34..34.E
+
+EF80: 35 34 36 37 33 34 11 46 | 38 34 34 00 00 34 11 45 | 546734.F844..4.E
+
+EF90: 39 34 3A 3B 00 34 11 46 | 3C 3D 00 00 3C 3D 09 45 | 94:;.4.F<=..<=.E
+
+EFA0: 3E 3D 3F 00 3C 3D 09 46 | 40 3D 3D 00 00 3D 09 45 | >=?.<=.F@==..=.E
+
+EFB0: 41 3D 42 00 00 3D 09 46 | 5A AA 59 FF 6A AA 5D FF | A=B..=.FZ.Y.j.].
+
+EFC0: 5B AA 59 FF 6A AA 5D FF | 59 A9 59 FF 6A A9 5D FD | [.Y.j.].Y.Y.j.].
+
+EFD0: 59 AA 59 FF 6A AA 5D FF | 5A AA 59 FF 6A AA 5D FF | Y.Y.j.].Z.Y.j.].
+
+EFE0: 6A AA 59 FF 6A AA 5D FF | 5A AA 59 FF 6A A9 5D FD | j.Y.j.].Z.Y.j.].
+
+EFF0: 5A AA 59 FF 6A A9 5D FD | FF FF FF FF FF FF FF FF | Z.Y.j.].........
+
+>
+20 |  ....~.... .... 
+
+FE60: 16 03 CA D0 F1 38 60 A5 | D1 8D A5 7E A5 D2 8D A6 | .....8`....~....
+
+FE70: 7E B2 D1 8D A7 7E A5 D3 | 8D A8 7E 18 60 AD 9E 7E | ~....~....~.`..~
+
+FE80: 85 D1 AD 9F 7E 85 D2 64 | CF A9 7B 85 D0 60 E6 D1 | ....~..d..{..`..
+
+FE90: D0 02 E6 D2 E6 CF 60 AD | EF 7D 20 14 02 20 3A 03 | ......`..} .. :.
+
+FEA0: B0 0F AD EA 7D 85 D1 AD | EB 7D 85 D2 20 D0 03 B0 | ....}....}.. ...
+
+FEB0: 01 60 64 CD AD E9 7D 85 | CE A0 00 B1 CD C9 FF D0 | .`d...}.........
+
+FEC0: 0D C8 D0 F7 E6 CE A5 CE | 29 0F D0 ED 38 60 98 8D | ........)...8`..
+
+FED0: EA 7D A5 CE 8D EB 7D 18 | 60 AD EF 7D 20 14 02 64 | .}....}.`..} ..d
+
+FEE0: D1 AD E9 7D 85 D2 64 CF | AD F6 7D 85 D0 B2 CF C9 | ...}..d...}.....
+
+FEF0: FF F0 13 85 D3 20 E7 03 | B0 0C A5 D1 8D EA 7D A5 | ..... ........}.
+
+FF00: D2 8D EB 7D 18 60 E6 D1 | E6 CF D0 E1 E6 D2 E6 D0 | ...}.`..........
+
+FF10: 20 C7 03 D0 D8 60 AD EF | 7D 20 14 02 64 CD AD E9 |  ....`..} ..d...
+
+FF20: 7D 85 CE 64 CF AD F6 7D | 85 D0 A0 00 B1 CD D1 CF | }..d...}........
+
+FF30: D0 9C C8 D0 F7 E6 CE E6 | D0 20 C7 03 D0 EC 60 AD | ......... ....`.
+
+FF40: F6 7D 18 69 10 C5 D0 60 | 20 21 04 A9 80 8D 55 D5 | .}.i...` !....U.
+
+FF50: 20 21 04 A9 30 92 D1 A9 | FF 85 D3 A9 08 80 1D B2 |  !..0...........
+
+FF60: D1 C5 D3 F0 16 25 D3 C5 | D3 D0 3E 20 21 04 A9 A0 | .....%....> !...
+
+FF70: 8D 55 D5 A5 D3 92 D1 A9 | 02 80 01 60 64 D4 64 D5 | .U.........`d.d.
+
+FF80: 85 D6 A0 00 B1 D1 C5 D3 | F0 0E C6 D4 D0 F4 C6 D5 | ................
+
+FF90: D0 F0 C6 D6 D0 EC 80 11 | 60 A9 F0 8D A0 7F A9 AA | ........`.......
+
+FFA0: 8D 55 D5 A9 55 8D AA AA | 60 A9 F0 8D 55 D5 18 60 | .U..U...`...U..`
+
+FFB0: FF FF FF FF 57 44 43 56 | 32 FE FF FF FC FF FF FF | ....WDCV2.......
+
+FFC0: FF FF FF FF FF FF FF FF | FF FF FF FF FF FF FF FF | ................
+
+FFD0: A2 FF FF FF 41 50 43 30 | 32 FE FF FF C0 FF FF FF | ....APC02.......
+
+FFE0: 5A FF FF FF 52 59 4F 52 | 53 FE 00 C0 00 00 FF FF | Z...RYORS.......
+
+FFF0: FF 2F FF FF FF FF FF FF | FF FF CF F0 00 F0 E3 F0 | ./..............
+
+>

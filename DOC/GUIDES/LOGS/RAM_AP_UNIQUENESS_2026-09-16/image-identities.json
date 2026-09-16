@@ -1,0 +1,9 @@
+{
+  "result": "PASS",
+  "visible_stamp": "0915(2324)",
+  "exact_installed_images": {
+    "himon-rom-c000": "fc1f78c05cfbe51ce44aa9e6cede5363c898b5b4290c461cf7393d224b935c31",
+    "asm-v1-flash-8000": "c1bd5c96fa333332d374d1c37fa47de3d36ab58dac75e626df85ce081a109838",
+    "apman-v1-bank2-8000": "0b5fe1df0b300593aef1ebcbdcc521df6aece1ce62118539b0af74d2afa08c58"
+  }
+}

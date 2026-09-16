@@ -1,0 +1,19 @@
+{
+  "scope": "host-only W65C02 policy primitive; not firmware integration",
+  "cases": 65536,
+  "linked_bytes": 28,
+  "linked_sha256": "3ec7952337fd3bb23408d74ae1a29616c11d9019d04016beb1f5173cb0e813d0",
+  "sources": {
+    "SRC\\AP\\fnv-scope-policy.inc": "21f8c8e12a5b10af993a5b60b1324e151614521a2c430f67fb37248310850075",
+    "SRC\\AP\\fnv-scope-card.inc": "dcbd7e67d9be9515a2d0d8aab8c704d23e397964bb5a87dd8e848d435ceaa9ec",
+    "SRC\\tools\\check_fnv_scope_policy.py": "0317bd9b81beab22d806e3c72d7f28fa0093e1780e366f440137a2b64ad7b039"
+  },
+  "guarantees": [
+    "all policy/request bytes",
+    "invalid and erased policy disabled",
+    "A6 and every bit-clear exclude B0",
+    "only three card writes",
+    "no I/O or bank selection",
+    "balanced RTS and preserved X"
+  ]
+}

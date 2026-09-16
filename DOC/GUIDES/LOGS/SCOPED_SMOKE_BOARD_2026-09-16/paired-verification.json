@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "policy": "FF",
+  "flash_sha256": "8134582cfc6567a43b5cef3b53fa93094410dacc86bd541f15989fb2cfa94b17",
+  "changed_sectors": [
+    "B2:8",
+    "B3:C",
+    "B3:D",
+    "B3:E",
+    "B3:F"
+  ],
+  "b0_b1_asm_aptest_preserved": true,
+  "expected_journals": true
+}

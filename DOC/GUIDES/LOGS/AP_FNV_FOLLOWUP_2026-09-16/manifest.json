@@ -1,0 +1,30 @@
+{
+  "scope": "Microchess hardware-reset persistence; partial LED observation; standalone host policy prototype",
+  "validation": {
+    "asm_test": "PASS; HIMON_VISIBLE_STAMP=0915(2324)",
+    "policy_cases": 65536,
+    "policy_bytes": 28,
+    "production_artifacts": "byte-identical to accepted parser-init baseline"
+  },
+  "files": {
+    "apman-size.json": "e1f4abd99a9cbe6807875579f9d0195d203634d716fab19d67267ab32e9c453d",
+    "asm-test.log": "a269b16641ab58d456e7a992e1274eb106ab5116e5a13eff0db8eed523e4fb8a",
+    "capture_reset.py": "e2fa56560f71857f0cfbdff8362a83461600d0845980b501e4575f4e7970a30a",
+    "check_led_scans.py": "64a422c52a0d91fab6bd4b3c1eaa6c7ecc609f4e498b4da7b1c5da19c6eff828",
+    "check_microchess.py": "97b615e40ad78d08dab4c88338fa739051842312ad1d886ff1f324a11e5b6841",
+    "console.py": "fed404826a5d41a89675f153dc07fa53a2f727e50334d4ed2db38cbcc953c815",
+    "firmware-identity.json": "90c3e40bb123bb94a86f6b8606a959792d10de599ebdf9c558fdef42b18e8b15",
+    "himon-ap-boundary.json": "43921fbc5b6207c3cefacc4caf81af906c686c88662ef4c2aa27e55862ec65fb",
+    "himon-ap-contracts.json": "b2613c1f198dfc385ca4ff965edf14801c6cc645ab9a10c4201ddf26ea4d1ac9",
+    "himon-ap-init.json": "753b7af9d552449bddcb1de48d1e6a41318a52c4cdb0eae5f81876bc384a49c3",
+    "himon-ap-ranges.json": "2b61dfedb9bad3fa260033254cb333c4630a4379585dc9435bfe929db092257b",
+    "microchess-checks.json": "c03d85473a709da4dae97a6391e0268b6c4b7bf09d66d570b5291705c827c158",
+    "operator-observation.txt": "ad5666f0f0e2aa11cfde091f895893af30bce2d46951f70aa2537e963e69a155",
+    "physical-reset.txt": "2e9d27f9d77a7472cc354e85bcc2443df317f47fadbcddb8b825d8bfda52a7e3",
+    "policy-checks.json": "18215794fcd1b33dbad35d2785070fc78e021d7f2d624310e20588b256cff4a8",
+    "policy.asm": "34bb08cb9320e964346d9b3edbd78c50bd053564735f31ea50fe8e37782e74fc",
+    "policy.map": "8591deb1e62163850b944f7d51102a20da26098d2851b1c58f95cb8bad6a9fba",
+    "policy.s19": "2b9a1e59ff59e8228dccfe127391d7c63bc3937c34ee04628959064ddca7bb44",
+    "serial-com4.jsonl": "a32557f428f8e494f947d32e0e1f393707008770fcc81fd38efa607bae61e6b0"
+  }
+}

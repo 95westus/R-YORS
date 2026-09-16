@@ -1,0 +1,37 @@
+{
+  "result": "PASS",
+  "policy": "A6",
+  "cases": [
+    {
+      "command": "AP B2 APTEST 5000",
+      "result": "PASS",
+      "output": "AP B2 APTEST 5000\r\nAP LOAD B2 9000 -> 5000\r\nGO 5002\r\n>"
+    },
+    {
+      "command": "APTEST",
+      "result": "PASS",
+      "output": "APTEST\r\nAP LOAD B2 9000 -> 2000\r\nGO 2002\r\n>"
+    },
+    {
+      "command": "AP B0 APTEST 5000",
+      "result": "PASS",
+      "output": "AP B0 APTEST 5000\r\nAPMAN ERR=$D1\r\n>",
+      "limitation": "Serial refusal is not electrical proof of no B0 selection"
+    },
+    {
+      "command": "APS B2 APMAN",
+      "result": "PASS",
+      "output": "APS B2 APMAN\r\nAPS B2 8000 APC APMAN L=0C21 @7000\r\n>"
+    },
+    {
+      "command": "AP 3000 5000",
+      "result": "PASS",
+      "output": "AP 3000 5000\r\nGO 5000\r\n\r\n#GO# ENTRY=5000\r\nRET A=5A X=5A Y=02 P=35 S=FD Nv-BdIzC\r\n>"
+    },
+    {
+      "command": "ASM assemble and G 2000",
+      "result": "PASS",
+      "output": "G 2000\r\nGO 2000\r\n\r\n#GO# ENTRY=2000\r\nRET A=AC X=5A Y=02 P=B5 S=FD Nv-BdIzC\r\n>"
+    }
+  ]
+}

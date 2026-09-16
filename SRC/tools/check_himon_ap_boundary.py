@@ -72,6 +72,8 @@ def main():
         (1,b'BOUNDARY_ABSENT',0,False), (1,b'FNV1A_INIT',1,True),
     ]:
         m = Machine(args.build_dir,top)
+        m.m.banks[3][0x7FF2] = 0xA7  # Explicit emulator enrollment for legacy workflows.
+        m.m.banks[3][0x7FF0:0x7FF2] = bytes((0x1E, 0x1F))  # legacy role fixture
         record = b'FN\xD6'+fnv(b'BOUNDARY_DATA').to_bytes(4,'little')+b'\0\xA5'
         m.m.banks[3][0x6F00:0x6F00+len(record)] = record
         rows = import_record(kind,name)
@@ -97,6 +99,8 @@ def main():
     command = command[:5]+b'\0'+command[6:]
     for mode in (1,2,3):
         m=Machine(args.build_dir,top)
+        m.m.banks[3][0x7FF2] = 0xA7  # Explicit emulator enrollment for legacy workflows.
+        m.m.banks[3][0x7FF0:0x7FF2] = bytes((0x1E, 0x1F))  # legacy role fixture
         m.m.ram[0x7A00:0x7B00]=command
         m.m.ram[0x19FF:0x1B01]=b'\xA5'*258
         m.m.ram[0x7E6A]=1
@@ -114,6 +118,8 @@ def main():
         cases.append(result)
     for address in (0x0A00,0x3000):
         m=Machine(args.build_dir,top)
+        m.m.banks[3][0x7FF2] = 0xA7  # Explicit emulator enrollment for legacy workflows.
+        m.m.banks[3][0x7FF0:0x7FF2] = bytes((0x1E, 0x1F))  # legacy role fixture
         m.m.ram[0x7C60]=3
         m.m.ram[0x7C62:0x7C64]=word(address)
         m.m.ram[0x7E6A]=1
@@ -127,6 +133,8 @@ def main():
         cases.append(result)
     for corrupt in (False,True):
         m=Machine(args.build_dir,top)
+        m.m.banks[3][0x7FF2] = 0xA7  # Explicit emulator enrollment for legacy workflows.
+        m.m.banks[3][0x7FF0:0x7FF2] = bytes((0x1E, 0x1F))  # legacy role fixture
         m.m.ram[0x7C60]=2
         m.m.ram[0x7A00:0x7B00]=command
         m.m.ram[0x1B00]=0xA5

@@ -1,0 +1,819 @@
+{
+  "status": "generated candidate artifacts; hardware acceptance remains image-specific",
+  "generator": "SRC/tools/export_ram_transients.py",
+  "flash_roles": {
+    "work": "NONE",
+    "top_backup": "B2:F",
+    "policy_default": "FF"
+  },
+  "tools": [
+    {
+      "name": "ap-store-v1-chain-install-tool-7000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-chain-install-tool-7000.s19",
+      "load_address": "7000",
+      "last_address": "7944",
+      "s19_entry": "7000",
+      "data_bytes": 2373,
+      "bin_bytes": 2373,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-chain-install-tool-7000.a": "ee708d85811cd3feb86b6b71ac9c65d8b2dfeeb1f0652c3ca9cd7a0bd85187bd",
+        "S19/ap-store-v1-chain-install-tool-7000.s19": "2dc7c759c315dec50f0c3c7f2b4f40b4ffbbd9222d2e81ccb98b6fda3fdb85e6",
+        "BIN/ap-store-v1-chain-install-tool-7000.bin": "fd6b56077214d8fc765efae825fae94ed9e45727b19469219be9affaca7ecf5a"
+      }
+    },
+    {
+      "name": "ap-store-v1-chain-install-tool-package-4000",
+      "kind": "AP envelope",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-chain-install-tool-package-4000.s19",
+      "load_address": "4000",
+      "last_address": "4972",
+      "s19_entry": "4000",
+      "data_bytes": 2419,
+      "bin_bytes": 2419,
+      "hole_fill": "FF",
+      "requirements": "Data package: stage and use AP LOAD/INSTALL; do not jump to the S9 address.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-chain-install-tool-package-4000.a": "c8248d4eb8c592f9a1bd53448a67ff590f42a0ba39f2adc6da0db6b33fe2d0c4",
+        "S19/ap-store-v1-chain-install-tool-package-4000.s19": "95e8283e8a44b85cac24fe0d293aca496b25ac41147a060b5b4fbb625945dba6",
+        "BIN/ap-store-v1-chain-install-tool-package-4000.bin": "20d4e2edfb519dd7800bc289f7a5ae8d1141e2605d5d3bcfa0f0bf86e518ced4"
+      }
+    },
+    {
+      "name": "ap-store-v1-chain-marker-4000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-chain-marker-4000.s19",
+      "load_address": "4000",
+      "last_address": "4FD1",
+      "s19_entry": "4000",
+      "data_bytes": 4050,
+      "bin_bytes": 4050,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-chain-marker-4000.a": "71624e4a199b6dce71f9503f62eadb310565c808d51effe3aacb234324eb3921",
+        "S19/ap-store-v1-chain-marker-4000.s19": "9fa709e857349b23524fd354fdf68690755d14900cf9982dfaf2eac86f3be940",
+        "BIN/ap-store-v1-chain-marker-4000.bin": "4d189e517b400e8a361b042411e6b7ea0f52a0f6d311b6688b328c49f7fa6020"
+      }
+    },
+    {
+      "name": "ap-store-v1-chain-marker-package-3000",
+      "kind": "AP envelope",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-chain-marker-package-3000.s19",
+      "load_address": "3000",
+      "last_address": "3FFF",
+      "s19_entry": "3000",
+      "data_bytes": 4096,
+      "bin_bytes": 4096,
+      "hole_fill": "FF",
+      "requirements": "Data package: stage and use AP LOAD/INSTALL; do not jump to the S9 address.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-chain-marker-package-3000.a": "baabf0134a5adc488d46deca6792026367d8a6e0105affd3f4a13691904d9ab8",
+        "S19/ap-store-v1-chain-marker-package-3000.s19": "ecf98913cef9b3675db51d55702ba81d58326d98d044ba2a006835555b229394",
+        "BIN/ap-store-v1-chain-marker-package-3000.bin": "81c7f444e5a54e2bd7dc5899e4e6efcad95d72f8082b7dbee93688fe1f2e679e"
+      }
+    },
+    {
+      "name": "ap-store-v1-chain-reader-tool-7000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-chain-reader-tool-7000.s19",
+      "load_address": "7000",
+      "last_address": "7869",
+      "s19_entry": "7000",
+      "data_bytes": 2154,
+      "bin_bytes": 2154,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-chain-reader-tool-7000.a": "e30c1537030f128b58ac72a29b02528426b9706ad00b0f89200feea52cb362f7",
+        "S19/ap-store-v1-chain-reader-tool-7000.s19": "3a52a8138268b5d95d31622f737467f21eeb4fcebaf376542610350088481a35",
+        "BIN/ap-store-v1-chain-reader-tool-7000.bin": "84699b5b648b9297aa3f16766685f3eff32dec2c990c0d137507c4ef65a25ef3"
+      }
+    },
+    {
+      "name": "ap-store-v1-chain-reader-tool-package-4000",
+      "kind": "AP envelope",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-chain-reader-tool-package-4000.s19",
+      "load_address": "4000",
+      "last_address": "4897",
+      "s19_entry": "4000",
+      "data_bytes": 2200,
+      "bin_bytes": 2200,
+      "hole_fill": "FF",
+      "requirements": "Data package: stage and use AP LOAD/INSTALL; do not jump to the S9 address.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-chain-reader-tool-package-4000.a": "c4d9e2b90a333ed191fb9dc207692ee0edc3219d3feac5fceed608680325da6b",
+        "S19/ap-store-v1-chain-reader-tool-package-4000.s19": "ad790f07dc5dfdcd95275418aa0f140e546c2a885de3867ff126952c4193bafd",
+        "BIN/ap-store-v1-chain-reader-tool-package-4000.bin": "d827e9e9ade4fe7d5e4e4f511c1dc1c4ded40e3da7fc9677cb376e91c439f9f4"
+      }
+    },
+    {
+      "name": "ap-store-v1-object-tool-7000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-object-tool-7000.s19",
+      "load_address": "7000",
+      "last_address": "79FF",
+      "s19_entry": "7000",
+      "data_bytes": 2560,
+      "bin_bytes": 2560,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-object-tool-7000.a": "c080ef05029b2c50db3f0766be09749564e62277b4639057ad2d0500c74a61cb",
+        "S19/ap-store-v1-object-tool-7000.s19": "d85588fe2f51a986cc44f3814e6e9be7a1621954bc2bb20637225e8b5f3928a3",
+        "BIN/ap-store-v1-object-tool-7000.bin": "821dfb7898a109418e16a0216b6781080d879a6a31a3493532570a632099ccf2"
+      }
+    },
+    {
+      "name": "ap-store-v1-object-tool-package-3000",
+      "kind": "AP envelope",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-object-tool-package-3000.s19",
+      "load_address": "3000",
+      "last_address": "3A2D",
+      "s19_entry": "3000",
+      "data_bytes": 2606,
+      "bin_bytes": 2606,
+      "hole_fill": "FF",
+      "requirements": "Data package: stage and use AP LOAD/INSTALL; do not jump to the S9 address.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-object-tool-package-3000.a": "b6c04a10606d5eaaeff50f9566ca9d735c7b6a99dae504b9fcd7c2907e078f9f",
+        "S19/ap-store-v1-object-tool-package-3000.s19": "7576ab9efa965e965fe540204c9a3cf2fa8f784fb3a523a639320401196e1d60",
+        "BIN/ap-store-v1-object-tool-package-3000.bin": "a6b4fb7e12afaac092a124b45bc5f8367d304c16c95a54e64a5b57c525e2eba2"
+      }
+    },
+    {
+      "name": "ap-store-v1-sector-tool-7000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-sector-tool-7000.s19",
+      "load_address": "7000",
+      "last_address": "7758",
+      "s19_entry": "7000",
+      "data_bytes": 1881,
+      "bin_bytes": 1881,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-sector-tool-7000.a": "d3f97eb065346b14d9e3c15985fd75ad53a92992bfc830e90bdbabf5945fdd99",
+        "S19/ap-store-v1-sector-tool-7000.s19": "a22e4e31054fa3c2cc426086e8c0261e6285810bccad70eaa13f7df4ba7ebefc",
+        "BIN/ap-store-v1-sector-tool-7000.bin": "ccbf95f42717f47e4ad17685a3851b13d0cc52997342ff2999b058bd2f46f79d"
+      }
+    },
+    {
+      "name": "ap-store-v1-slice6-catalog-tool-7000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-slice6-catalog-tool-7000.s19",
+      "load_address": "7000",
+      "last_address": "79C3",
+      "s19_entry": "7000",
+      "data_bytes": 2500,
+      "bin_bytes": 2500,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-slice6-catalog-tool-7000.a": "208b3a873ae23a7d5e2c501cc0a7366a15bfce741bf340221e777ba2e2e99207",
+        "S19/ap-store-v1-slice6-catalog-tool-7000.s19": "8005aaa2dc012803473463b25c632369bd3fd50e38ad8373e08328fab025526e",
+        "BIN/ap-store-v1-slice6-catalog-tool-7000.bin": "1cb0f6548314c74f27c923c4a1039d9a642964ca5f62f5ac64c789b3ac035193"
+      }
+    },
+    {
+      "name": "ap-store-v1-slice6-catalog-tool-package-4000",
+      "kind": "AP envelope",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-slice6-catalog-tool-package-4000.s19",
+      "load_address": "4000",
+      "last_address": "49F1",
+      "s19_entry": "4000",
+      "data_bytes": 2546,
+      "bin_bytes": 2546,
+      "hole_fill": "FF",
+      "requirements": "Data package: stage and use AP LOAD/INSTALL; do not jump to the S9 address.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-slice6-catalog-tool-package-4000.a": "8e1b95bde4b092a7ee696e3455e044cdab27d30656676ff7ae91d176a339f8e5",
+        "S19/ap-store-v1-slice6-catalog-tool-package-4000.s19": "2fbc2d38b019296a9a72cdd2c0d87e1f3f156c10ed8b459032c23eea24b1256e",
+        "BIN/ap-store-v1-slice6-catalog-tool-package-4000.bin": "5d2e3cc25f0a67353465cc63063aa1d4f0404cc5f02a3de0f0994ba41cd3fcd7"
+      }
+    },
+    {
+      "name": "ap-store-v1-slice6-delete-tool-7000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-slice6-delete-tool-7000.s19",
+      "load_address": "7000",
+      "last_address": "774E",
+      "s19_entry": "7000",
+      "data_bytes": 1871,
+      "bin_bytes": 1871,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-slice6-delete-tool-7000.a": "4d516ce852831fa09c181e0ffb7bcc1511286f68a0205d5099b0a2a1e6fe3085",
+        "S19/ap-store-v1-slice6-delete-tool-7000.s19": "c287161e77992f15ab9b3266eddb0c3be20ab11523bcb53e32c35fd5600d703b",
+        "BIN/ap-store-v1-slice6-delete-tool-7000.bin": "57c2b79172b2ad5baaa8ee694f7307037dd056eac6813c163ce57445b5fca527"
+      }
+    },
+    {
+      "name": "ap-store-v1-slice6-delete-tool-package-4000",
+      "kind": "AP envelope",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-slice6-delete-tool-package-4000.s19",
+      "load_address": "4000",
+      "last_address": "477C",
+      "s19_entry": "4000",
+      "data_bytes": 1917,
+      "bin_bytes": 1917,
+      "hole_fill": "FF",
+      "requirements": "Data package: stage and use AP LOAD/INSTALL; do not jump to the S9 address.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-slice6-delete-tool-package-4000.a": "1eba1bea028afb19cd11a9e41e9e2bcead7c63a3136f1afe0759656ea7a3b384",
+        "S19/ap-store-v1-slice6-delete-tool-package-4000.s19": "dc15548d3a359daeed52273611a9bcd235fa201e9c896a54d142538623e8c364",
+        "BIN/ap-store-v1-slice6-delete-tool-package-4000.bin": "f5a5879019f64fc7849948974668c15fa4629a0b7f1b8144f19a53a9cf213253"
+      }
+    },
+    {
+      "name": "ap-store-v1-slice6-plan-tool-7000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-slice6-plan-tool-7000.s19",
+      "load_address": "7000",
+      "last_address": "7980",
+      "s19_entry": "7000",
+      "data_bytes": 2433,
+      "bin_bytes": 2433,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-slice6-plan-tool-7000.a": "2f6e81c1d1ec84fb6c2c251414f4299e03ce308075820ffe48bfad5c1c17d6ea",
+        "S19/ap-store-v1-slice6-plan-tool-7000.s19": "5e7aefee31df86b1ee81fe1336f259cefac30a59f6613bf8cc90783ba7a2c56b",
+        "BIN/ap-store-v1-slice6-plan-tool-7000.bin": "2025d469d7ec26413f3fdcf174390f573f14c03da2e70290725844f9371b14f1"
+      }
+    },
+    {
+      "name": "ap-store-v1-slice6-plan-tool-package-4000",
+      "kind": "AP envelope",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/ap-store-v1-slice6-plan-tool-package-4000.s19",
+      "load_address": "4000",
+      "last_address": "49AE",
+      "s19_entry": "4000",
+      "data_bytes": 2479,
+      "bin_bytes": 2479,
+      "hole_fill": "FF",
+      "requirements": "Data package: stage and use AP LOAD/INSTALL; do not jump to the S9 address.",
+      "native_source": null,
+      "files": {
+        "A/ap-store-v1-slice6-plan-tool-package-4000.a": "a517e4e9ad5fec5d4e2d434234f9f0fb8203462c6a788219c7db2b27c2405ea8",
+        "S19/ap-store-v1-slice6-plan-tool-package-4000.s19": "d11cf33b71a6253d8481a9e5d96a79cbf42d51e294e722126f0f94dbdf4968c9",
+        "BIN/ap-store-v1-slice6-plan-tool-package-4000.bin": "b9e8ceec33281a0f9e6b0dea6ab0ba62f407f8127739b97e98c5d3f75086aab1"
+      }
+    },
+    {
+      "name": "apman-7000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/apman-7000.s19",
+      "load_address": "7000",
+      "last_address": "7BF2",
+      "s19_entry": "7000",
+      "data_bytes": 3059,
+      "bin_bytes": 3059,
+      "hole_fill": "FF",
+      "requirements": "Private AM02 overlay; requires HIMON bootstrap and initialized manager request state.",
+      "native_source": null,
+      "files": {
+        "A/apman-7000.a": "57f2bbde9447c8cdef82982d05bc84545a827425ef0b59427fd0c5e049e4896a",
+        "S19/apman-7000.s19": "f61c4246f9e40b89803698d838bf8d54112879f07cf6beeba93dfefeb5aa2ef7",
+        "BIN/apman-7000.bin": "697b600bd67a521c8b2a50aa1b3ee123dd1af039fc6a944e8ad670d0fcf59c08"
+      }
+    },
+    {
+      "name": "asm-session-report-v1.2-7000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/asm-session-report-v1.2-7000.s19",
+      "load_address": "7000",
+      "last_address": "771A",
+      "s19_entry": "7000",
+      "data_bytes": 1819,
+      "bin_bytes": 1819,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/asm-session-report-v1.2-7000.a": "d503a9548de3f299a398b8b15f85b96f66378b433fd9f557e0736ac865082159",
+        "S19/asm-session-report-v1.2-7000.s19": "6dc527b72572d8f79ba58cb6ee08281e980c6ca6af3409373fc8d8ae91f9fa09",
+        "BIN/asm-session-report-v1.2-7000.bin": "348c5677e4f6e21d7bbda2deec18f277230f238f46587400074d1f95078d5471"
+      }
+    },
+    {
+      "name": "asm-v1-runtime-2000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/asm-v1-runtime-2000.s19",
+      "load_address": "2000",
+      "last_address": "540A",
+      "s19_entry": "2000",
+      "data_bytes": 13323,
+      "bin_bytes": 13323,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/asm-v1-runtime-2000.a": "b90099e84938144f6d122c446d37c85e154ee58f369ac0121958a045ac081e8a",
+        "S19/asm-v1-runtime-2000.s19": "05d155cdf013bdd37e73083663449a1daa30d715545417f5b22b9d6e055696a7",
+        "BIN/asm-v1-runtime-2000.bin": "791b21b42ed5ae7903e766001b5cf6bf05f89f66555bf6a2f9d159ce3d34966e"
+      }
+    },
+    {
+      "name": "asm-v1-runtime-asmtest-2000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/asm-v1-runtime-asmtest-2000.s19",
+      "load_address": "2000",
+      "last_address": "57D2",
+      "s19_entry": "2000",
+      "data_bytes": 14291,
+      "bin_bytes": 14291,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/asm-v1-runtime-asmtest-2000.a": "c3bf1286ca847133bd1ab8be18cc95606cc247a43e2dbfdf04138af23c8783f4",
+        "S19/asm-v1-runtime-asmtest-2000.s19": "8626558815b0a24957144643ba826c1f4c1f856dfa25600ad4401e7cebbdeb75",
+        "BIN/asm-v1-runtime-asmtest-2000.bin": "f4768bcd90e1549937cb9740f58078201c84146930c96ac62e837252392efa13"
+      }
+    },
+    {
+      "name": "asm-v1-runtime-paste-2000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/asm-v1-runtime-paste-2000.s19",
+      "load_address": "2000",
+      "last_address": "5CAB",
+      "s19_entry": "2000",
+      "data_bytes": 15532,
+      "bin_bytes": 15532,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/asm-v1-runtime-paste-2000.a": "cd48e4668fcd606e7ae51af2e8b86b99c2d368e1dbf2bd88fe4b2f066884724f",
+        "S19/asm-v1-runtime-paste-2000.s19": "1b703052c6cf28ab0c5a4f5f14d29c6d3d880813225369e5bc70d039b3edefa0",
+        "BIN/asm-v1-runtime-paste-2000.bin": "89e9941be076912c6d1e96d22aa8aaa6e15a36431827f52283c6ed66668374fe"
+      }
+    },
+    {
+      "name": "asm-v1-runtime-smoke-2000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/asm-v1-runtime-smoke-2000.s19",
+      "load_address": "2000",
+      "last_address": "581F",
+      "s19_entry": "2000",
+      "data_bytes": 14368,
+      "bin_bytes": 14368,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/asm-v1-runtime-smoke-2000.a": "c5ca967a00cbc1ddb3dfeb0c70965681939c411bec995d719dc2111c773459ec",
+        "S19/asm-v1-runtime-smoke-2000.s19": "5504b4086dc1296c6dd089f1727282661214b6558b9cb7d884d0477b7d3046b2",
+        "BIN/asm-v1-runtime-smoke-2000.bin": "eb29e4e5df6e1e0765d0f876d1c612063163c7b5b68cae93dc603b374c278837"
+      }
+    },
+    {
+      "name": "asmtest-6800-wdc",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/asmtest-6800-wdc.s19",
+      "load_address": "6800",
+      "last_address": "6826",
+      "s19_entry": "6800",
+      "data_bytes": 39,
+      "bin_bytes": 39,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/asmtest-6800-wdc.a": "fe19a4356c469ec0db620834e0c68eb560da3bb073b57af698752f2ff9e8ee70",
+        "S19/asmtest-6800-wdc.s19": "506f42555146627bf2004c695584896f6f60f3af731e562056c1e0c9e2848591",
+        "BIN/asmtest-6800-wdc.bin": "50be5cfc0043fe547d2318b72803bb5b336d250165eaa97d5d4151938e4f8b3e"
+      }
+    },
+    {
+      "name": "bank-audit-2000",
+      "kind": "host comparison fixture",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/bank-audit-2000.s19",
+      "load_address": "2000",
+      "last_address": "2201",
+      "s19_entry": "2000",
+      "data_bytes": 514,
+      "bin_bytes": 514,
+      "hole_fill": "FF",
+      "requirements": "Pins historical HIMON call addresses: do not launch this raw image on the current monitor. Use the companion -imports.a and normal AP load/link.",
+      "native_source": "A/bank-audit-2000-imports.a",
+      "files": {
+        "A/bank-audit-2000.a": "7876703d08aed47bfbfd49742edb6974d1bf19c4977086a4425b1fe77ed3c6f4",
+        "S19/bank-audit-2000.s19": "530ab4775af5c6b3dae7bc0fd4c30bc91efb308880599f2019c9552b23d327ee",
+        "BIN/bank-audit-2000.bin": "859cffa081fa4e5ede0b6ba678e9a6a68fe978cb3a9ccdafc2e4969d1404474e",
+        "A/bank-audit-2000-imports.a": "02e20e8efac795543fcdaacf6a2398f5cf157fb0560639227a18fd898d3b2e0a"
+      }
+    },
+    {
+      "name": "bank-dump-2000",
+      "kind": "host comparison fixture",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/bank-dump-2000.s19",
+      "load_address": "2000",
+      "last_address": "292B",
+      "s19_entry": "2000",
+      "data_bytes": 2348,
+      "bin_bytes": 2348,
+      "hole_fill": "FF",
+      "requirements": "Pins historical HIMON call addresses: do not launch this raw image on the current monitor. Use the companion -imports.a and normal AP load/link.",
+      "native_source": "A/bank-dump-2000-imports.a",
+      "files": {
+        "A/bank-dump-2000.a": "5f6ed5e3f916d5164525674f21c5bfa53759b36c60e54ee4326f91e2cae9e0fc",
+        "S19/bank-dump-2000.s19": "be46b2a1c135550a737ff50e8f63fbc8657a5ce2d925eb7d40a0c2bcf6b6b3db",
+        "BIN/bank-dump-2000.bin": "664aaf987e6d1450975e1fa4abd84ba0df65155869490bbedcdd8d72e9fd8c84",
+        "A/bank-dump-2000-imports.a": "0e541cb8d35e28bf86646361ab25af00ab08e9c9927e6f1b2064ccd1b1eaffc8"
+      }
+    },
+    {
+      "name": "fnv1a-hbstr-6000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/fnv1a-hbstr-6000.s19",
+      "load_address": "6000",
+      "last_address": "643C",
+      "s19_entry": "0000",
+      "data_bytes": 1085,
+      "bin_bytes": 1085,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/fnv1a-hbstr-6000.a": "79a6132729cc266dacd91b6718bc4bbc050dfe7a6118180b070505c121f0f292",
+        "S19/fnv1a-hbstr-6000.s19": "a538128c876426ae5487fcba9f93f2fa8dbce0335955903bd09b0ba1cbc3272e",
+        "BIN/fnv1a-hbstr-6000.bin": "741a6c2e81d7d5dbe8805bc7f2e4af517ba5dbb3c33554bf1a3175419b0c90b3"
+      }
+    },
+    {
+      "name": "life-2000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/life-2000.s19",
+      "load_address": "2000",
+      "last_address": "2D93",
+      "s19_entry": "2000",
+      "data_bytes": 3476,
+      "bin_bytes": 3476,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/life-2000.a": "74e9c445297eea61c3a25b67c2a9640dd10bd4a2b9a45ac0f141b36008ef1fcb",
+        "S19/life-2000.s19": "6aa6df35aac5f9965ea4bed13310a0f80aef5fb41263e979ac93c8769f5aed72",
+        "BIN/life-2000.bin": "c872fb34160a8938c37552ef0d80444038d2268d5adeb40d8144928b2667daac"
+      }
+    },
+    {
+      "name": "microchess-2000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/microchess-2000.s19",
+      "load_address": "2000",
+      "last_address": "2624",
+      "s19_entry": "2000",
+      "data_bytes": 1573,
+      "bin_bytes": 1573,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/microchess-2000.a": "51811f4d609a837eb80b9847a9b5ccbcf2d0f0d56c84daa6afa2257cb6fa5ecf",
+        "S19/microchess-2000.s19": "94c8b69750aad73970cb4cb4b677ca90ea0924c552b2b51895c587637fe82c9b",
+        "BIN/microchess-2000.bin": "c2383ebfefd216361a512f17297a906da8d66a919eb8fa66eab3fdcdbd053341"
+      }
+    },
+    {
+      "name": "microchess-ap-3000",
+      "kind": "AP envelope",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/microchess-ap-3000.s19",
+      "load_address": "3000",
+      "last_address": "36A5",
+      "s19_entry": "3000",
+      "data_bytes": 1702,
+      "bin_bytes": 1702,
+      "hole_fill": "FF",
+      "requirements": "Data package: stage and use AP LOAD/INSTALL; do not jump to the S9 address.",
+      "native_source": null,
+      "files": {
+        "A/microchess-ap-3000.a": "e54880033a9c07b3e6b660cb4bb3d74b294336a8ae47cb90b1ba48b2b3e389e3",
+        "S19/microchess-ap-3000.s19": "4a2a7fc258b1dd729ecc46320b9203a349c35fc7d6dd642b80c0a7c5a0bf5730",
+        "BIN/microchess-ap-3000.bin": "bc55363da391ae84dd389c763e7746ac2935e031d71353f4816b7ed1c77fa86d"
+      }
+    },
+    {
+      "name": "pia-led-show-2000",
+      "kind": "RAM image",
+      "source_repository": "R-YORS",
+      "source": "SRC/BUILD/s19/pia-led-show-2000.s19",
+      "load_address": "2000",
+      "last_address": "2083",
+      "s19_entry": "2000",
+      "data_bytes": 132,
+      "bin_bytes": 132,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/pia-led-show-2000.a": "72a297b1c65c9183eac6e4dda91973d686008ab0a2e228a2f408f4cbdf411efa",
+        "S19/pia-led-show-2000.s19": "d501084ed33a202283bb36726a3bf6a09f529f1af868ae68ca325bf9b5647e07",
+        "BIN/pia-led-show-2000.bin": "9b8376973623af25dd7202962364396fcc0c192796555d2dd567987fb6e7fc8c"
+      }
+    },
+    {
+      "name": "str8n-v1.34-bank-maint-2000",
+      "kind": "RAM image",
+      "source_repository": "STR8-N",
+      "source": "BUILD/v1.34/s19/str8n-v1.34-bank-maint-2000.s19",
+      "load_address": "2000",
+      "last_address": "39B2",
+      "s19_entry": "2000",
+      "data_bytes": 6579,
+      "bin_bytes": 6579,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/str8n-v1.34-bank-maint-2000.a": "bbcad318eba7501e93a75c9990d651d485ca40cbbaf10e675bfce5825e4e4076",
+        "S19/str8n-v1.34-bank-maint-2000.s19": "95aee537e486e6a16e40dbd3ce7baa181d018f44ab13f6a29601779d77650c2f",
+        "BIN/str8n-v1.34-bank-maint-2000.bin": "26bc67b21ac225de223ae5ffda6438d27915c62bcf7f5a48a47aea6372076712"
+      }
+    },
+    {
+      "name": "str8n-v1.34-bank-maint-menu-2000",
+      "kind": "RAM image",
+      "source_repository": "STR8-N",
+      "source": "BUILD/v1.34/s19/str8n-v1.34-bank-maint-menu-2000.s19",
+      "load_address": "2000",
+      "last_address": "4FFF",
+      "s19_entry": "2000",
+      "data_bytes": 12288,
+      "bin_bytes": 12288,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/str8n-v1.34-bank-maint-menu-2000.a": "0fd2f9d8ecf2b4a4208ee4f873890f1eaca18b82854eec201a5c0b9c88677e01",
+        "S19/str8n-v1.34-bank-maint-menu-2000.s19": "a3aee8e295ea0dae666afc0f43530d1aa2f6cb286433b14e1c58b83e0856e7b4",
+        "BIN/str8n-v1.34-bank-maint-menu-2000.bin": "07254865a811282249f3be1f569b48a9993d3402019ab8e9934c94f07891c085"
+      }
+    },
+    {
+      "name": "str8n-v1.34-str8-in65-bank-maint-2000",
+      "kind": "RAM image",
+      "source_repository": "STR8-N",
+      "source": "BUILD/v1.34/s19/str8n-v1.34-str8-in65-bank-maint-2000.s19",
+      "load_address": "2000",
+      "last_address": "3B15",
+      "s19_entry": "2000",
+      "data_bytes": 6934,
+      "bin_bytes": 6934,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/str8n-v1.34-str8-in65-bank-maint-2000.a": "0d2341731f707605d1229a899640b7fdc37c3dfe3e4890d07cfb356cde58de5c",
+        "S19/str8n-v1.34-str8-in65-bank-maint-2000.s19": "809b839cf8f8288f8ae51153b78e8c132cf792e090474e9ea2ad0eeb911905da",
+        "BIN/str8n-v1.34-str8-in65-bank-maint-2000.bin": "37e411f3d3aa8c1982958bace2f616736a23cd78440ac1b4ae58b78c128ca0bb"
+      }
+    },
+    {
+      "name": "str8n-v1.34-console-abi-test-2000",
+      "kind": "RAM image",
+      "source_repository": "STR8-N",
+      "source": "BUILD/v1.34/s19/str8n-v1.34-console-abi-test-2000.s19",
+      "load_address": "2000",
+      "last_address": "242B",
+      "s19_entry": "2000",
+      "data_bytes": 1068,
+      "bin_bytes": 1068,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/str8n-v1.34-console-abi-test-2000.a": "1ead38ab4705672ad0e3a2da41421c249e4637a6df0ce59805bd4d72f2389655",
+        "S19/str8n-v1.34-console-abi-test-2000.s19": "25c2f6cce1f22bf09916739b9bb9c382bd71cf86403c8f58e1e1edc97c8cde77",
+        "BIN/str8n-v1.34-console-abi-test-2000.bin": "99cd5b80369cbd445d1bd808b91950b0041ef0ae40d2caf36c3b1971f761aec8"
+      }
+    },
+    {
+      "name": "str8n-v1.34-led-worker-test-2000",
+      "kind": "RAM image",
+      "source_repository": "STR8-N",
+      "source": "BUILD/v1.34/s19/str8n-v1.34-led-worker-test-2000.s19",
+      "load_address": "2000",
+      "last_address": "244D",
+      "s19_entry": "2000",
+      "data_bytes": 1102,
+      "bin_bytes": 1102,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/str8n-v1.34-led-worker-test-2000.a": "5ab289f2957984ba70b6d8bbc42ebae0762bbcce42265c1f122fa41bd3c7bf3e",
+        "S19/str8n-v1.34-led-worker-test-2000.s19": "e8c34448a3c5fe9513da76429b8310708bcd620b6338c753ef02e453c2897294",
+        "BIN/str8n-v1.34-led-worker-test-2000.bin": "9f1edbbea7e4bef4a8a3a3cbb042fae014ca5dff1ac46eb5132512706949ac09"
+      }
+    },
+    {
+      "name": "str8n-v1.34-irq-test-2000",
+      "kind": "RAM image",
+      "source_repository": "STR8-N",
+      "source": "BUILD/v1.34/s19/str8n-v1.34-irq-test-2000.s19",
+      "load_address": "2000",
+      "last_address": "21CF",
+      "s19_entry": "2000",
+      "data_bytes": 464,
+      "bin_bytes": 464,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/str8n-v1.34-irq-test-2000.a": "57bd1b54ca6d172838d6904ec8edeed08abe91d7e3ed2228834742a1926ee9a2",
+        "S19/str8n-v1.34-irq-test-2000.s19": "36a1277c0dc2b58076633cfa68f4e4fbe9467ded1be7af8b4361bf3294769e74",
+        "BIN/str8n-v1.34-irq-test-2000.bin": "01ed047919b096e55062bd84f2fe5f59ced01b66b89f58773ee3b58cb63e0633"
+      }
+    },
+    {
+      "name": "str8n-v1.34-top-update-2000",
+      "kind": "RAM image",
+      "source_repository": "STR8-N",
+      "source": "BUILD/v1.34/s19/str8n-v1.34-top-update-2000.s19",
+      "load_address": "2000",
+      "last_address": "4FFF",
+      "s19_entry": "2000",
+      "data_bytes": 12288,
+      "bin_bytes": 12288,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/str8n-v1.34-top-update-2000.a": "7f8729a97e1a8276ac1417afa01edb2cff9fb62e40be2b9e33c1c7f863f68f03",
+        "S19/str8n-v1.34-top-update-2000.s19": "5bfd81f11ed50f0ba11bc42b27e462949a183689846b0675ed3f913381b3904e",
+        "BIN/str8n-v1.34-top-update-2000.bin": "5297bd47aa455e88a4d17d8c4e4782faa1d16b13f4d80e5ea426948df1d5759e"
+      }
+    },
+    {
+      "name": "str8n-v1.34-directory-refresh-2000",
+      "kind": "RAM image",
+      "source_repository": "STR8-N",
+      "source": "BUILD/v1.34/s19/str8n-v1.34-directory-refresh-2000.s19",
+      "load_address": "2000",
+      "last_address": "4FFF",
+      "s19_entry": "2000",
+      "data_bytes": 12288,
+      "bin_bytes": 12288,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/str8n-v1.34-directory-refresh-2000.a": "c9562d41bc1fc820642ddd50b49262a08347d1b178ef986462c3881a991763a7",
+        "S19/str8n-v1.34-directory-refresh-2000.s19": "b71c3888c39ff3d960d8e84de7319aff8f2d10dd796d9901f208238ac6a8d303",
+        "BIN/str8n-v1.34-directory-refresh-2000.bin": "a169f079224ae79676bb6ce7a1575c267cf61683b80a4dade8f94fcf75445f4d"
+      }
+    },
+    {
+      "name": "str8n-v1.34-str8-in65-top-update-2000",
+      "kind": "RAM image",
+      "source_repository": "STR8-N",
+      "source": "BUILD/v1.34/s19/str8n-v1.34-str8-in65-top-update-2000.s19",
+      "load_address": "2000",
+      "last_address": "4FFF",
+      "s19_entry": "2000",
+      "data_bytes": 12288,
+      "bin_bytes": 12288,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/str8n-v1.34-str8-in65-top-update-2000.a": "9f300528e48732115a178d8d9c311d9730d5c6c9e815c91bc2eac2bee6888aad",
+        "S19/str8n-v1.34-str8-in65-top-update-2000.s19": "5bfd81f11ed50f0ba11bc42b27e462949a183689846b0675ed3f913381b3904e",
+        "BIN/str8n-v1.34-str8-in65-top-update-2000.bin": "5297bd47aa455e88a4d17d8c4e4782faa1d16b13f4d80e5ea426948df1d5759e"
+      }
+    },
+    {
+      "name": "str8n-v1.34-wdcmonv2-archive-2000",
+      "kind": "RAM image",
+      "source_repository": "STR8-N",
+      "source": "BUILD/v1.34/s19/str8n-v1.34-wdcmonv2-archive-2000.s19",
+      "load_address": "2000",
+      "last_address": "250E",
+      "s19_entry": "2000",
+      "data_bytes": 1295,
+      "bin_bytes": 1295,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/str8n-v1.34-wdcmonv2-archive-2000.a": "640dc6d12b27b4a8e0e8d7e653a4003801c03d34366c6cd12e74d22d3f23d6f9",
+        "S19/str8n-v1.34-wdcmonv2-archive-2000.s19": "5e0811701830821022ede13b7b8e5fa26392f0caf42d3fb8993c7cdfa5698f5c",
+        "BIN/str8n-v1.34-wdcmonv2-archive-2000.bin": "f00753d530342763b986c242ef2ecadd42d8b755573570dd5f11e1741b6c0be4"
+      }
+    },
+    {
+      "name": "str8n-v1.34-wdcmonv2-install-2000",
+      "kind": "RAM image",
+      "source_repository": "STR8-N",
+      "source": "BUILD/v1.34/s19/str8n-v1.34-wdcmonv2-install-2000.s19",
+      "load_address": "2000",
+      "last_address": "29B4",
+      "s19_entry": "2000",
+      "data_bytes": 2485,
+      "bin_bytes": 2485,
+      "hole_fill": "FF",
+      "requirements": "Use the original tool procedure and matching resident ABI; S9 is not proof that an image is standalone.",
+      "native_source": null,
+      "files": {
+        "A/str8n-v1.34-wdcmonv2-install-2000.a": "0401e26c03b9fa9fc81f915817cf3617625136ae31419da38a5d3a1ba5e7e3cc",
+        "S19/str8n-v1.34-wdcmonv2-install-2000.s19": "907af382db3537b20d04306966686b9a5e99d5821e405087295ba691a266623e",
+        "BIN/str8n-v1.34-wdcmonv2-install-2000.bin": "342654c3d04d3f62bbf2c264a4525f852712687e944543821b68ef836ce3a3be"
+      }
+    }
+  ],
+  "excluded": [
+    {
+      "file": "SRC\\BUILD\\s19\\apman-v1-bank2-8000.s19",
+      "reason": "outside RAM transient window $2000-$7CFF"
+    },
+    {
+      "file": "SRC\\BUILD\\s19\\asm-v1-core-2000.s19",
+      "reason": "outside RAM transient window $2000-$7CFF"
+    },
+    {
+      "file": "SRC\\BUILD\\s19\\asm-v1-flash-8000.s19",
+      "reason": "outside RAM transient window $2000-$7CFF"
+    },
+    {
+      "file": "SRC\\BUILD\\s19\\himon-apv2-bank3-c-e.s19",
+      "reason": "outside RAM transient window $2000-$7CFF"
+    },
+    {
+      "file": "SRC\\BUILD\\s19\\himon-c000.s19",
+      "reason": "outside RAM transient window $2000-$7CFF"
+    },
+    {
+      "file": "SRC\\BUILD\\s19\\himon-rom-c000-install-8000.s19",
+      "reason": "outside RAM transient window $2000-$7CFF"
+    },
+    {
+      "file": "SRC\\BUILD\\s19\\himon-rom-c000.s19",
+      "reason": "outside RAM transient window $2000-$7CFF"
+    },
+    {
+      "file": "SRC\\BUILD\\s19\\rom-append-calc-b804.s19",
+      "reason": "outside RAM transient window $2000-$7CFF"
+    },
+    {
+      "file": "SRC\\BUILD\\s19\\ryors-v1.2-asm-bank3-8-b.s19",
+      "reason": "outside RAM transient window $2000-$7CFF"
+    },
+    {
+      "file": "SRC\\BUILD\\s19\\ryors-v1.2-himon-asm-bank3-8-e.s19",
+      "reason": "outside RAM transient window $2000-$7CFF"
+    },
+    {
+      "file": "SRC\\BUILD\\s19\\ryors-v1.2-himon-bank3-c-e.s19",
+      "reason": "outside RAM transient window $2000-$7CFF"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "result": "PASS",
+  "mode": "led-b2",
+  "expected_display": [
+    "82",
+    "92",
+    "A2",
+    "B2",
+    "C2",
+    "D2",
+    "E2"
+  ],
+  "result_bytes": "8292a2b2c2d2e2000000000000000000000000000000000000000000000000000000000000000000000000000000000007d1b4000000000000000000000000000effffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "pcr_samples": "eceeeceeeceeeceeeceeeceeeceeffffffffffffffffffffffffffffffffffff",
+  "visual_gate": "requires separate operator observation; serial/RAM samples alone do not close it"
+}

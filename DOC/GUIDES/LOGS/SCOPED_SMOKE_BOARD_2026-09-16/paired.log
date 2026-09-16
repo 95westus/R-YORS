@@ -1,0 +1,64 @@
+Archived B0:8; B3 restored
+Archived B0:9; B3 restored
+Archived B0:A; B3 restored
+Archived B0:B; B3 restored
+Archived B0:C; B3 restored
+Archived B0:D; B3 restored
+Archived B0:E; B3 restored
+Archived B0:F; B3 restored
+B0 SHA256=2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8
+Archived B1:8; B3 restored
+Archived B1:9; B3 restored
+Archived B1:A; B3 restored
+Archived B1:B; B3 restored
+Archived B1:C; B3 restored
+Archived B1:D; B3 restored
+Archived B1:E; B3 restored
+Archived B1:F; B3 restored
+B1 SHA256=bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211
+Archived B2:8; B3 restored
+Archived B2:9; B3 restored
+Archived B2:A; B3 restored
+Archived B2:B; B3 restored
+Archived B2:C; B3 restored
+Archived B2:D; B3 restored
+Archived B2:E; B3 restored
+Archived B2:F; B3 restored
+B2 SHA256=becbd9dfe8d1ae7ce021df4851882bdff9827757310b2f6d4da597551c544a8f
+Archived B3:8; B3 restored
+Archived B3:9; B3 restored
+Archived B3:A; B3 restored
+Archived B3:B; B3 restored
+Archived B3:C; B3 restored
+Archived B3:D; B3 restored
+Archived B3:E; B3 restored
+Archived B3:F; B3 restored
+B3 SHA256=be6c4fa11cb42a10343636b5f56c9c4234548131cf306c1c245b59a32be9cbbf
+{
+  "serial_log": "C:\\SRC\\R-YORS\\LOCAL\\scoped-smoke-board-20260916\\serial-com4.jsonl",
+  "helper_sha256": "f15a35a26b88bc2d4a5eab83ed27f13a14007ec4fe25ac456631cf544efb7952",
+  "banks": {
+    "0": {
+      "bytes": 32768,
+      "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8",
+      "reset": "F818"
+    },
+    "1": {
+      "bytes": 32768,
+      "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211",
+      "reset": "F000"
+    },
+    "2": {
+      "bytes": 32768,
+      "sha256": "becbd9dfe8d1ae7ce021df4851882bdff9827757310b2f6d4da597551c544a8f",
+      "reset": "F000"
+    },
+    "3": {
+      "bytes": 32768,
+      "sha256": "be6c4fa11cb42a10343636b5f56c9c4234548131cf306c1c245b59a32be9cbbf",
+      "reset": "F000"
+    }
+  },
+  "flash_sha256": "8134582cfc6567a43b5cef3b53fa93094410dacc86bd541f15989fb2cfa94b17"
+}
+PASS exact complete image: paired FF 8134582cfc6567a43b5cef3b53fa93094410dacc86bd541f15989fb2cfa94b17

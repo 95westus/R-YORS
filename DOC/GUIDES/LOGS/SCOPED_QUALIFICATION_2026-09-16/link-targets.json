@@ -1,0 +1,17 @@
+[
+  {
+    "name": "BIO_FTDI_PUT_CSTR",
+    "site": 10008,
+    "target": 52272
+  },
+  {
+    "name": "SYS_READ_CSTRING_ECHO_UPPER",
+    "site": 8536,
+    "target": 52033
+  },
+  {
+    "name": "BIO_FTDI_WRITE_BYTE_BLOCK",
+    "site": 10005,
+    "target": 58837
+  }
+]

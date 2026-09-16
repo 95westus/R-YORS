@@ -8,9 +8,10 @@ The retained 2026-09-10 board proof installed the build at `B1:9000` and
 qualified onboard assembly, AP-v2 packaging, RAM and carrier
 load/link/entry, named discovery, board rendering, exact `H` output, and `Q`
 return. HIMON `00.0910(2121)` also provides a hardware-proven bare
-`MICROCHESS` launcher. A physical-reset persistence run remains the final
-acceptance gate for that carrier/launcher combination. Later HIMON/ASM
-firmware-reset proofs did not repeat the MicroChess carrier test. Discover
+`MICROCHESS` launcher. The [2026-09-16 follow-up](../LOGS/AP_FNV_FOLLOWUP_2026-09-16.md)
+completes physical-reset persistence: receive-only `RST H`, B1:$9000 discovery,
+bare launch under HIMON `00.0915(2324)`, board initialization, exact help, and
+`Q` return. Discover
 the board's present carrier with `APS B1 MICROCHESS` rather than assuming
 the historical sector remains installed.
 
@@ -496,8 +497,10 @@ onboard assembly, RAM package load/link/entry, board rendering, and all three
 proved `APS B1 MICROCHESS`, named `AP B1 MICROCHESS`, exact `H`, and `Q`
 return. After guarded replacement of Bank-3 sectors C-E, bare `MICROCHESS`
 proved the same load, display, help, and return path under HIMON
-`00.0910(2121)`. A physical RESET and repeated discovery/launch remain the
+`00.0910(2121)`. A physical RESET and repeated discovery/launch were the
 only open board gate for this exact build.
+The [2026-09-16 follow-up](../LOGS/AP_FNV_FOLLOWUP_2026-09-16.md) closes that
+gate with receive-only hardware-reset capture and repeated bare launch/return.
 
 ## Refreshing From Upstream
 

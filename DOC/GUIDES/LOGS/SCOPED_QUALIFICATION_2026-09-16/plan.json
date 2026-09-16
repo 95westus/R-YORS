@@ -1,0 +1,102 @@
+[
+  {
+    "number": 1,
+    "bank": 2,
+    "sector": "A",
+    "fixture": "bankdump",
+    "stem": "01-b2a-bankdump",
+    "new_descriptor": false,
+    "expected_sha256": "09655aa19920d04f3a775e3ba6e2cf69f0010c2618ed256d36857796ca1a0733",
+    "install_console": "\r\nB0-3: 2\r\nRANGE: A\r\nI B2 A-A WRITE? Y: Y\r\nS19\r\nCOMMIT? Y: Y.\r\nOK\r\n"
+  },
+  {
+    "number": 2,
+    "bank": 1,
+    "sector": "A",
+    "fixture": "bankdump",
+    "stem": "02-b1a-bankdump",
+    "new_descriptor": true,
+    "expected_sha256": "dce45943abe05c9ca71965732a351a4ee2105ebdb489c6c5ab35ee4b57589486",
+    "install_console": "\r\nB0-3: 1\r\nRANGE: A\r\nTYPE: A2\r\nDESC: APC01\r\nI B1 A-A WRITE? Y: Y\r\nS19\r\nCOMMIT? Y: Y.\r\nOK\r\n"
+  },
+  {
+    "number": 3,
+    "bank": 2,
+    "sector": "A",
+    "fixture": "erased",
+    "stem": "03-b2a-erased",
+    "new_descriptor": false,
+    "expected_sha256": "96a00b6b297d50bc0d6f57003ebfd3dc3dc0eac6bac565361f6a7661fcd14b16",
+    "install_console": "\r\nB0-3: 2\r\nRANGE: A\r\nI B2 A-A WRITE? Y: Y\r\nS19\r\nCOMMIT? Y: Y.\r\nOK\r\n"
+  },
+  {
+    "number": 4,
+    "bank": 1,
+    "sector": "A",
+    "fixture": "bad-crc",
+    "stem": "04-b1a-bad-crc",
+    "new_descriptor": false,
+    "expected_sha256": "8a095c9eab65c7a8395be41773e02c5b9aac0fabf71cba3255a7f9114e8071a2",
+    "install_console": "\r\nB0-3: 1\r\nRANGE: A\r\nI B1 A-A WRITE? Y: Y\r\nS19\r\nCOMMIT? Y: Y.\r\nOK\r\n"
+  },
+  {
+    "number": 5,
+    "bank": 1,
+    "sector": "A",
+    "fixture": "forged-name",
+    "stem": "05-b1a-forged-name",
+    "new_descriptor": false,
+    "expected_sha256": "25e4af4cda64d5669d884f238641266167f7ba3f4cc90a49d550ff88a1b7247e",
+    "install_console": "\r\nB0-3: 1\r\nRANGE: A\r\nI B1 A-A WRITE? Y: Y\r\nS19\r\nCOMMIT? Y: Y.\r\nOK\r\n"
+  },
+  {
+    "number": 6,
+    "bank": 1,
+    "sector": "A",
+    "fixture": "bad-entry",
+    "stem": "06-b1a-bad-entry",
+    "new_descriptor": false,
+    "expected_sha256": "313c95b6b77f95f00c9ba48c5cd59c2ba6571effd9f30e11ef4bccad368f1037",
+    "install_console": "\r\nB0-3: 1\r\nRANGE: A\r\nI B1 A-A WRITE? Y: Y\r\nS19\r\nCOMMIT? Y: Y.\r\nOK\r\n"
+  },
+  {
+    "number": 7,
+    "bank": 1,
+    "sector": "A",
+    "fixture": "bad-import",
+    "stem": "07-b1a-bad-import",
+    "new_descriptor": false,
+    "expected_sha256": "10d7e9e79f653144691ebb9b55044fbccfb34058c6daa7a9ec8f204f60df3e7f",
+    "install_console": "\r\nB0-3: 1\r\nRANGE: A\r\nI B1 A-A WRITE? Y: Y\r\nS19\r\nCOMMIT? Y: Y.\r\nOK\r\n"
+  },
+  {
+    "number": 8,
+    "bank": 1,
+    "sector": "A",
+    "fixture": "resident-shadow",
+    "stem": "08-b1a-resident-shadow",
+    "new_descriptor": false,
+    "expected_sha256": "d44e693467676a237e299fb70b87da25f7f33fd7d2321808e8698ac7e29969f1",
+    "install_console": "\r\nB0-3: 1\r\nRANGE: A\r\nI B1 A-A WRITE? Y: Y\r\nS19\r\nCOMMIT? Y: Y.\r\nOK\r\n"
+  },
+  {
+    "number": 9,
+    "bank": 1,
+    "sector": "A",
+    "fixture": "erased",
+    "stem": "09-b1a-erased",
+    "new_descriptor": false,
+    "expected_sha256": "ed212af2826e399f59436deaa162dc988f8217946a172bab3803fb496ebc55ab",
+    "install_console": "\r\nB0-3: 1\r\nRANGE: A\r\nI B1 A-A WRITE? Y: Y\r\nS19\r\nCOMMIT? Y: Y.\r\nOK\r\n"
+  },
+  {
+    "number": 10,
+    "bank": 2,
+    "sector": "A",
+    "fixture": "bankdump",
+    "stem": "10-b2a-bankdump",
+    "new_descriptor": false,
+    "expected_sha256": "8a9977c675364f95a53b58b23067ba469d3595026064a2530e7c3e9db3096f4b",
+    "install_console": "\r\nB0-3: 2\r\nRANGE: A\r\nI B2 A-A WRITE? Y: Y\r\nS19\r\nCOMMIT? Y: Y.\r\nOK\r\n"
+  }
+]

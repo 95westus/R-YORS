@@ -1,0 +1,23 @@
+{
+  "result": "PASS",
+  "tools": 41,
+  "inspector": {
+    "name": "fnv-ram-hrec-2000",
+    "kind": "private RAM HREC inspection proof",
+    "source_repository": "R-YORS",
+    "source": "SRC/BUILD/s19/fnv-ram-hrec-2000.s19",
+    "load_address": "2000",
+    "last_address": "214C",
+    "s19_entry": "2000",
+    "data_bytes": 333,
+    "bin_bytes": 333,
+    "hole_fill": "FF",
+    "requirements": "Initialize private $7D40-$7D5F card: banks=0, RAM enable=1, windows=$08, format=0, wanted hash. Bank 3, decimal clear. Scans only $3000-$3FFF; returns metadata, never executes providers. Not a monitor command or public resolver ABI. See DOC/GUIDES/AP/RAM_HREC_PROOF_2026-09-16.md.",
+    "native_source": null,
+    "files": {
+      "A/fnv-ram-hrec-2000.a": "4d796afa8165a2ba0cc0220e382249fb200c538e50465fda3ff35f8b5895e6c6",
+      "S19/fnv-ram-hrec-2000.s19": "2c5199a6e5d696b87b111e2dfef79fb646c8246bdeeefe1cc969be7685105954",
+      "BIN/fnv-ram-hrec-2000.bin": "dc0a54a873ef44ae1b304f29597a3fbb784472870b719b90f1131a6b43a6de58"
+    }
+  }
+}

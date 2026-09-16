@@ -1,0 +1,8 @@
+{
+  "command": "make -C SRC asm-test",
+  "exit_code": 0,
+  "result": "PASS",
+  "scoped_integration_cases": 59,
+  "ram_hrec_cases": 72,
+  "note": "Full regression used the automatic display stamp; firmware artifacts subsequently regenerated with installed 0915(2324) stamp and checked against accepted board archive. No flash programming."
+}

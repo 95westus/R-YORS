@@ -1,0 +1,1423 @@
+{
+  "result": "PASS",
+  "inputs": {
+    "s19/himon-rom-c000.s19": "f71044cc458ca4be773defff18ec7e6a427b4460ca53cc3edba42c8047aa90cf",
+    "s19/himon-rom-c000.map": "4c7334ea9721e4664dcefd060adab181fa497eb3f8ddbefb79526cdbaa9149e3",
+    "s19/asm-v1-flash-8000.s19": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5",
+    "s19/asm-v1-flash-8000.map": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e",
+    "s19/apman-7000.map": "61e40b9bece99f083637ff65a601207716adc00b217c27c24a63f2604e42ce3f",
+    "bin/apman-v1-bank2-8000.bin": "1fed29fe2236e8c2e8aaba574d5dc452f8885efac75060c33a4eb02c8edc779b"
+  },
+  "str8_sha256": "9538d97854ba9d5d76143cba0fedb3b2e7ce18f977ce89557406e63404026cb7",
+  "source_sha256": {
+    "AP/ap-contract.inc": "4b47950e8ca171fa6b94e6b2b51308a478bbc0abbf0840499ace6e10baa1fe97",
+    "AP/ap-core.inc": "0028f4443f811688e9eb09d2a938e8506f3e0d835a73d6d973b49a793ef48e2c",
+    "AP/ap-link.inc": "6e2766ef263e15d2662448c9e3df898b1c8dc2992963d4edcb8be2d314f035d1",
+    "AP/ap-manager.inc": "b9b7a9ad2068f495d150fc1edf88fecf485dbb6d2f79be26bbad05817d89c4c9",
+    "AP/ap-space.inc": "8c16c074d0f6415b810ffa04a00ef000c76115eb81c654892474f52983cfac0f",
+    "AP/fnv-scope-card.inc": "8f6e7b0e40efd70fbf60eb8ba5f15626b408107e55c1d0b73e3377a433db6e64",
+    "AP/fnv-scope-policy.inc": "213ed89ece206293fb5ff899dcfc7fe5d06762de60ef94c3768189355002cd2c",
+    "HIMON/himon-ap-resolver.inc": "c23a97adce5ed2f97ba11b376f0cbd741be0b050dfa5d7f22b2faa2dc7a1b395",
+    "HIMON/himon-ap-manager-source-error.inc": "758147b7689966e4bb5e3945a3b34a2c9e5b5c30d4a1e2e9695cbc8c9d8526b4",
+    "HIMON/himon-ap-manager-shadow.inc": "0eb79b83aa0ad8aa42e4f78eaf727779115a3276088bb9ebfd6fc25746bda6c7",
+    "HIMON/himon-ap-manager-missing.inc": "9407ac8bfb90cfc727de6163957d7af5f08e4bc3d92b7c01727e79c227c10ec2"
+  },
+  "tool_sha256": "c566b31a25ba18d7c4db938c9c2698be1931f3822f11829e4c6c11d79b695a38",
+  "negative_boundary_cases": [
+    "JSR THE_JOIN_FIND",
+    "AND #CMD_HASH_KIND_EXEC",
+    "LDA CMD_BUF,X",
+    "JSR HIM_WRITE_HBSTRING",
+    "LDX #<MSG_APMAN_NF"
+  ],
+  "cases": [
+    {
+      "entry": "HIM_AP_LINK_RESOLVE_SLOT_X",
+      "result": "return",
+      "a": 226,
+      "x": 0,
+      "y": 7,
+      "carry": true,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 8,
+      "steps": 530004,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32195,
+          32197
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32195,
+          32197
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "case_type": "resolver",
+      "kind": 1,
+      "name": "FNV1A_INIT",
+      "slot": 0,
+      "resolved": "E281"
+    },
+    {
+      "entry": "HIM_AP_LINK_RESOLVE_SLOT_X",
+      "result": "return",
+      "a": 239,
+      "x": 0,
+      "y": 7,
+      "carry": true,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 8,
+      "steps": 597968,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32195,
+          32197
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32195,
+          32197
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "case_type": "resolver",
+      "kind": 2,
+      "name": "BOUNDARY_DATA",
+      "slot": 0,
+      "resolved": "EF08"
+    },
+    {
+      "entry": "HIM_AP_LINK_RESOLVE_SLOT_X",
+      "result": "return",
+      "a": 1,
+      "x": 0,
+      "y": 7,
+      "carry": false,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 8,
+      "steps": 530000,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "case_type": "resolver",
+      "kind": 2,
+      "name": "FNV1A_INIT",
+      "slot": 0,
+      "resolved": "CAFE"
+    },
+    {
+      "entry": "HIM_AP_LINK_RESOLVE_SLOT_X",
+      "result": "return",
+      "a": 0,
+      "x": 0,
+      "y": 7,
+      "carry": false,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 8,
+      "steps": 597963,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "case_type": "resolver",
+      "kind": 1,
+      "name": "BOUNDARY_DATA",
+      "slot": 0,
+      "resolved": "CAFE"
+    },
+    {
+      "entry": "HIM_AP_LINK_RESOLVE_SLOT_X",
+      "result": "return",
+      "a": 248,
+      "x": 0,
+      "y": 0,
+      "carry": false,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 8,
+      "steps": 689922,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "case_type": "resolver",
+      "kind": 1,
+      "name": "BOUNDARY_ABSENT",
+      "slot": 0,
+      "resolved": "CAFE"
+    },
+    {
+      "entry": "HIM_AP_LINK_RESOLVE_SLOT_X",
+      "result": "return",
+      "a": 226,
+      "x": 0,
+      "y": 7,
+      "carry": true,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 8,
+      "steps": 530073,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          209,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32195,
+          32197
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          209,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32195,
+          32197
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "case_type": "resolver",
+      "kind": 1,
+      "name": "FNV1A_INIT",
+      "slot": 1,
+      "resolved": "E281"
+    },
+    {
+      "entry": "HIM_AP_SERVICE",
+      "result": "stopped-at-caller-boundary",
+      "a": 128,
+      "x": 0,
+      "y": 55,
+      "carry": false,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 4,
+      "steps": 1051,
+      "writes": [
+        [
+          242,
+          243
+        ],
+        [
+          250,
+          252
+        ],
+        [
+          508,
+          510
+        ],
+        [
+          6656,
+          6912
+        ],
+        [
+          32304,
+          32305
+        ],
+        [
+          32362,
+          32363
+        ]
+      ],
+      "changed": [
+        [
+          242,
+          243
+        ],
+        [
+          250,
+          252
+        ],
+        [
+          508,
+          510
+        ],
+        [
+          6656,
+          6674
+        ],
+        [
+          6675,
+          6912
+        ],
+        [
+          32362,
+          32363
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "case_type": "manager",
+      "name": "whole-command-page-mode-1"
+    },
+    {
+      "entry": "HIM_AP_SERVICE",
+      "result": "stopped-at-caller-boundary",
+      "a": 128,
+      "x": 0,
+      "y": 55,
+      "carry": false,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 4,
+      "steps": 1051,
+      "writes": [
+        [
+          242,
+          243
+        ],
+        [
+          250,
+          252
+        ],
+        [
+          508,
+          510
+        ],
+        [
+          6656,
+          6912
+        ],
+        [
+          32304,
+          32305
+        ],
+        [
+          32362,
+          32363
+        ]
+      ],
+      "changed": [
+        [
+          242,
+          243
+        ],
+        [
+          250,
+          252
+        ],
+        [
+          508,
+          510
+        ],
+        [
+          6656,
+          6674
+        ],
+        [
+          6675,
+          6912
+        ],
+        [
+          32362,
+          32363
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "case_type": "manager",
+      "name": "whole-command-page-mode-2"
+    },
+    {
+      "entry": "HIM_AP_SERVICE",
+      "result": "stopped-at-caller-boundary",
+      "a": 128,
+      "x": 0,
+      "y": 48,
+      "carry": true,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 10,
+      "steps": 2145,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          199,
+          203
+        ],
+        [
+          207,
+          213
+        ],
+        [
+          230,
+          235
+        ],
+        [
+          242,
+          243
+        ],
+        [
+          250,
+          256
+        ],
+        [
+          502,
+          510
+        ],
+        [
+          6656,
+          6912
+        ],
+        [
+          32291,
+          32293
+        ],
+        [
+          32304,
+          32307
+        ],
+        [
+          32309,
+          32317
+        ],
+        [
+          32319,
+          32325
+        ],
+        [
+          32362,
+          32363
+        ],
+        [
+          32440,
+          32442
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          199,
+          203
+        ],
+        [
+          207,
+          213
+        ],
+        [
+          230,
+          235
+        ],
+        [
+          242,
+          243
+        ],
+        [
+          250,
+          256
+        ],
+        [
+          502,
+          510
+        ],
+        [
+          6656,
+          6674
+        ],
+        [
+          6675,
+          6912
+        ],
+        [
+          32291,
+          32293
+        ],
+        [
+          32306,
+          32307
+        ],
+        [
+          32309,
+          32310
+        ],
+        [
+          32311,
+          32314
+        ],
+        [
+          32319,
+          32325
+        ],
+        [
+          32362,
+          32363
+        ],
+        [
+          32440,
+          32442
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "case_type": "manager",
+      "name": "whole-command-page-mode-3"
+    },
+    {
+      "entry": "HIM_AP_SERVICE",
+      "result": "return",
+      "a": 212,
+      "x": 163,
+      "y": 6,
+      "carry": false,
+      "ap_status": 212,
+      "manager_status": 212,
+      "stack_peak_bytes_including_entry": 16,
+      "steps": 145,
+      "writes": [
+        [
+          254,
+          256
+        ],
+        [
+          496,
+          510
+        ],
+        [
+          31841,
+          31842
+        ],
+        [
+          32304,
+          32307
+        ],
+        [
+          32672,
+          32673
+        ]
+      ],
+      "changed": [
+        [
+          254,
+          256
+        ],
+        [
+          496,
+          510
+        ],
+        [
+          31841,
+          31842
+        ],
+        [
+          32304,
+          32305
+        ],
+        [
+          32306,
+          32307
+        ],
+        [
+          32672,
+          32673
+        ]
+      ],
+      "bank_visits": [],
+      "output": "APERR=$D4\r\n",
+      "case_type": "manager",
+      "name": "reject-before-shadow-0A00"
+    },
+    {
+      "entry": "HIM_AP_SERVICE",
+      "result": "return",
+      "a": 212,
+      "x": 163,
+      "y": 6,
+      "carry": false,
+      "ap_status": 212,
+      "manager_status": 212,
+      "stack_peak_bytes_including_entry": 16,
+      "steps": 229,
+      "writes": [
+        [
+          254,
+          256
+        ],
+        [
+          496,
+          510
+        ],
+        [
+          31841,
+          31842
+        ],
+        [
+          32291,
+          32293
+        ],
+        [
+          32304,
+          32307
+        ],
+        [
+          32309,
+          32317
+        ],
+        [
+          32319,
+          32325
+        ],
+        [
+          32672,
+          32673
+        ]
+      ],
+      "changed": [
+        [
+          254,
+          256
+        ],
+        [
+          496,
+          510
+        ],
+        [
+          31841,
+          31842
+        ],
+        [
+          32304,
+          32305
+        ],
+        [
+          32306,
+          32307
+        ],
+        [
+          32309,
+          32310
+        ],
+        [
+          32321,
+          32325
+        ],
+        [
+          32672,
+          32673
+        ]
+      ],
+      "bank_visits": [],
+      "output": "APERR=$D4\r\n",
+      "case_type": "manager",
+      "name": "reject-before-shadow-3000"
+    },
+    {
+      "entry": "HIM_AP_SERVICE",
+      "result": "return",
+      "a": 218,
+      "x": 139,
+      "y": 7,
+      "carry": false,
+      "ap_status": 218,
+      "manager_status": 218,
+      "stack_peak_bytes_including_entry": 12,
+      "steps": 412209,
+      "writes": [
+        [
+          209,
+          213
+        ],
+        [
+          242,
+          243
+        ],
+        [
+          250,
+          252
+        ],
+        [
+          254,
+          256
+        ],
+        [
+          500,
+          510
+        ],
+        [
+          512,
+          551
+        ],
+        [
+          768,
+          822
+        ],
+        [
+          2560,
+          6912
+        ],
+        [
+          31841,
+          31842
+        ],
+        [
+          32291,
+          32293
+        ],
+        [
+          32303,
+          32307
+        ],
+        [
+          32309,
+          32317
+        ],
+        [
+          32319,
+          32325
+        ],
+        [
+          32362,
+          32363
+        ],
+        [
+          32672,
+          32673
+        ],
+        [
+          32748,
+          32749
+        ]
+      ],
+      "changed": [
+        [
+          209,
+          213
+        ],
+        [
+          242,
+          243
+        ],
+        [
+          250,
+          252
+        ],
+        [
+          254,
+          256
+        ],
+        [
+          500,
+          510
+        ],
+        [
+          512,
+          547
+        ],
+        [
+          548,
+          551
+        ],
+        [
+          768,
+          822
+        ],
+        [
+          2560,
+          6765
+        ],
+        [
+          6766,
+          6912
+        ],
+        [
+          31841,
+          31842
+        ],
+        [
+          32303,
+          32305
+        ],
+        [
+          32306,
+          32307
+        ],
+        [
+          32309,
+          32310
+        ],
+        [
+          32321,
+          32325
+        ],
+        [
+          32362,
+          32363
+        ],
+        [
+          32672,
+          32673
+        ]
+      ],
+      "bank_visits": [
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3
+      ],
+      "output": "APMAN NF\r\n",
+      "case_type": "manager",
+      "name": "absent-manager"
+    },
+    {
+      "entry": "HIM_AP_SERVICE",
+      "result": "return",
+      "a": 218,
+      "x": 139,
+      "y": 7,
+      "carry": false,
+      "ap_status": 218,
+      "manager_status": 218,
+      "stack_peak_bytes_including_entry": 12,
+      "steps": 813129,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          199,
+          203
+        ],
+        [
+          207,
+          213
+        ],
+        [
+          230,
+          235
+        ],
+        [
+          242,
+          243
+        ],
+        [
+          250,
+          256
+        ],
+        [
+          500,
+          510
+        ],
+        [
+          512,
+          551
+        ],
+        [
+          768,
+          822
+        ],
+        [
+          2560,
+          6912
+        ],
+        [
+          31841,
+          31842
+        ],
+        [
+          32291,
+          32293
+        ],
+        [
+          32303,
+          32307
+        ],
+        [
+          32309,
+          32317
+        ],
+        [
+          32319,
+          32325
+        ],
+        [
+          32362,
+          32363
+        ],
+        [
+          32440,
+          32442
+        ],
+        [
+          32672,
+          32673
+        ],
+        [
+          32748,
+          32749
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          199,
+          203
+        ],
+        [
+          207,
+          213
+        ],
+        [
+          230,
+          235
+        ],
+        [
+          242,
+          243
+        ],
+        [
+          250,
+          256
+        ],
+        [
+          500,
+          510
+        ],
+        [
+          512,
+          547
+        ],
+        [
+          548,
+          551
+        ],
+        [
+          768,
+          822
+        ],
+        [
+          2560,
+          6765
+        ],
+        [
+          6766,
+          6912
+        ],
+        [
+          31841,
+          31842
+        ],
+        [
+          32303,
+          32305
+        ],
+        [
+          32306,
+          32307
+        ],
+        [
+          32309,
+          32310
+        ],
+        [
+          32321,
+          32325
+        ],
+        [
+          32362,
+          32363
+        ],
+        [
+          32440,
+          32442
+        ],
+        [
+          32672,
+          32673
+        ]
+      ],
+      "bank_visits": [
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        2,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        1,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        3
+      ],
+      "output": "APMAN NF\r\n",
+      "case_type": "manager",
+      "name": "corrupt-manager"
+    }
+  ]
+}
