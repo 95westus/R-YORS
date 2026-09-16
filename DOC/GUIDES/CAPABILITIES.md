@@ -1,25 +1,28 @@
 # Current Capability Matrix
 
 This is the short authority for the supported STR8-N, HIMON, and ASM-F2 command
-surfaces. The latest COM4 observation, after the ASM-F2 size qualification
-and installation on 2026-09-15, is:
+surfaces. The latest COM4 workbench installation, after the resident AP
+range-check reduction on 2026-09-16, is:
 
 ```text
 STR8-N 1.34
-HIMON   00.0915(2233)
-ASM-F2  00.0915(2243) in Bank-3 sectors 8-B
+HIMON   00.0915(2324) in Bank-3 sectors C-E
+ASM-F2  00.0915(2324) in Bank-3 sectors 8-B
 ```
 
-The [qualification record](LOGS/ASMF2_SIZE_2026-09-15.md) identifies the exact
-installed image and checks. The capability tables below describe supported
-components; their commands require those components and any named carriers
-to be installed. ASM-F2 replaced the Bank-3 WDCMONV2 copy. Bank 0-2 carriers
-were not requalified in this run.
+The [range-size record](LOGS/HIMON_AP_RANGE_SIZE_2026-09-16.md) identifies the
+exact installed image: HIMON is 11,848 bytes with 440 bytes free. Host gates,
+exact four-bank readback, affected board workflows and physical-reset
+qualification pass for this slice. APMAN at B2:8 retains its 3,031-byte
+BODY and 41-byte overlay reserve; APTEST remains at B2:9. The preceding
+[manager qualification](LOGS/APMAN_SIZE_2026-09-16.md) records its physical-reset
+proof. The capability tables require the named components and carriers to be
+installed. ASM-F2 occupies the former Bank-3 WDCMONV2 region.
 
 The published local release ZIPs contain HIMON and ASM-F2 `00.0915(2324)`.
-Their combined 8-E stream passes the complete host regression and differs
-from the reset-qualified board image only in nine timestamp bytes. It has
-not been reflashed. See [release packages](../../RELEASE/README.md),
+Those published artifacts are separate from this later workbench qualification;
+the same visible stamp does not imply byte identity. No release was published
+for this range-check slice. See [release packages](../../RELEASE/README.md),
 [qualification](../../RELEASE/QUALIFICATION.json), and the
 [application catalog](RELEASE_APPLICATIONS.md) for distribution contents and
 the distinction between firmware proof and optional application proof.

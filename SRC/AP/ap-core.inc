@@ -780,12 +780,10 @@ HIM_AP_SOURCE_BASE_GE_20:
                         CMP             #HIM_AP_SOURCE_LIMIT_HI
                         BCC             HIM_AP_SOURCE_BASE_GOOD
                         CMP             #HIM_AP_FLASH_BASE_HI
-                        BCS             HIM_AP_SOURCE_BASE_GE_80
-                        JMP             HIM_AP_BAD_RANGE
+                        BCC             HIM_AP_SOURCE_BASE_BAD
 HIM_AP_SOURCE_BASE_GE_80:
                         CMP             #HIM_AP_FLASH_LIMIT_HI
-                        BCC             HIM_AP_SOURCE_BASE_GOOD
-                        JMP             HIM_AP_BAD_RANGE
+                        BCS             HIM_AP_SOURCE_BASE_BAD
 HIM_AP_SOURCE_BASE_GOOD:
                         SEC
                         RTS
@@ -793,13 +791,11 @@ HIM_AP_SOURCE_BASE_GOOD:
 HIM_AP_LOAD_RANGE_OK:
                         LDA             HIM_AP_BODY_LEN_LO
                         ORA             HIM_AP_BODY_LEN_HI
-                        BNE             HIM_AP_LOAD_LEN_NONZERO
-                        JMP             HIM_AP_BAD_RANGE
+                        BEQ             HIM_AP_LOAD_BASE_BAD
 HIM_AP_LOAD_LEN_NONZERO:
                         LDA             HIM_AP_DST_HI
                         CMP             #HIM_AP_RAM_BASE_HI
-                        BCS             HIM_AP_LOAD_BASE_GE_20
-                        JMP             HIM_AP_BAD_RANGE
+                        BCC             HIM_AP_LOAD_BASE_BAD
 HIM_AP_LOAD_BASE_GE_20:
                         LDX             HIM_AP_OP
                         CPX             #HIM_AP_OP_TAKEOVER
@@ -830,8 +826,7 @@ HIM_AP_LOAD_BASE_LT_50:
                         STA             HIM_AP_TMP2_LO
                         LDA             HIM_AP_DST_HI
                         ADC             HIM_AP_TMP_HI
-                        BCC             HIM_AP_LOAD_LAST_NO_CARRY
-                        JMP             HIM_AP_BAD_RANGE
+                        BCS             HIM_AP_LOAD_BASE_BAD
 HIM_AP_LOAD_LAST_NO_CARRY:
                         STA             HIM_AP_TMP2_HI
                         LDX             HIM_AP_OP
@@ -843,15 +838,14 @@ HIM_AP_LOAD_LAST_NO_CARRY:
                         BCS             HIM_AP_LOAD_TOOL_LAST
                         CMP             #HIM_AP_LOAD_LIMIT_HI
                         BCC             HIM_AP_LOAD_RANGE_GOOD
-                        JMP             HIM_AP_BAD_RANGE
+                        BRA             HIM_AP_LOAD_BASE_BAD
 HIM_AP_LOAD_TOOL_LAST:
                         CMP             #HIM_AP_TOOL_LIMIT_HI
                         BCC             HIM_AP_LOAD_RANGE_GOOD
-                        JMP             HIM_AP_BAD_RANGE
+                        BRA             HIM_AP_LOAD_BASE_BAD
 HIM_AP_LOAD_TAKEOVER_LAST:
                         CMP             #HIM_AP_TAKEOVER_LIMIT_HI
-                        BCC             HIM_AP_LOAD_RANGE_GOOD
-                        JMP             HIM_AP_BAD_RANGE
+                        BCS             HIM_AP_LOAD_BASE_BAD
 HIM_AP_LOAD_RANGE_GOOD:
                         SEC
                         RTS

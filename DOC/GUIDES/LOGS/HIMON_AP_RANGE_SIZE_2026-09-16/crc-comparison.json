@@ -1,0 +1,166 @@
+{
+  "result": "PASS",
+  "basis": "B0-B2 fresh backup and B3 post-install readback compared to live BANKAUDIT",
+  "checks": [
+    {
+      "bank": 0,
+      "sector": "8",
+      "crc": "5579"
+    },
+    {
+      "bank": 0,
+      "sector": "9",
+      "crc": "D507"
+    },
+    {
+      "bank": 0,
+      "sector": "A",
+      "crc": "ACD0"
+    },
+    {
+      "bank": 0,
+      "sector": "B",
+      "crc": "EFDF"
+    },
+    {
+      "bank": 0,
+      "sector": "C",
+      "crc": "EFDF"
+    },
+    {
+      "bank": 0,
+      "sector": "D",
+      "crc": "EFDF"
+    },
+    {
+      "bank": 0,
+      "sector": "E",
+      "crc": "EFDF"
+    },
+    {
+      "bank": 0,
+      "sector": "F",
+      "crc": "D007"
+    },
+    {
+      "bank": 1,
+      "sector": "8",
+      "crc": "FA1C"
+    },
+    {
+      "bank": 1,
+      "sector": "9",
+      "crc": "7EED"
+    },
+    {
+      "bank": 1,
+      "sector": "A",
+      "crc": "0FE1"
+    },
+    {
+      "bank": 1,
+      "sector": "B",
+      "crc": "0FE1"
+    },
+    {
+      "bank": 1,
+      "sector": "C",
+      "crc": "0FE1"
+    },
+    {
+      "bank": 1,
+      "sector": "D",
+      "crc": "0FE1"
+    },
+    {
+      "bank": 1,
+      "sector": "E",
+      "crc": "0FE1"
+    },
+    {
+      "bank": 1,
+      "sector": "F",
+      "crc": "2619"
+    },
+    {
+      "bank": 2,
+      "sector": "8",
+      "crc": "AFA4"
+    },
+    {
+      "bank": 2,
+      "sector": "9",
+      "crc": "5606"
+    },
+    {
+      "bank": 2,
+      "sector": "A",
+      "crc": "0FE1"
+    },
+    {
+      "bank": 2,
+      "sector": "B",
+      "crc": "0FE1"
+    },
+    {
+      "bank": 2,
+      "sector": "C",
+      "crc": "0FE1"
+    },
+    {
+      "bank": 2,
+      "sector": "D",
+      "crc": "0FE1"
+    },
+    {
+      "bank": 2,
+      "sector": "E",
+      "crc": "0FE1"
+    },
+    {
+      "bank": 2,
+      "sector": "F",
+      "crc": "0FE1"
+    },
+    {
+      "bank": 3,
+      "sector": "8",
+      "crc": "1C8B"
+    },
+    {
+      "bank": 3,
+      "sector": "9",
+      "crc": "07C0"
+    },
+    {
+      "bank": 3,
+      "sector": "A",
+      "crc": "A4B7"
+    },
+    {
+      "bank": 3,
+      "sector": "B",
+      "crc": "A9ED"
+    },
+    {
+      "bank": 3,
+      "sector": "C",
+      "crc": "403E"
+    },
+    {
+      "bank": 3,
+      "sector": "D",
+      "crc": "B470"
+    },
+    {
+      "bank": 3,
+      "sector": "E",
+      "crc": "14CF"
+    },
+    {
+      "bank": 3,
+      "sector": "F",
+      "crc": "32F0"
+    }
+  ]
+}

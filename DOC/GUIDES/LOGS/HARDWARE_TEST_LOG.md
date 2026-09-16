@@ -26682,3 +26682,25 @@ manager/fixture discovery, APTEST execution, and fresh ASM A=$AC/C=1. COM4
 closed at the HIMON prompt. LED visual acceptance and NMI remain separate.
 See [the qualification record](APMAN_SIZE_2026-09-16.md) and its
 [hashed evidence](APMAN_SIZE_2026-09-16/manifest.json). No release was published.
+
+
+## 2026-09-16 Resident AP Range-Check Reduction And Reset Proof
+
+The resident source/destination predicates save 20 bytes: HIMON is 11,848
+bytes, end `$EE48` exclusive, with 440 bytes free. ASM and APMAN artifacts
+remain exact; APMAN retains 41 overlay bytes. Full firmware regression,
+30,966 linked range comparisons, and nine packaging identity checks pass.
+
+STR8-N I replaced only B3:C-E on COM4. Twenty-one board workflow cases,
+physical RESET (`RST H`, STR8-N 1.34, warm HIMON), post-reset fresh ASM/APTEST,
+and final four-bank readback pass. Banks 0-2 and B3:8-B are byte-identical to
+the fresh backup. Outside C-E, only D3 journal `$FFED` changed `$FC->$F0`.
+All 32 live sector CRCs match independent final-readback CRCs. The 128K image
+SHA-256 is `91a61597d9f5b239971169047876918091841468ffe654fe3cb8ed8a1d0200c3`.
+
+COM4 closed at HIMON in Bank 3. The initial packaging size assertion, protected
+redzone uploader, and expired reset listener are documented with their
+successful reruns; no earlier transcripts were changed. See the
+[qualification record](HIMON_AP_RANGE_SIZE_2026-09-16.md) and
+[hashed evidence](HIMON_AP_RANGE_SIZE_2026-09-16/manifest.json).
+No release was published. Visual LED acceptance and NMI remain separate.

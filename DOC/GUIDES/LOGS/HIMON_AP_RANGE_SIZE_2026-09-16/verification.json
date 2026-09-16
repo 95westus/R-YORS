@@ -1,0 +1,284 @@
+{
+  "result": "PASS",
+  "himon_bytes": 11848,
+  "himon_headroom": 440,
+  "saving": 20,
+  "unchanged_asm_bytes": 15235,
+  "unchanged_apman_body_bytes": 3031,
+  "range_comparisons": 30966,
+  "board_cases": [
+    "load-1-4FFF-1 exact status/BODY/redzones",
+    "load-1-4FFF-2 exact status/BODY/redzones",
+    "load-1-5000-1 exact status/BODY/redzones",
+    "load-1-7000-1 exact status/BODY/redzones",
+    "load-1-7BFF-1 exact status/BODY/redzones",
+    "load-1-7BFF-2 exact status/BODY/redzones",
+    "load-5-5000-4 exact status/BODY/redzones",
+    "load-5-6FFF-1 exact status/BODY/redzones",
+    "load-5-6FFF-2 exact status/BODY/redzones",
+    "load-5-7000-1 exact status/BODY/redzones",
+    "source-0A00 parser source boundary",
+    "source-1900 parser source boundary",
+    "source-3000 parser source boundary",
+    "source-1A00 parser source boundary",
+    "source-5000 parser source boundary",
+    "source-7FFF parser source boundary",
+    "source-FF00 parser source boundary",
+    "persistent manager/flash-source/typed imports/BANKAUDIT",
+    "fresh ASM execution and persistent APTEST",
+    "software W recovery/ASM/APTEST",
+    "software C recovery/ASM/APTEST"
+  ],
+  "physical_reset": {
+    "result": "PASS",
+    "checks": [
+      "RST H/STR8/HIMON recovery",
+      "resume cleared",
+      "fresh ASM and persistent APTEST",
+      "exact Bank 3 readback"
+    ]
+  },
+  "sectors": [
+    {
+      "bank": 0,
+      "sector": "8",
+      "changed": false,
+      "before_crc": "5579",
+      "after_crc": "5579"
+    },
+    {
+      "bank": 0,
+      "sector": "9",
+      "changed": false,
+      "before_crc": "D507",
+      "after_crc": "D507"
+    },
+    {
+      "bank": 0,
+      "sector": "A",
+      "changed": false,
+      "before_crc": "ACD0",
+      "after_crc": "ACD0"
+    },
+    {
+      "bank": 0,
+      "sector": "B",
+      "changed": false,
+      "before_crc": "EFDF",
+      "after_crc": "EFDF"
+    },
+    {
+      "bank": 0,
+      "sector": "C",
+      "changed": false,
+      "before_crc": "EFDF",
+      "after_crc": "EFDF"
+    },
+    {
+      "bank": 0,
+      "sector": "D",
+      "changed": false,
+      "before_crc": "EFDF",
+      "after_crc": "EFDF"
+    },
+    {
+      "bank": 0,
+      "sector": "E",
+      "changed": false,
+      "before_crc": "EFDF",
+      "after_crc": "EFDF"
+    },
+    {
+      "bank": 0,
+      "sector": "F",
+      "changed": false,
+      "before_crc": "D007",
+      "after_crc": "D007"
+    },
+    {
+      "bank": 1,
+      "sector": "8",
+      "changed": false,
+      "before_crc": "FA1C",
+      "after_crc": "FA1C"
+    },
+    {
+      "bank": 1,
+      "sector": "9",
+      "changed": false,
+      "before_crc": "7EED",
+      "after_crc": "7EED"
+    },
+    {
+      "bank": 1,
+      "sector": "A",
+      "changed": false,
+      "before_crc": "0FE1",
+      "after_crc": "0FE1"
+    },
+    {
+      "bank": 1,
+      "sector": "B",
+      "changed": false,
+      "before_crc": "0FE1",
+      "after_crc": "0FE1"
+    },
+    {
+      "bank": 1,
+      "sector": "C",
+      "changed": false,
+      "before_crc": "0FE1",
+      "after_crc": "0FE1"
+    },
+    {
+      "bank": 1,
+      "sector": "D",
+      "changed": false,
+      "before_crc": "0FE1",
+      "after_crc": "0FE1"
+    },
+    {
+      "bank": 1,
+      "sector": "E",
+      "changed": false,
+      "before_crc": "0FE1",
+      "after_crc": "0FE1"
+    },
+    {
+      "bank": 1,
+      "sector": "F",
+      "changed": false,
+      "before_crc": "2619",
+      "after_crc": "2619"
+    },
+    {
+      "bank": 2,
+      "sector": "8",
+      "changed": false,
+      "before_crc": "AFA4",
+      "after_crc": "AFA4"
+    },
+    {
+      "bank": 2,
+      "sector": "9",
+      "changed": false,
+      "before_crc": "5606",
+      "after_crc": "5606"
+    },
+    {
+      "bank": 2,
+      "sector": "A",
+      "changed": false,
+      "before_crc": "0FE1",
+      "after_crc": "0FE1"
+    },
+    {
+      "bank": 2,
+      "sector": "B",
+      "changed": false,
+      "before_crc": "0FE1",
+      "after_crc": "0FE1"
+    },
+    {
+      "bank": 2,
+      "sector": "C",
+      "changed": false,
+      "before_crc": "0FE1",
+      "after_crc": "0FE1"
+    },
+    {
+      "bank": 2,
+      "sector": "D",
+      "changed": false,
+      "before_crc": "0FE1",
+      "after_crc": "0FE1"
+    },
+    {
+      "bank": 2,
+      "sector": "E",
+      "changed": false,
+      "before_crc": "0FE1",
+      "after_crc": "0FE1"
+    },
+    {
+      "bank": 2,
+      "sector": "F",
+      "changed": false,
+      "before_crc": "0FE1",
+      "after_crc": "0FE1"
+    },
+    {
+      "bank": 3,
+      "sector": "8",
+      "changed": false,
+      "before_crc": "1C8B",
+      "after_crc": "1C8B"
+    },
+    {
+      "bank": 3,
+      "sector": "9",
+      "changed": false,
+      "before_crc": "07C0",
+      "after_crc": "07C0"
+    },
+    {
+      "bank": 3,
+      "sector": "A",
+      "changed": false,
+      "before_crc": "A4B7",
+      "after_crc": "A4B7"
+    },
+    {
+      "bank": 3,
+      "sector": "B",
+      "changed": false,
+      "before_crc": "A9ED",
+      "after_crc": "A9ED"
+    },
+    {
+      "bank": 3,
+      "sector": "C",
+      "changed": true,
+      "before_crc": "776F",
+      "after_crc": "403E"
+    },
+    {
+      "bank": 3,
+      "sector": "D",
+      "changed": true,
+      "before_crc": "53E3",
+      "after_crc": "B470"
+    },
+    {
+      "bank": 3,
+      "sector": "E",
+      "changed": true,
+      "before_crc": "7C78",
+      "after_crc": "14CF"
+    },
+    {
+      "bank": 3,
+      "sector": "F",
+      "changed": true,
+      "before_crc": "EAD1",
+      "after_crc": "32F0"
+    }
+  ],
+  "installation": {
+    "result": "PASS",
+    "before_sha256": "39718b56169da58f52443e537efff0f4c59a7c0822581c9138d1dd36109bd614",
+    "after_sha256": "dd6da38d7c982c4ccda15727b4eff516c2285412913bfd7f5144e6493b2e720e",
+    "journal_changes": [
+      65517
+    ],
+    "payload_sha256": "0072e698b5edc79c9ecff1eaadb11ca2558f839dc06a1e7871aa3d9bd22fb717"
+  },
+  "final_flash_sha256": "91a61597d9f5b239971169047876918091841468ffe654fe3cb8ed8a1d0200c3",
+  "final_bank_sha256": [
+    "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8",
+    "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211",
+    "0b67c0fc66568f8903927d4014069a306a8ea8838fc557991813828bbe01a13c",
+    "dd6da38d7c982c4ccda15727b4eff516c2285412913bfd7f5144e6493b2e720e"
+  ],
+  "state": "HIMON prompt in Bank 3; COM4 closed; no release published"
+}

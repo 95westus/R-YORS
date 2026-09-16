@@ -440,6 +440,14 @@ run.
 
 ## Current Accepted Baseline
 
+The resident AP range-check reduction has a focused
+[size and board card](../AP/HIMON_AP_RANGE_SIZE_REDUCTION_2026-09-16.md).
+Its maintained host sweep checks both destination policies and source-base
+windows from linked instructions; optional baseline comparison also checks
+registers, scratch and ordered writes. Board qualification requires exact
+HIMON C-E installation/readback, boundary redzones, manager/import and fresh
+ASM smoke, recovery, and preservation of the remaining flash image.
+
 The capability matrix identifies the live release and board-accepted surface.
 Baseline changes belong there first; this plan deliberately does not duplicate
 the version and status narrative.

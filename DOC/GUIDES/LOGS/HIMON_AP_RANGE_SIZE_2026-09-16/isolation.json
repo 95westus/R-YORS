@@ -1,0 +1,9 @@
+{
+  "result": "PASS",
+  "preserved_banks": [
+    0,
+    1,
+    2
+  ],
+  "bank3_sha256": "dd6da38d7c982c4ccda15727b4eff516c2285412913bfd7f5144e6493b2e720e"
+}

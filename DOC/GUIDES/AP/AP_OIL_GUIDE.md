@@ -71,13 +71,18 @@ applies to `AP`, `AP L`, `AP D`, and `APS`; it adds no delay. HIMON's next
 console output or input wait replaces it with the normal activity/wait status,
 and a launched application remains free to take ownership of Port A. Hardware
 load/inspect/run paths and physical-reset recovery have passed on COM4;
-operator-observed LED values are still pending. The latest
+operator-observed LED values are still pending. The manager's
 [size qualification](../LOGS/APMAN_SIZE_2026-09-16.md) identifies the workbench
 image after the initial [Bank-2 setup](../LOGS/HIMON_AP_BANK2_2026-09-16.md).
 Shared INSTALL facts and carrier formatting reduce APMAN's BODY to `$0BD7`
 (3,031 bytes), leaving 41 bytes below `$7C00`; its envelope is `$0C05`.
 Commands, resident images, RAM allocation, and the one-sector carrier model
 are unchanged. This workbench qualification does not update published ZIPs.
+
+The subsequent [resident range-check reduction](HIMON_AP_RANGE_SIZE_REDUCTION_2026-09-16.md)
+saves 20 HIMON bytes, leaving 440 bytes below `$F000`. It preserves the same
+AP address policies, RAM allocation, ASM image and APMAN carrier; the manager's
+41-byte overlay reserve is unchanged.
 
 The exact syntax and limits are maintained in the
 [ASM User Guide](../ASM/ASM_USER_GUIDE.md). Safe address choices are in

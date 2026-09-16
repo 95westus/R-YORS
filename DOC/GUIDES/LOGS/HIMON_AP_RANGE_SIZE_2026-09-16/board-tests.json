@@ -1,0 +1,26 @@
+{
+  "result": "PASS",
+  "cases": [
+    "load-1-4FFF-1 exact status/BODY/redzones",
+    "load-1-4FFF-2 exact status/BODY/redzones",
+    "load-1-5000-1 exact status/BODY/redzones",
+    "load-1-7000-1 exact status/BODY/redzones",
+    "load-1-7BFF-1 exact status/BODY/redzones",
+    "load-1-7BFF-2 exact status/BODY/redzones",
+    "load-5-5000-4 exact status/BODY/redzones",
+    "load-5-6FFF-1 exact status/BODY/redzones",
+    "load-5-6FFF-2 exact status/BODY/redzones",
+    "load-5-7000-1 exact status/BODY/redzones",
+    "source-0A00 parser source boundary",
+    "source-1900 parser source boundary",
+    "source-3000 parser source boundary",
+    "source-1A00 parser source boundary",
+    "source-5000 parser source boundary",
+    "source-7FFF parser source boundary",
+    "source-FF00 parser source boundary",
+    "persistent manager/flash-source/typed imports/BANKAUDIT",
+    "fresh ASM execution and persistent APTEST",
+    "software W recovery/ASM/APTEST",
+    "software C recovery/ASM/APTEST"
+  ]
+}

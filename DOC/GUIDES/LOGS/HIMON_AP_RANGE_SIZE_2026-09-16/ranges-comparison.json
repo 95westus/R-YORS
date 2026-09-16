@@ -1,0 +1,33 @@
+{
+  "result": "PASS",
+  "cases": {
+    "destination": 30710,
+    "source_base": 256
+  },
+  "inputs": {
+    ".s19": "9a16d3f909f4ed941ca382709987fcd927f381e2c246c1b34917b806119d1d01",
+    ".map": "b9ca1df8e3bb91b2e0c2e49379d1544d4eaa192627dff6366ce200108968cd8e"
+  },
+  "tool_sha256": "2f2d3cb58e873e3bcd97e82e5ce261f630e43e91e60c54481bb4235c833e8cad",
+  "baseline_inputs": {
+    ".s19": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+    ".map": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49"
+  },
+  "compared": "A/X/Y/P/SP, AP scratch bytes and ordered writes",
+  "cycle_delta": [
+    -5,
+    1
+  ],
+  "sizes": {
+    "HIM_AP_SOURCE_BASE_OK": {
+      "before": 38,
+      "after": 32,
+      "saving": 6
+    },
+    "HIM_AP_LOAD_RANGE_OK": {
+      "before": 130,
+      "after": 116,
+      "saving": 14
+    }
+  }
+}

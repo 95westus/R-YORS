@@ -729,14 +729,17 @@ release-files: $(PUBLISH_RELEASE_TOOL) tools/package_component_releases.py tools
 asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show microchess asm-ap-v2-check asm-error-check asm-size-check himon-size-check himon-ap-contract-check
 	@echo "ASM v1 smoke checks passed."
 
-.PHONY: himon-ap-contract-check himon-ap-boundary-check apman-size-check
+.PHONY: himon-ap-contract-check himon-ap-boundary-check himon-ap-range-check apman-size-check
+himon-ap-range-check: $(HIMON_ROM_S19) tools/check_himon_ap_ranges.py
+	$(PYTHON) -B tools/check_himon_ap_ranges.py --output "$(BUILD_DIR)/tmp/himon-ap-ranges.json"
+
 apman-size-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN) tools/check_apman_size.py
 	$(PYTHON) -B tools/check_apman_size.py --output "$(BUILD_DIR)/tmp/apman-size.json"
 
 himon-ap-boundary-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
 	$(PYTHON) -B tools/check_himon_ap_boundary.py --output "$(BUILD_DIR)/tmp/himon-ap-boundary.json"
 
-himon-ap-contract-check: himon-ap-boundary-check apman-size-check $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
+himon-ap-contract-check: himon-ap-boundary-check himon-ap-range-check apman-size-check $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
 	$(PYTHON) -B tools/check_himon_ap_contracts.py --output "$(BUILD_DIR)/tmp/himon-ap-contracts.json"
 
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(ASM_V1_FLASH_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)

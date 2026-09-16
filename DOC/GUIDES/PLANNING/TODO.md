@@ -34,6 +34,17 @@ size measurement, and required hardware proof are complete.
   four-bank readback, and physical-reset rediscovery/fresh ASM all pass. See
   [size qualification](../AP/APMAN_SIZE_REDUCTION_2026-09-16.md).
 
+### Accepted: resident AP range-check size reduction
+
+- [x] Complete physical-reset and final isolation qualification of the 20-byte
+  resident reduction. HIMON ends at `$EE48`, with 440 bytes free; ASM and APMAN
+  are byte-identical to the preceding build. The 30,966 linked range comparisons,
+  full firmware regression, packaging identity checks, C-E install/readback,
+  21 board workflow cases and 32 sector CRC comparisons pass. Physical RESET,
+  post-reset fresh ASM/APTEST, and final four-bank readback also pass; only
+  HIMON C-E and the expected D3 journal byte changed. See the
+  [qualification record](../LOGS/HIMON_AP_RANGE_SIZE_2026-09-16.md).
+
 ### Candidate: APMAN bank/sector LED activity
 
 - [ ] Accept APMAN's banked-media activity display on hardware. The common

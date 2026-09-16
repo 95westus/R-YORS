@@ -1,0 +1,12 @@
+{
+  "result": "PASS",
+  "cases": {
+    "destination": 30710,
+    "source_base": 256
+  },
+  "inputs": {
+    ".s19": "9a16d3f909f4ed941ca382709987fcd927f381e2c246c1b34917b806119d1d01",
+    ".map": "b9ca1df8e3bb91b2e0c2e49379d1544d4eaa192627dff6366ce200108968cd8e"
+  },
+  "tool_sha256": "2f2d3cb58e873e3bcd97e82e5ce261f630e43e91e60c54481bb4235c833e8cad"
+}
