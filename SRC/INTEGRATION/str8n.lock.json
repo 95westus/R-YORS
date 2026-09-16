@@ -1,17 +1,17 @@
 {
   "schema": 1,
   "project": "STR8-N",
-  "version": "1.33",
+  "version": "1.34",
   "repository": "https://github.com/95westus/STR8-N.git",
   "manifestSchema": 3,
   "artifacts": {
-    "topSectorSha256": "C9DA23B8ADFE78A401DD7CE5865F52B6E0F9A884BB17A6413678CEF63822BEF3",
-    "publicContractSha256": "599CBC6E5EBF7C68DD7680FDB298C4F12A967A084D4188B00631EDC47317CEFF"
+    "topSectorSha256": "9538D97854BA9D5D76143CBA0FEDB3B2E7CE18F977CE89557406E63404026CB7",
+    "publicContractSha256": "947F8D096EBE42CE07C072E179B618115341E390D0975131B6204D863C95E4DD"
   },
   "layout": {
     "residentStart": "F000",
-    "residentEnd": "FD41",
-    "unusedMargin": 14,
+    "residentEnd": "FCF1",
+    "unusedMargin": 134,
     "directoryStart": "FFB0",
     "directoryEnd": "FFEF",
     "configurationStart": "FFF0",
@@ -43,7 +43,7 @@
     "bankNone": 255,
     "bankSelectService": "F010",
     "selectorEntry": "0203",
-    "selectorEnd": "0228",
+    "selectorEnd": "0226",
     "recordService": "F009",
     "recordVersion": 2,
     "recordCapabilities": 3,
