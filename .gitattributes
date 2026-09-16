@@ -4,3 +4,17 @@
 # Firmware/programmer images must remain byte-for-byte exact.
 *.bin binary
 *.BIN binary
+
+# Release checksums cover exact bytes on every checkout platform.
+RELEASE/*.zip binary
+RELEASE/README.md -text whitespace=cr-at-eol
+RELEASE/SHA256SUMS.txt -text whitespace=cr-at-eol
+RELEASE/QUALIFICATION.json -text whitespace=cr-at-eol
+RELEASE/component-release-manifest.json -text whitespace=cr-at-eol
+RELEASE/release-index.json -text whitespace=cr-at-eol
+RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19 -text whitespace=cr-at-eol
+
+# Preserve the original bytes referenced by the new hardware proof hashes.
+DOC/GUIDES/LOGS/ASMF2_SIZE_2026-09-15.jsonl -text whitespace=cr-at-eol
+DOC/GUIDES/LOGS/HIMON_SIZE_2026-09-15.jsonl -text whitespace=cr-at-eol
+DOC/GUIDES/LOGS/HIMON_RESTAMP_2026-09-15.jsonl -text whitespace=cr-at-eol
