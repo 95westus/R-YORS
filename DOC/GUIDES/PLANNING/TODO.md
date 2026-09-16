@@ -45,6 +45,16 @@ size measurement, and required hardware proof are complete.
   HIMON C-E and the expected D3 journal byte changed. See the
   [qualification record](../LOGS/HIMON_AP_RANGE_SIZE_2026-09-16.md).
 
+### Accepted: resident AP parser initialization reduction
+
+- [x] Qualify the ten-byte indexed-clear reduction. HIMON ends at `$EE3E`,
+  with 450 bytes free. The linked comparison passes 1,024 clear/guard cases
+  and 153 parser cases; the extra 37 cycles cost 4.625 microseconds at 8 MHz.
+  Early-error X remains ABI-volatile. Full host regression, installation
+  readback and 30 board cases pass. Physical RESET, post-reset ASM/APTEST,
+  final four-bank readback and all 32 sector CRC comparisons also pass. See the
+  [size card](../AP/HIMON_AP_INIT_SIZE_REDUCTION_2026-09-16.md).
+
 ### Candidate: APMAN bank/sector LED activity
 
 - [ ] Accept APMAN's banked-media activity display on hardware. The common

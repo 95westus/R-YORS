@@ -1,0 +1,29 @@
+{
+  "result": "PASS",
+  "regression_command": "make -C SRC HIMON_VISIBLE_STAMP=0915(2324) asm-test himon-banked-ap-check himon-str8-record-check himon-io-led-check board-s19-check himon-rom-bin",
+  "regression_log_sha256": "691fdf96e4f520ec689e9ae31f8a0ecebd0b7dea71a53a00d7d0409e764ff3d9",
+  "install_sha256": "913cc42d451f5ad95432a280f167d379106dc23da23ab9f85fcd76fe7c295ed0",
+  "measurements": [
+    {
+      "image": "himon-c000",
+      "saving": 10,
+      "before_end": 61000,
+      "after_end": 60990
+    },
+    {
+      "image": "himon-rom-c000",
+      "saving": 10,
+      "before_end": 61000,
+      "after_end": 60990
+    }
+  ],
+  "unchanged": {
+    "s19/asm-v1-flash-8000.s19": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5",
+    "s19/asm-v1-flash-8000.map": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e",
+    "s19/apman-7000.s19": "85497d68a187c711343c7c73067cbe6ea254173305c93991b5903573a7cf54fc",
+    "s19/apman-7000.map": "61e40b9bece99f083637ff65a601207716adc00b217c27c24a63f2604e42ce3f",
+    "bin/apman-v1.ap": "c53f820a05b0b7cd5921518f97beebb12a3f2c247d2526dfa2ac0ca91be0555e",
+    "bin/apman-v1-bank2-8000.bin": "1fed29fe2236e8c2e8aaba574d5dc452f8885efac75060c33a4eb02c8edc779b",
+    "s19/apman-v1-bank2-8000.s19": "8863906bb030e7b1ddeb493b0d92f93a026c19f0005583b572b14cc71da7fd2c"
+  }
+}

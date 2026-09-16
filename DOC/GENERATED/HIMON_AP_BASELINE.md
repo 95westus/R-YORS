@@ -7,7 +7,7 @@ linked symbols reconciled against every emitted S19 byte. No image has holes.
 
 | Image | Emitted range | Bytes | Contiguous headroom |
 | --- | --- | ---: | ---: |
-| himon-rom-c000 | `$C000-$EE47` | 11,848 | 440 |
+| himon-rom-c000 | `$C000-$EE3D` | 11,838 | 450 |
 | asm-v1-flash-8000 | `$8000-$BB82` | 15,235 | 1,149 |
 | apman-7000 | `$7000-$7BD6` | 3,031 | 41 |
 
@@ -26,26 +26,26 @@ monitor/debug/S19 logic, metadata and remaining tables/strings.
 | ap | AP/APS command adapters and FNV records | `$C3CB-$C47E` | 180 |
 | ap | Manager discovery/bootstrap and bank staging | `$D407-$D537` | 305 |
 | ap | Service dispatch and load orchestration | `$D538-$D615` | 222 |
-| ap | Package parsing, validation and source bounds | `$D616-$DACE` | 1,209 |
-| ap | Destination bounds, copy and internal relocation | `$DACF-$DCCF` | 513 |
-| ap | Typed import orchestration and signed addend | `$DCD0-$DD8E` | 191 |
-| ap | HIMON-owned typed-import provider (AP functional subtotal) | `$DD8F-$DDD5` | 71 |
-| ap | Import row walking and relocation patching | `$DDD6-$DE75` | 160 |
-| ap | Hole suggestion and shared AP error exits | `$DE76-$DF0C` | 151 |
-| ap | AP usage and manager-not-found strings | `$EB6D-$EB9C` | 48 |
-| ap | AP error prefix | `$EBAD-$EBB3` | 7 |
+| ap | Package parsing, validation and source bounds | `$D616-$DAC4` | 1,199 |
+| ap | Destination bounds, copy and internal relocation | `$DAC5-$DCC5` | 513 |
+| ap | Typed import orchestration and signed addend | `$DCC6-$DD84` | 191 |
+| ap | HIMON-owned typed-import provider (AP functional subtotal) | `$DD85-$DDCB` | 71 |
+| ap | Import row walking and relocation patching | `$DDCC-$DE6B` | 160 |
+| ap | Hole suggestion and shared AP error exits | `$DE6C-$DF02` | 151 |
+| ap | AP usage and manager-not-found strings | `$EB63-$EB92` | 48 |
+| ap | AP error prefix | `$EBA3-$EBA9` | 7 |
 | shared | High-bit string output | `$CC4E-$CC69` | 28 |
 | shared | PACK40 primitives | `$D365-$D406` | 162 |
-| shared | Resident catalog/resolver, including catalog UI helpers | `$DFD6-$E27E` | 681 |
-| shared | FNV and arithmetic, including inline records/basis | `$E27F-$E32A` | 172 |
-| shared | Monitor token/parser primitives | `$E32B-$E3F3` | 201 |
-| shared | Linked library console/flash/debug/hex primitives | `$E415-$E9B1` | 1,437 |
-| himon | Other HIMON CODE (incl. embedded tables/records) | `$C000-$C3CA`, `$C47F-$CC4D`, `$CC6A-$D364`, `$DF0D-$DFD5`, `$E3F4-$E414` | 4,991 |
-| himon | Other HIMON DATA (incl. embedded tables/records) | `$E9B2-$EB6C`, `$EB9D-$EBAC`, `$EBB4-$EE47` | 1,119 |
+| shared | Resident catalog/resolver, including catalog UI helpers | `$DFCC-$E274` | 681 |
+| shared | FNV and arithmetic, including inline records/basis | `$E275-$E320` | 172 |
+| shared | Monitor token/parser primitives | `$E321-$E3E9` | 201 |
+| shared | Linked library console/flash/debug/hex primitives | `$E40B-$E9A7` | 1,437 |
+| himon | Other HIMON CODE (incl. embedded tables/records) | `$C000-$C3CA`, `$C47F-$CC4D`, `$CC6A-$D364`, `$DF03-$DFCB`, `$E3EA-$E40A` | 4,991 |
+| himon | Other HIMON DATA (incl. embedded tables/records) | `$E9A8-$EB62`, `$EB93-$EBA2`, `$EBAA-$EE3D` | 1,119 |
 
 | Owner | Total bytes |
 | --- | ---: |
-| ap | 3,057 |
+| ap | 3,047 |
 | shared | 2,681 |
 | himon | 6,110 |
 | HIMON excluding dedicated AP, including shared | 8,791 |
@@ -56,7 +56,7 @@ physical blocks. EQU/IF-0 declarations contribute no bytes.
 
 ## Image accounting
 
-- himon-rom-c000: CODE 10,674, DATA 1,174; dense component 12,288 bytes including 440 bytes of FF padding.
+- himon-rom-c000: CODE 10,664, DATA 1,174; dense component 12,288 bytes including 450 bytes of FF padding.
 - asm-v1-flash-8000: CODE 14,542, DATA 693; dense component 16,384 bytes including 1,149 bytes of FF padding.
 - APMAN: BODY 3,031, envelope overhead 46, package 3,077, carrier 4,096, erased carrier tail 1,019 bytes.
 - APMAN contains 555 stored worker bytes; they are already included in BODY.
@@ -75,10 +75,10 @@ sector when installed; package size and occupied flash sectors are distinct.
 
 | Artifact | SHA-256 |
 | --- | --- |
-| himon-rom-c000 s19 | `9a16d3f909f4ed941ca382709987fcd927f381e2c246c1b34917b806119d1d01` |
-| himon-rom-c000 map | `b9ca1df8e3bb91b2e0c2e49379d1544d4eaa192627dff6366ce200108968cd8e` |
-| himon-rom-c000 body | `539c871b36d2b22bdf82a9b8c8b1f15603df40edad9b75df70debb490da37efe` |
-| himon-rom-c000 dense | `0072e698b5edc79c9ecff1eaadb11ca2558f839dc06a1e7871aa3d9bd22fb717` |
+| himon-rom-c000 s19 | `f71044cc458ca4be773defff18ec7e6a427b4460ca53cc3edba42c8047aa90cf` |
+| himon-rom-c000 map | `4c7334ea9721e4664dcefd060adab181fa497eb3f8ddbefb79526cdbaa9149e3` |
+| himon-rom-c000 body | `e25ffcfc94a01fcb1c32bb59933f0683a8362ad68899d7064e26c66a68fcf1ab` |
+| himon-rom-c000 dense | `c957f837a816a27b62ff46218d85e7a81ed14c9d3d66abe23db7340c8c9385ba` |
 | asm-v1-flash-8000 s19 | `07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5` |
 | asm-v1-flash-8000 map | `d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e` |
 | asm-v1-flash-8000 body | `c1bd5c96fa333332d374d1c37fa47de3d36ab58dac75e626df85ce081a109838` |

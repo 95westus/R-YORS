@@ -22,12 +22,14 @@ The functional change reserves one durable session byte at `$7E6A`; the later
 source extraction adds no ROM or RAM. The subsequent
 [range-check reduction](../AP/HIMON_AP_RANGE_SIZE_REDUCTION_2026-09-16.md)
 saves 20 resident bytes without changing RAM or the accepted address windows.
+The [parser initialization loop](../AP/HIMON_AP_INIT_SIZE_REDUCTION_2026-09-16.md)
+saves another ten bytes, also without a RAM-allocation change.
 
 ```text
 $8000-$BFFF   outside the HIMON component; ASM-F2 in the combined image
-$C000-$E9B1   HIMON CODE, START entry at $C000
-$E9B2-$EE47   HIMON DATA
-$EE48-$EFFF   440-byte HIMON component growth margin, padded FF
+$C000-$E9A7   HIMON CODE, START entry at $C000
+$E9A8-$EE3D   HIMON DATA
+$EE3E-$EFFF   450-byte HIMON component growth margin, padded FF
 $F000-$FFFF   outside the HIMON component; STR8-N owns the top and vectors
 ```
 
@@ -58,7 +60,7 @@ are owned and checked by STR8-N.
 
 The current workbench HIMON/ASM pair is installed on COM4 with STR8-N v1.34.
 The frozen comparison stamp remains `00.0915(2324)`; use the dated contract
-and range-size records' hashes to identify these changed bytes. Previously published
+and size-qualification records' hashes to identify these changed bytes. Previously published
 [release packages](../../../RELEASE/README.md) remain separate and unchanged.
 
 ## Target Live-Bank Budget
@@ -89,8 +91,8 @@ Combined image layout:
 ```text
 $8000-$BB82   ASM-F2 low-flash image, entry $800C
 $BB83-$BFFF   1,149-byte low-flash growth margin; no carrier storage in Bank 3
-$C000-$EE47   HIMON body, including resident AP-v2 linker/APMAN bootstrap
-$EE48-$EFFF   440-byte image gap inside the E sector
+$C000-$EE3D   HIMON body, including resident AP-v2 linker/APMAN bootstrap
+$EE3E-$EFFF   450-byte image gap inside the E sector
 $F000-$FCF1   STR8-N v1.34 resident supervisor, installer, loader, and services
 $FCF2-$FD77   currently available resident growth, 134 bytes
 $FD78-$FFAF   stored unified STR8-N RAM worker, copied to $0200-$0437

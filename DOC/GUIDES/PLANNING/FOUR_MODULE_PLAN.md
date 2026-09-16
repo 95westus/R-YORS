@@ -76,12 +76,12 @@ historical evidence for its identified image, not the current size baseline.
 | --- | --- | --- |
 | ASM-F2, `$8000-$BFFF` | `_END_DATA=$BB83` exclusive; occupied span 15,235 bytes | 1,149 bytes to `$C000` |
 | ASM build reserve | Makefile requires at least `$0200` bytes to `$C000` | 637 bytes of additional growth before the existing guard fails |
-| HIMON including resident AP, `$C000-$EFFF` | `_END_DATA=$EE48` exclusive; occupied span 11,848 bytes | 440 bytes to `$F000` |
+| HIMON including resident AP, `$C000-$EFFF` | `_END_DATA=$EE3E` exclusive; occupied span 11,838 bytes | 450 bytes to `$F000` |
 | STR8-N, `$F000-$FFFF` | Lock pins resident end `$FCF1` inclusive and 134-byte margin | Whole 4K sector remains recovery-owned; not an AP expansion area |
 | Current APMAN package | `$0C05` = 3,077 bytes; BODY `$0BD7` = 3,031 bytes | One full 4K carrier sector; RAM BODY `$7000-$7BD6`, 41 bytes of overlay headroom |
 | R-YORS distribution payload | Dense `$8000-$EFFF`, 28K | Padding means this file span need not shrink when code shrinks |
 
-ASM and HIMON have 1,589 bytes of combined headroom, but it is split across
+ASM and HIMON have 1,599 bytes of combined headroom, but it is split across
 their link regions. Do not treat it as one freely allocatable area.
 
 Bank 2 is available for AP tooling: the operator identifies its BSO2 install
@@ -300,6 +300,11 @@ shares existing local error exits and saves 20 bytes. Its linked comparison
 covers 30,966 source/destination cases, with no additional RAM or stack and
 observed predicate cost of -5 to +1 cycles on the current layout. At 8 MHz,
 the maximum observed added cost is 0.125 microseconds per invocation.
+
+The next [parser initialization slice](../AP/HIMON_AP_INIT_SIZE_REDUCTION_2026-09-16.md)
+saves another ten bytes by looping over six adjacent cells. It adds 37 cycles
+(4.625 microseconds at 8 MHz), with no extra stack or RAM. X on early failure
+is volatile under the existing ABI; successful X/Y results are preserved.
 
 ### Phase 4: optional resident-space or product variants
 

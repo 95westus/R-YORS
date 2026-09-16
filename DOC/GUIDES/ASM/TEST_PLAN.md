@@ -440,6 +440,11 @@ run.
 
 ## Current Accepted Baseline
 
+The [parser initialization slice](../AP/HIMON_AP_INIT_SIZE_REDUCTION_2026-09-16.md)
+adds clear-block guard checks for every incoming X value and parser error-path
+comparisons. Its focused board caller verifies early-error X and zeroed state,
+success X/Y, and untouched install-result cells before the normal recovery rail.
+
 The resident AP range-check reduction has a focused
 [size and board card](../AP/HIMON_AP_RANGE_SIZE_REDUCTION_2026-09-16.md).
 Its maintained host sweep checks both destination policies and source-base

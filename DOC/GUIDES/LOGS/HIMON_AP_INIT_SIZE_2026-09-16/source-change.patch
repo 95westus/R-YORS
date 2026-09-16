@@ -1,0 +1,67 @@
+diff --git a/SRC/AP/ap-core.inc b/SRC/AP/ap-core.inc
+index 66df905..5bb051d 100644
+--- a/SRC/AP/ap-core.inc
++++ b/SRC/AP/ap-core.inc
+@@ -125,16 +125,18 @@ HIM_AP_SUGGEST_FOUND:
+                         RTS
+ 
+ HIM_AP_PARSE_MIN:
+-                        STZ             HIM_AP_RELOC_COUNT
+-                        STZ             HIM_AP_IMPORT_COUNT
+-                        STZ             HIM_AP_BODY_LO
+-                        STZ             HIM_AP_BODY_HI
+-                        STZ             HIM_AP_BODY_LEN_LO
+-                        STZ             HIM_AP_BODY_LEN_HI
++; BODY pointer/length and relocation/import counts occupy six adjacent cells.
++; X is volatile on failure; successful parsing returns the source in X/Y.
++                        LDX             #(HIM_AP_IMPORT_COUNT-HIM_AP_BODY_LO)
++HIM_AP_PARSE_CLEAR_BODY:
++                        STZ             HIM_AP_BODY_LO,X
++                        DEX
++                        BPL             HIM_AP_PARSE_CLEAR_BODY
+                         STZ             HIM_AP_REL_LO
+                         STZ             HIM_AP_REL_HI
+                         STZ             HIM_AP_IMPORT_LO
+                         STZ             HIM_AP_IMPORT_HI
++HIM_AP_PARSE_CLEAR_DONE:
+                         LDA             #HIM_AP_HDR_BYTES
+                         STA             HIM_AP_PKG_LEN_LO
+                         STZ             HIM_AP_PKG_LEN_HI
+diff --git a/SRC/Makefile b/SRC/Makefile
+index 37b1425..b339694 100644
+--- a/SRC/Makefile
++++ b/SRC/Makefile
+@@ -729,7 +729,10 @@ release-files: $(PUBLISH_RELEASE_TOOL) tools/package_component_releases.py tools
+ asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show microchess asm-ap-v2-check asm-error-check asm-size-check himon-size-check himon-ap-contract-check
+ 	@echo "ASM v1 smoke checks passed."
+ 
+-.PHONY: himon-ap-contract-check himon-ap-boundary-check himon-ap-range-check apman-size-check
++.PHONY: himon-ap-contract-check himon-ap-boundary-check himon-ap-range-check himon-ap-init-check apman-size-check
++himon-ap-init-check: $(HIMON_ROM_S19) tools/check_himon_ap_init.py
++	$(PYTHON) -B tools/check_himon_ap_init.py --output "$(BUILD_DIR)/tmp/himon-ap-init.json"
++
+ himon-ap-range-check: $(HIMON_ROM_S19) tools/check_himon_ap_ranges.py
+ 	$(PYTHON) -B tools/check_himon_ap_ranges.py --output "$(BUILD_DIR)/tmp/himon-ap-ranges.json"
+ 
+@@ -739,7 +742,7 @@ apman-size-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN) tools/
+ himon-ap-boundary-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
+ 	$(PYTHON) -B tools/check_himon_ap_boundary.py --output "$(BUILD_DIR)/tmp/himon-ap-boundary.json"
+ 
+-himon-ap-contract-check: himon-ap-boundary-check himon-ap-range-check apman-size-check $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
++himon-ap-contract-check: himon-ap-boundary-check himon-ap-range-check himon-ap-init-check apman-size-check $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
+ 	$(PYTHON) -B tools/check_himon_ap_contracts.py --output "$(BUILD_DIR)/tmp/himon-ap-contracts.json"
+ 
+ asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(ASM_V1_FLASH_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
+diff --git a/SRC/tools/check_board_s19_identity.ps1 b/SRC/tools/check_board_s19_identity.ps1
+index 111bb9f..0ae78a2 100644
+--- a/SRC/tools/check_board_s19_identity.ps1
++++ b/SRC/tools/check_board_s19_identity.ps1
+@@ -61,7 +61,7 @@ function Assert-Canonical([object]$Canonical, [object]$Target, [string]$Role) {
+ $asm = Read-S19 (Join-Path $S19Dir 'asm-v1-flash-8000.s19')
+ $himon = Read-S19 (Join-Path $S19Dir 'himon-rom-c000.s19')
+ if ($asm.Memory.Count -ne 0x3B83) { Fail ('canonical ASM byte count is ${0:X4}, expected $3B83' -f $asm.Memory.Count) }
+-if ($himon.Memory.Count -ne 0x2E48) { Fail ('canonical HIMON byte count is ${0:X4}, expected $2E48' -f $himon.Memory.Count) }
++if ($himon.Memory.Count -ne 0x2E3E) { Fail ('canonical HIMON byte count is ${0:X4}, expected $2E3E' -f $himon.Memory.Count) }
+ 
+ $himonTargets = @(
+     'himon-c000.s19',

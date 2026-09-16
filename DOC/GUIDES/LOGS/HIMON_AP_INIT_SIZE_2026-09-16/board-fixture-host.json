@@ -1,0 +1,50 @@
+{
+  "result": "PASS",
+  "cases": [
+    {
+      "case": "bad-source",
+      "input_x": 0,
+      "results": "063006ff37"
+    },
+    {
+      "case": "bad-source",
+      "input_x": 166,
+      "results": "063006ff37"
+    },
+    {
+      "case": "bad-source",
+      "input_x": 255,
+      "results": "063006ff37"
+    },
+    {
+      "case": "bad-signature",
+      "input_x": 0,
+      "results": "073007ff00"
+    },
+    {
+      "case": "bad-signature",
+      "input_x": 166,
+      "results": "073007ff00"
+    },
+    {
+      "case": "bad-signature",
+      "input_x": 255,
+      "results": "073007ff00"
+    },
+    {
+      "case": "valid",
+      "input_x": 0,
+      "results": "0031000030"
+    },
+    {
+      "case": "valid",
+      "input_x": 166,
+      "results": "0031000030"
+    },
+    {
+      "case": "valid",
+      "input_x": 255,
+      "results": "0031000030"
+    }
+  ]
+}

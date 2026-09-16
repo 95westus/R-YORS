@@ -1,0 +1,9 @@
+{
+  "result": "PASS",
+  "checks": [
+    "RST H/STR8/HIMON recovery",
+    "resume cleared",
+    "fresh ASM and persistent APTEST",
+    "exact Bank 3 readback"
+  ]
+}

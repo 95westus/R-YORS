@@ -84,6 +84,12 @@ saves 20 HIMON bytes, leaving 440 bytes below `$F000`. It preserves the same
 AP address policies, RAM allocation, ASM image and APMAN carrier; the manager's
 41-byte overlay reserve is unchanged.
 
+The [parser initialization loop](HIMON_AP_INIT_SIZE_REDUCTION_2026-09-16.md)
+recovers another ten resident bytes, leaving 450 bytes below `$F000`. It clears
+the same cells, preserves successful X/Y results and uses the existing
+volatile-X contract on errors. The additional clearing cost is 4.625
+microseconds at the board's 8 MHz clock.
+
 The exact syntax and limits are maintained in the
 [ASM User Guide](../ASM/ASM_USER_GUIDE.md). Safe address choices are in
 [Address Practices](../ASM/ADDRESS_PRACTICES.md).

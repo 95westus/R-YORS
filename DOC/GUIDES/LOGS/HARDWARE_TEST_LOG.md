@@ -26704,3 +26704,26 @@ successful reruns; no earlier transcripts were changed. See the
 [qualification record](HIMON_AP_RANGE_SIZE_2026-09-16.md) and
 [hashed evidence](HIMON_AP_RANGE_SIZE_2026-09-16/manifest.json).
 No release was published. Visual LED acceptance and NMI remain separate.
+
+
+## 2026-09-16 Resident AP Initialization Reduction And Reset Proof
+
+The indexed six-cell parser clear saves ten more resident bytes: HIMON is
+11,838 bytes, end `$EE3E`, with 450 bytes free. Clearing adds 37 cycles
+(4.625 microseconds at 8 MHz) and no stack or RAM. Early-error X is volatile
+under the existing ABI; successful X/Y results and adjacent install-result
+cells are preserved. All 1,024 clear/guard cases, 153 parser comparisons,
+full host regression and nine S19 payload identity checks pass.
+
+COM4 passed nine initialization-specific cases plus the 21-case AP/ASM/recovery
+rail. STR8-N I replaced only B3:C-E. Physical RESET captured `RST H`, STR8-N
+1.34, warm HIMON and cleared resume; post-reset fresh ASM and persistent
+APTEST pass. Final four-bank readback preserves B0-B2 and B3:8-B; outside
+C-E, only D3 journal `$FFED` changes `$F0->$C0`. All 32 sector CRCs match.
+The final 128K SHA-256 is
+`a0af5849bcb4985699b58f22daa1a801262469e2172bb15827189990cf5bf1cc`.
+
+COM4 closed at HIMON in Bank 3. See the
+[qualification record](HIMON_AP_INIT_SIZE_2026-09-16.md) and
+[hashed evidence](HIMON_AP_INIT_SIZE_2026-09-16/manifest.json).
+No release was published. Visual LED acceptance and NMI remain separate.

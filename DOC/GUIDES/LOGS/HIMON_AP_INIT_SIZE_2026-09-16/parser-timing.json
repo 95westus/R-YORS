@@ -1,0 +1,322 @@
+{
+  "result": "PASS",
+  "scope": "Whole PARSE call through synthetic RTS; one incoming X per existing fixture",
+  "inputs": {
+    ".s19": "f71044cc458ca4be773defff18ec7e6a427b4460ca53cc3edba42c8047aa90cf",
+    ".map": "4c7334ea9721e4664dcefd060adab181fa497eb3f8ddbefb79526cdbaa9149e3"
+  },
+  "baseline_inputs": {
+    ".s19": "9a16d3f909f4ed941ca382709987fcd927f381e2c246c1b34917b806119d1d01",
+    ".map": "b9ca1df8e3bb91b2e0c2e49379d1544d4eaa192627dff6366ce200108968cd8e"
+  },
+  "min_delta": 29,
+  "max_delta": 37,
+  "cases": [
+    {
+      "case": "valid-0A00-1",
+      "old_cycles": 3393,
+      "new_cycles": 3429,
+      "delta": 36
+    },
+    {
+      "case": "valid-0A00-255",
+      "old_cycles": 129479,
+      "new_cycles": 129508,
+      "delta": 29
+    },
+    {
+      "case": "valid-0A00-256",
+      "old_cycles": 129980,
+      "new_cycles": 130009,
+      "delta": 29
+    },
+    {
+      "case": "valid-0A00-257",
+      "old_cycles": 130477,
+      "new_cycles": 130506,
+      "delta": 29
+    },
+    {
+      "case": "valid-1900-1",
+      "old_cycles": 3393,
+      "new_cycles": 3429,
+      "delta": 36
+    },
+    {
+      "case": "valid-20DC-1",
+      "old_cycles": 3419,
+      "new_cycles": 3455,
+      "delta": 36
+    },
+    {
+      "case": "valid-20DC-255",
+      "old_cycles": 129505,
+      "new_cycles": 129534,
+      "delta": 29
+    },
+    {
+      "case": "valid-20DC-256",
+      "old_cycles": 130006,
+      "new_cycles": 130035,
+      "delta": 29
+    },
+    {
+      "case": "valid-20DC-257",
+      "old_cycles": 130503,
+      "new_cycles": 130532,
+      "delta": 29
+    },
+    {
+      "case": "valid-20DE-1",
+      "old_cycles": 3419,
+      "new_cycles": 3455,
+      "delta": 36
+    },
+    {
+      "case": "valid-20DE-255",
+      "old_cycles": 129501,
+      "new_cycles": 129530,
+      "delta": 29
+    },
+    {
+      "case": "valid-20DE-256",
+      "old_cycles": 130006,
+      "new_cycles": 130035,
+      "delta": 29
+    },
+    {
+      "case": "valid-20DE-257",
+      "old_cycles": 130503,
+      "new_cycles": 130532,
+      "delta": 29
+    },
+    {
+      "case": "valid-37F8-1",
+      "old_cycles": 3419,
+      "new_cycles": 3455,
+      "delta": 36
+    },
+    {
+      "case": "valid-37F8-255",
+      "old_cycles": 129505,
+      "new_cycles": 129534,
+      "delta": 29
+    },
+    {
+      "case": "valid-37F8-256",
+      "old_cycles": 130006,
+      "new_cycles": 130035,
+      "delta": 29
+    },
+    {
+      "case": "valid-37F8-257",
+      "old_cycles": 130503,
+      "new_cycles": 130532,
+      "delta": 29
+    },
+    {
+      "case": "export",
+      "old_cycles": 3635,
+      "new_cycles": 3671,
+      "delta": 36
+    },
+    {
+      "case": "bad-source-0000",
+      "old_cycles": 117,
+      "new_cycles": 154,
+      "delta": 37
+    },
+    {
+      "case": "bad-source-09FF",
+      "old_cycles": 117,
+      "new_cycles": 154,
+      "delta": 37
+    },
+    {
+      "case": "bad-source-1A00",
+      "old_cycles": 124,
+      "new_cycles": 161,
+      "delta": 37
+    },
+    {
+      "case": "bad-source-1FFF",
+      "old_cycles": 124,
+      "new_cycles": 161,
+      "delta": 37
+    },
+    {
+      "case": "bad-source-4FFF",
+      "old_cycles": 205,
+      "new_cycles": 242,
+      "delta": 37
+    },
+    {
+      "case": "bad-source-5000",
+      "old_cycles": 134,
+      "new_cycles": 171,
+      "delta": 37
+    },
+    {
+      "case": "bad-source-7FFF",
+      "old_cycles": 134,
+      "new_cycles": 171,
+      "delta": 37
+    },
+    {
+      "case": "bad-source-FF00",
+      "old_cycles": 138,
+      "new_cycles": 175,
+      "delta": 37
+    },
+    {
+      "case": "corrupt-0",
+      "old_cycles": 232,
+      "new_cycles": 269,
+      "delta": 37
+    },
+    {
+      "case": "corrupt-1",
+      "old_cycles": 244,
+      "new_cycles": 281,
+      "delta": 37
+    },
+    {
+      "case": "corrupt-2",
+      "old_cycles": 256,
+      "new_cycles": 293,
+      "delta": 37
+    },
+    {
+      "case": "corrupt-5",
+      "old_cycles": 534,
+      "new_cycles": 571,
+      "delta": 37
+    },
+    {
+      "case": "corrupt-6",
+      "old_cycles": 655,
+      "new_cycles": 692,
+      "delta": 37
+    },
+    {
+      "case": "corrupt-8",
+      "old_cycles": 667,
+      "new_cycles": 704,
+      "delta": 37
+    },
+    {
+      "case": "corrupt-15",
+      "old_cycles": 130414,
+      "new_cycles": 130443,
+      "delta": 29
+    },
+    {
+      "case": "corrupt-16",
+      "old_cycles": 130434,
+      "new_cycles": 130463,
+      "delta": 29
+    },
+    {
+      "case": "corrupt-17",
+      "old_cycles": 130454,
+      "new_cycles": 130483,
+      "delta": 29
+    },
+    {
+      "case": "corrupt-18",
+      "old_cycles": 130474,
+      "new_cycles": 130503,
+      "delta": 29
+    },
+    {
+      "case": "corrupt-31",
+      "old_cycles": 2360,
+      "new_cycles": 2389,
+      "delta": 29
+    },
+    {
+      "case": "corrupt-32",
+      "old_cycles": 2488,
+      "new_cycles": 2517,
+      "delta": 29
+    },
+    {
+      "case": "corrupt-34",
+      "old_cycles": 130414,
+      "new_cycles": 130443,
+      "delta": 29
+    },
+    {
+      "case": "corrupt-290",
+      "old_cycles": 130414,
+      "new_cycles": 130443,
+      "delta": 29
+    },
+    {
+      "case": "truncated-5",
+      "old_cycles": 529,
+      "new_cycles": 566,
+      "delta": 37
+    },
+    {
+      "case": "truncated-7",
+      "old_cycles": 529,
+      "new_cycles": 566,
+      "delta": 37
+    },
+    {
+      "case": "truncated-8",
+      "old_cycles": 687,
+      "new_cycles": 724,
+      "delta": 37
+    },
+    {
+      "case": "truncated-18",
+      "old_cycles": 824,
+      "new_cycles": 860,
+      "delta": 36
+    },
+    {
+      "case": "truncated-20",
+      "old_cycles": 929,
+      "new_cycles": 965,
+      "delta": 36
+    },
+    {
+      "case": "truncated-23",
+      "old_cycles": 1483,
+      "new_cycles": 1519,
+      "delta": 36
+    },
+    {
+      "case": "truncated-26",
+      "old_cycles": 1666,
+      "new_cycles": 1702,
+      "delta": 36
+    },
+    {
+      "case": "truncated-30",
+      "old_cycles": 2168,
+      "new_cycles": 2204,
+      "delta": 36
+    },
+    {
+      "case": "truncated-33",
+      "old_cycles": 2493,
+      "new_cycles": 2529,
+      "delta": 36
+    },
+    {
+      "case": "truncated-34",
+      "old_cycles": 2644,
+      "new_cycles": 2680,
+      "delta": 36
+    },
+    {
+      "case": "truncated-290",
+      "old_cycles": 2488,
+      "new_cycles": 2517,
+      "delta": 29
+    }
+  ]
+}

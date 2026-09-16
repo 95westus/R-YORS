@@ -125,16 +125,18 @@ HIM_AP_SUGGEST_FOUND:
                         RTS
 
 HIM_AP_PARSE_MIN:
-                        STZ             HIM_AP_RELOC_COUNT
-                        STZ             HIM_AP_IMPORT_COUNT
-                        STZ             HIM_AP_BODY_LO
-                        STZ             HIM_AP_BODY_HI
-                        STZ             HIM_AP_BODY_LEN_LO
-                        STZ             HIM_AP_BODY_LEN_HI
+; BODY pointer/length and relocation/import counts occupy six adjacent cells.
+; X is volatile on failure; successful parsing returns the source in X/Y.
+                        LDX             #(HIM_AP_IMPORT_COUNT-HIM_AP_BODY_LO)
+HIM_AP_PARSE_CLEAR_BODY:
+                        STZ             HIM_AP_BODY_LO,X
+                        DEX
+                        BPL             HIM_AP_PARSE_CLEAR_BODY
                         STZ             HIM_AP_REL_LO
                         STZ             HIM_AP_REL_HI
                         STZ             HIM_AP_IMPORT_LO
                         STZ             HIM_AP_IMPORT_HI
+HIM_AP_PARSE_CLEAR_DONE:
                         LDA             #HIM_AP_HDR_BYTES
                         STA             HIM_AP_PKG_LEN_LO
                         STZ             HIM_AP_PKG_LEN_HI
