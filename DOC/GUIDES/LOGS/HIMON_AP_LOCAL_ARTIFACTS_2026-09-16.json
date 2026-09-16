@@ -1,0 +1,548 @@
+[
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/bank-maint-2000.s19",
+    "sha256": "95aee537e486e6a16e40dbd3ce7baa181d018f44ab13f6a29601779d77650c2f",
+    "bytes": 18114,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/bank-stage-2000.s19",
+    "sha256": "f15a35a26b88bc2d4a5eab83ed27f13a14007ec4fe25ac456631cf544efb7952",
+    "bytes": 349,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/before-b0.bin",
+    "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/before-b1.bin",
+    "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/before-b2.bin",
+    "sha256": "52011800db06a1c13b3c86688f1a55d35e079590e8b92073a11253e82c84fb44",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/before-b3.bin",
+    "sha256": "3eead7cab55b85c887eb67ff1720584931d5fee934a099e3c88358029927c533",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/boundary-sentinel.s19",
+    "sha256": "f3e57e757dc83edd821f58eec96dc8eeca2df974e6a5047fce46c21c48ab4c93",
+    "bytes": 56,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/child-return.s19",
+    "sha256": "795e6c2432fa54b63909dabb318fa61e510bd2634ff947dd5097ef78111b1c1c",
+    "bytes": 334,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/enrolled-b3.bin",
+    "sha256": "39718b56169da58f52443e537efff0f4c59a7c0822581c9138d1dd36109bd614",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/final-b0.bin",
+    "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/final-b1.bin",
+    "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/final-b2.bin",
+    "sha256": "0b67c0fc66568f8903927d4014069a306a8ea8838fc557991813828bbe01a13c",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/final-b3.bin",
+    "sha256": "39718b56169da58f52443e537efff0f4c59a7c0822581c9138d1dd36109bd614",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/bin/apman-v1-bank2-8000.bin",
+    "sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9",
+    "bytes": 4096,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/bin/himon-rom-c000.bin",
+    "sha256": "1ac1946839e14a251a055939f9b35f5dd6b2432c1fd4ef12f5ef978cab3e102c",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/s19/apman-7000.map",
+    "sha256": "8378ca8e36ac0c89d3c7bb65c02b0392e6799f8f5c185cff4d5c49e1d51fe03a",
+    "bytes": 11948,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/s19/apman-7000.s19",
+    "sha256": "7c15c2ee91989d095f0e024dea2b1eef571718508433ca73b8d891d4f7e21e33",
+    "bytes": 8460,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/s19/apman-v1-bank2-8000.s19",
+    "sha256": "506c65862ed4193f946ca33ff0512e9b1637263338d0744dc857aab07d98608d",
+    "bytes": 9740,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/s19/asm-v1-flash-8000.map",
+    "sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e",
+    "bytes": 66253,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/s19/asm-v1-flash-8000.s19",
+    "sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5",
+    "bytes": 41918,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/s19/himon-c000.map",
+    "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+    "bytes": 47118,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/s19/himon-c000.s19",
+    "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+    "bytes": 32652,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/s19/himon-rom-c000.map",
+    "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+    "bytes": 47118,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/s19/himon-rom-c000.s19",
+    "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+    "bytes": 32652,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/s19/ryors-v1.2-asm-bank3-8-b.s19",
+    "sha256": "79af47c34c28ebdfcb582f15b9fbec2e21db4e158c3a91a0870203ef28a27414",
+    "bytes": 38924,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
+    "sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9",
+    "bytes": 68108,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/before/s19/ryors-v1.2-himon-bank3-c-e.s19",
+    "sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648",
+    "bytes": 29196,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/bin/apman-v1-bank2-8000.bin",
+    "sha256": "1fed29fe2236e8c2e8aaba574d5dc452f8885efac75060c33a4eb02c8edc779b",
+    "bytes": 4096,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/bin/himon-rom-c000.bin",
+    "sha256": "1ac1946839e14a251a055939f9b35f5dd6b2432c1fd4ef12f5ef978cab3e102c",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/s19/apman-7000.map",
+    "sha256": "61e40b9bece99f083637ff65a601207716adc00b217c27c24a63f2604e42ce3f",
+    "bytes": 11987,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/s19/apman-7000.s19",
+    "sha256": "85497d68a187c711343c7c73067cbe6ea254173305c93991b5903573a7cf54fc",
+    "bytes": 8354,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/s19/apman-v1-bank2-8000.s19",
+    "sha256": "8863906bb030e7b1ddeb493b0d92f93a026c19f0005583b572b14cc71da7fd2c",
+    "bytes": 9740,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/s19/asm-v1-flash-8000.map",
+    "sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e",
+    "bytes": 66253,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/s19/asm-v1-flash-8000.s19",
+    "sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5",
+    "bytes": 41918,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/s19/himon-c000.map",
+    "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+    "bytes": 47118,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/s19/himon-c000.s19",
+    "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+    "bytes": 32652,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/s19/himon-rom-c000.map",
+    "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+    "bytes": 47118,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/s19/himon-rom-c000.s19",
+    "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+    "bytes": 32652,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/s19/ryors-v1.2-asm-bank3-8-b.s19",
+    "sha256": "79af47c34c28ebdfcb582f15b9fbec2e21db4e158c3a91a0870203ef28a27414",
+    "bytes": 38924,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
+    "sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9",
+    "bytes": 68108,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/artifacts/after/s19/ryors-v1.2-himon-bank3-c-e.s19",
+    "sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648",
+    "bytes": 29196,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/apman-v1-bank2-8000.bin",
+    "sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9",
+    "bytes": 4096,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/apman-v1-bank2-8000.s19",
+    "sha256": "506c65862ed4193f946ca33ff0512e9b1637263338d0744dc857aab07d98608d",
+    "bytes": 9740,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/bank-maint-2000.s19",
+    "sha256": "95aee537e486e6a16e40dbd3ce7baa181d018f44ab13f6a29601779d77650c2f",
+    "bytes": 18114,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/bank-stage-2000.s19",
+    "sha256": "f15a35a26b88bc2d4a5eab83ed27f13a14007ec4fe25ac456631cf544efb7952",
+    "bytes": 349,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/before-b0.bin",
+    "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/before-b1.bin",
+    "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/before-b2.bin",
+    "sha256": "cbb006447ceb2120cf63fc9ce3d58a3fe78c50a1ca696bb016ea055edddf4689",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/before-b3.bin",
+    "sha256": "4462b67074947082018ad24975f3e87cde8934662fe5c2c74107acb248d8d98c",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/boundary-sentinel.s19",
+    "sha256": "f3e57e757dc83edd821f58eec96dc8eeca2df974e6a5047fce46c21c48ab4c93",
+    "bytes": 56,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/child-return.s19",
+    "sha256": "795e6c2432fa54b63909dabb318fa61e510bd2634ff947dd5097ef78111b1c1c",
+    "bytes": 334,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/enrolled-b3.bin",
+    "sha256": "3eead7cab55b85c887eb67ff1720584931d5fee934a099e3c88358029927c533",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/erased-b2.bin",
+    "sha256": "2d864c0b789a43214eee8524d3182075125e5ca2cd527f3582ec87ffd94076bc",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/final-b0.bin",
+    "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/final-b1.bin",
+    "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/final-b2.bin",
+    "sha256": "52011800db06a1c13b3c86688f1a55d35e079590e8b92073a11253e82c84fb44",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/final-b3.bin",
+    "sha256": "3eead7cab55b85c887eb67ff1720584931d5fee934a099e3c88358029927c533",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BANK2_2026-09-16/reclaimed-b3.bin",
+    "sha256": "5b92d315ef7742fbe577ae7a32a1a338170447241c8cfd893e2f2c45efd7ca7e",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BASELINE_2026-09-16/com4.jsonl",
+    "sha256": "e617d85b8861cca3072b7820d2dc8e6d70617f3e1b0074cf35ea180e6da0842b",
+    "bytes": 319632,
+    "reason": "Windows-reserved basename; identical portable transcript copy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/bin/apman-v1-bank2-8000.bin",
+    "sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9",
+    "bytes": 4096,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/bin/himon-rom-c000.bin",
+    "sha256": "1ac1946839e14a251a055939f9b35f5dd6b2432c1fd4ef12f5ef978cab3e102c",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/s19/apman-7000.map",
+    "sha256": "8378ca8e36ac0c89d3c7bb65c02b0392e6799f8f5c185cff4d5c49e1d51fe03a",
+    "bytes": 11948,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/s19/apman-7000.s19",
+    "sha256": "7c15c2ee91989d095f0e024dea2b1eef571718508433ca73b8d891d4f7e21e33",
+    "bytes": 8460,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/s19/apman-v1-bank2-8000.s19",
+    "sha256": "506c65862ed4193f946ca33ff0512e9b1637263338d0744dc857aab07d98608d",
+    "bytes": 9740,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/s19/asm-v1-flash-8000.map",
+    "sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e",
+    "bytes": 66253,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/s19/asm-v1-flash-8000.s19",
+    "sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5",
+    "bytes": 41918,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/s19/himon-c000.map",
+    "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+    "bytes": 47118,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/s19/himon-c000.s19",
+    "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+    "bytes": 32652,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/s19/himon-rom-c000.map",
+    "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+    "bytes": 47118,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/s19/himon-rom-c000.s19",
+    "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+    "bytes": 32652,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/s19/ryors-v1.2-asm-bank3-8-b.s19",
+    "sha256": "79af47c34c28ebdfcb582f15b9fbec2e21db4e158c3a91a0870203ef28a27414",
+    "bytes": 38924,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
+    "sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9",
+    "bytes": 68108,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_BOUNDARY_2026-09-16/artifacts/s19/ryors-v1.2-himon-bank3-c-e.s19",
+    "sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648",
+    "bytes": 29196,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_CHANGE_2026-09-16/before-b3.bin",
+    "sha256": "99d80e2e7f98a11a03ff8fff56b260c02c9b18f1cd7d2ca05ba7dbd4789d0234",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_CHANGE_2026-09-16/com4.jsonl",
+    "sha256": "b1c52d3a01e466e8e7f6ba5e934df120048da2d91c71a5264f46238225a97734",
+    "bytes": 2569166,
+    "reason": "Windows-reserved basename; identical portable transcript copy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_CHANGE_2026-09-16/functional-28k.s19",
+    "sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9",
+    "bytes": 68108,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_CHANGE_2026-09-16/installed-b3.bin",
+    "sha256": "4462b67074947082018ad24975f3e87cde8934662fe5c2c74107acb248d8d98c",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/bin/apman-v1-bank2-8000.bin",
+    "sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9",
+    "bytes": 4096,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/bin/himon-rom-c000.bin",
+    "sha256": "1ac1946839e14a251a055939f9b35f5dd6b2432c1fd4ef12f5ef978cab3e102c",
+    "bytes": 32768,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/s19/apman-7000.map",
+    "sha256": "8378ca8e36ac0c89d3c7bb65c02b0392e6799f8f5c185cff4d5c49e1d51fe03a",
+    "bytes": 11948,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/s19/apman-7000.s19",
+    "sha256": "7c15c2ee91989d095f0e024dea2b1eef571718508433ca73b8d891d4f7e21e33",
+    "bytes": 8460,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/s19/apman-v1-bank2-8000.s19",
+    "sha256": "506c65862ed4193f946ca33ff0512e9b1637263338d0744dc857aab07d98608d",
+    "bytes": 9740,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/s19/asm-v1-flash-8000.map",
+    "sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e",
+    "bytes": 66253,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/s19/asm-v1-flash-8000.s19",
+    "sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5",
+    "bytes": 41918,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/s19/himon-c000.map",
+    "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+    "bytes": 47118,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/s19/himon-c000.s19",
+    "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+    "bytes": 32652,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/s19/himon-rom-c000.map",
+    "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+    "bytes": 47118,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/s19/himon-rom-c000.s19",
+    "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+    "bytes": 32652,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/s19/ryors-v1.2-asm-bank3-8-b.s19",
+    "sha256": "79af47c34c28ebdfcb582f15b9fbec2e21db4e158c3a91a0870203ef28a27414",
+    "bytes": 38924,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
+    "sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9",
+    "bytes": 68108,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_AP_MANAGER_BOUNDARY_2026-09-16/artifacts/s19/ryors-v1.2-himon-bank3-c-e.s19",
+    "sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648",
+    "bytes": 29196,
+    "reason": "Generated artifact retained locally under repository ignore policy"
+  }
+]

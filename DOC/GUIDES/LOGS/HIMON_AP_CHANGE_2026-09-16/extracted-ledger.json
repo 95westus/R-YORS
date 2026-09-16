@@ -1,0 +1,344 @@
+{
+  "schema": 1,
+  "images": [
+    {
+      "name": "himon-rom-c000",
+      "start": 49152,
+      "end_exclusive": 61020,
+      "emitted_bytes": 11868,
+      "holes": 0,
+      "limit": 61440,
+      "headroom": 420,
+      "dense_bytes": 12288,
+      "body_sha256": "a52fb9d42747b9a29bd553deb9b00e0d1f8e2e654d6313486551a9d2e6c533e8",
+      "dense_sha256": "af6a02f6e7fa5c39b475f20071386d44724f69eac1920dbb62e388f5f1595e35",
+      "s19_sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+      "map_sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+      "code_section_bytes": 10694,
+      "data_section_bytes": 1174
+    },
+    {
+      "name": "asm-v1-flash-8000",
+      "start": 32768,
+      "end_exclusive": 48003,
+      "emitted_bytes": 15235,
+      "holes": 0,
+      "limit": 49152,
+      "headroom": 1149,
+      "dense_bytes": 16384,
+      "body_sha256": "c1bd5c96fa333332d374d1c37fa47de3d36ab58dac75e626df85ce081a109838",
+      "dense_sha256": "510946236372de051e1075e54231e0afef9df6e0264309e7b4b685b6db3dfd0b",
+      "s19_sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5",
+      "map_sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e",
+      "code_section_bytes": 14542,
+      "data_section_bytes": 693,
+      "udata": [
+        20480,
+        28014
+      ]
+    },
+    {
+      "name": "apman-7000",
+      "start": 28672,
+      "end_exclusive": 31744,
+      "emitted_bytes": 3072,
+      "holes": 0,
+      "limit": 31744,
+      "headroom": 0,
+      "dense_bytes": 3072,
+      "body_sha256": "fddae88f76241dc5cba1baed6ec1a323accc5d2b17f8db33074815b6704548b8",
+      "dense_sha256": "fddae88f76241dc5cba1baed6ec1a323accc5d2b17f8db33074815b6704548b8",
+      "s19_sha256": "7c15c2ee91989d095f0e024dea2b1eef571718508433ca73b8d891d4f7e21e33",
+      "map_sha256": "8378ca8e36ac0c89d3c7bb65c02b0392e6799f8f5c185cff4d5c49e1d51fe03a",
+      "package_bytes": 3118,
+      "envelope_overhead": 46,
+      "package_sha256": "4bf5ad6432f379acca19adc2d352fcacf207a1fcce5bd842beb219235aab67ef",
+      "carrier_bytes": 4096,
+      "carrier_sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9",
+      "carrier_tail_bytes": 978,
+      "worker_bytes": 555,
+      "sections": [
+        {
+          "tag": "S",
+          "offset": 5,
+          "bytes": 11,
+          "end_exclusive": 19
+        },
+        {
+          "tag": "R",
+          "offset": 19,
+          "bytes": 1,
+          "end_exclusive": 23
+        },
+        {
+          "tag": "E",
+          "offset": 23,
+          "bytes": 13,
+          "end_exclusive": 39
+        },
+        {
+          "tag": "I",
+          "offset": 39,
+          "bytes": 1,
+          "end_exclusive": 43
+        },
+        {
+          "tag": "B",
+          "offset": 43,
+          "bytes": 3072,
+          "end_exclusive": 3118
+        }
+      ],
+      "raw_linker_end_code": 60416
+    }
+  ],
+  "himon_ownership": [
+    {
+      "owner": "ap",
+      "label": "AP/APS command adapters and FNV records",
+      "start_symbol": "CMD_AP_FNV",
+      "end_symbol": "CMD_L_FNV",
+      "spans": [
+        [
+          50123,
+          50303
+        ]
+      ],
+      "bytes": 180
+    },
+    {
+      "owner": "ap",
+      "label": "Manager discovery/bootstrap and bank staging",
+      "start_symbol": "HIM_APMAN_BOOTSTRAP",
+      "end_symbol": "HIM_AP_SERVICE",
+      "spans": [
+        [
+          54279,
+          54584
+        ]
+      ],
+      "bytes": 305
+    },
+    {
+      "owner": "ap",
+      "label": "Service dispatch and load orchestration",
+      "start_symbol": "HIM_AP_SERVICE",
+      "end_symbol": "HIM_AP_PARSE_MIN",
+      "spans": [
+        [
+          54584,
+          54806
+        ]
+      ],
+      "bytes": 222
+    },
+    {
+      "owner": "ap",
+      "label": "Package parsing, validation and source bounds",
+      "start_symbol": "HIM_AP_PARSE_MIN",
+      "end_symbol": "HIM_AP_LOAD_RANGE_OK",
+      "spans": [
+        [
+          54806,
+          56021
+        ]
+      ],
+      "bytes": 1215
+    },
+    {
+      "owner": "ap",
+      "label": "Destination bounds, copy and internal relocation",
+      "start_symbol": "HIM_AP_LOAD_RANGE_OK",
+      "end_symbol": "HIM_AP_IMPORT_LINK",
+      "spans": [
+        [
+          56021,
+          56548
+        ]
+      ],
+      "bytes": 527
+    },
+    {
+      "owner": "ap",
+      "label": "Typed import linker",
+      "start_symbol": "HIM_AP_IMPORT_LINK",
+      "end_symbol": "HIM_AP_FIND_HOLE",
+      "spans": [
+        [
+          56548,
+          56970
+        ]
+      ],
+      "bytes": 422
+    },
+    {
+      "owner": "ap",
+      "label": "Hole suggestion and shared AP error exits",
+      "start_symbol": "HIM_AP_FIND_HOLE",
+      "end_symbol": "L_NOTE_S1_ADDR",
+      "spans": [
+        [
+          56970,
+          57121
+        ]
+      ],
+      "bytes": 151
+    },
+    {
+      "owner": "ap",
+      "label": "AP usage and manager-not-found strings",
+      "start_symbol": "MSG_USAGE_AP",
+      "end_symbol": "MSG_USAGE_L",
+      "spans": [
+        [
+          60289,
+          60337
+        ]
+      ],
+      "bytes": 48
+    },
+    {
+      "owner": "ap",
+      "label": "AP error prefix",
+      "start_symbol": "MSG_AP_ERR",
+      "end_symbol": "MSG_L_READY",
+      "spans": [
+        [
+          60353,
+          60360
+        ]
+      ],
+      "bytes": 7
+    },
+    {
+      "owner": "shared",
+      "label": "High-bit string output",
+      "start_symbol": "HIM_WRITE_HBSTRING",
+      "end_symbol": "MON_CTX_REQUIRE_VALID",
+      "spans": [
+        [
+          52302,
+          52330
+        ]
+      ],
+      "bytes": 28
+    },
+    {
+      "owner": "shared",
+      "label": "PACK40 primitives",
+      "start_symbol": "HIM_PACK40_ASCII_TO_CODE",
+      "end_symbol": "HIM_APMAN_BOOTSTRAP",
+      "spans": [
+        [
+          54117,
+          54279
+        ]
+      ],
+      "bytes": 162
+    },
+    {
+      "owner": "shared",
+      "label": "Resident catalog/resolver, including catalog UI helpers",
+      "start_symbol": "THE_JOIN_EXEC_XY_FNV",
+      "end_symbol": "FNV1A_INIT_FNV",
+      "spans": [
+        [
+          57322,
+          58003
+        ]
+      ],
+      "bytes": 681
+    },
+    {
+      "owner": "shared",
+      "label": "FNV and arithmetic, including inline records/basis",
+      "start_symbol": "FNV1A_INIT_FNV",
+      "end_symbol": "CMD_REQUIRE_EOL",
+      "spans": [
+        [
+          58003,
+          58175
+        ]
+      ],
+      "bytes": 172
+    },
+    {
+      "owner": "shared",
+      "label": "Monitor token/parser primitives",
+      "start_symbol": "CMD_REQUIRE_EOL",
+      "end_symbol": "MON_BOOTLOG_RESET",
+      "spans": [
+        [
+          58175,
+          58376
+        ]
+      ],
+      "bytes": 201
+    },
+    {
+      "owner": "shared",
+      "label": "Linked library console/flash/debug/hex primitives",
+      "start_symbol": "BIO_FTDI_READ_BYTE_NONBLOCK",
+      "end_symbol": "_END_CODE",
+      "spans": [
+        [
+          58409,
+          59846
+        ]
+      ],
+      "bytes": 1437
+    },
+    {
+      "owner": "himon",
+      "label": "Other HIMON CODE (incl. embedded tables/records)",
+      "spans": [
+        [
+          49152,
+          50123
+        ],
+        [
+          50303,
+          52302
+        ],
+        [
+          52330,
+          54117
+        ],
+        [
+          57121,
+          57322
+        ],
+        [
+          58376,
+          58409
+        ]
+      ],
+      "bytes": 4991
+    },
+    {
+      "owner": "himon",
+      "label": "Other HIMON DATA (incl. embedded tables/records)",
+      "spans": [
+        [
+          59846,
+          60289
+        ],
+        [
+          60337,
+          60353
+        ],
+        [
+          60360,
+          61020
+        ]
+      ],
+      "bytes": 1119
+    }
+  ],
+  "himon_totals": {
+    "ap": 3077,
+    "shared": 2681,
+    "himon": 6110
+  },
+  "himon_excluding_dedicated_ap": 8791
+}

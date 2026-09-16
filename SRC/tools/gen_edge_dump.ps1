@@ -11,7 +11,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$DisplaySource,
 
-    [string]$ReadableMap = ''
+    [string]$ReadableMap = '',
+    [switch]$HimonIncludes
 )
 
 $ErrorActionPreference = "Stop"
@@ -206,7 +207,13 @@ function Add-MermaidEdgeAtlas {
 
 $sourceFull = (Resolve-Path -LiteralPath $SourcePath).Path
 $outFull = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutPath)
-$lines = Get-Content -LiteralPath $sourceFull
+. (Join-Path $PSScriptRoot 'read_wdc_source.ps1')
+if ($HimonIncludes) {
+    . (Join-Path $PSScriptRoot 'read_himon_source.ps1')
+    $lines = Read-ActiveSourceLines -Text (Read-HimonSource -Path $sourceFull)
+} else {
+    $lines = Read-ActiveSourceLines -Path $sourceFull
+}
 
 $labelPattern = '^\s*([A-Za-z_?][A-Za-z0-9_?]*):'
 $callPattern = '^\s*(?:[A-Za-z_?][A-Za-z0-9_?]*:\s*)?(JSR|JMP)\s+([A-Za-z_?][A-Za-z0-9_?]*)\b'

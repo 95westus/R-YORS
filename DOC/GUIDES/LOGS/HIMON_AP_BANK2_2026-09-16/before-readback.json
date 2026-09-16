@@ -1,0 +1,27 @@
+{
+  "serial_log": "C:\\SRC\\R-YORS\\LOCAL\\himon-ap-bank2-20260916\\serial-com4.jsonl",
+  "helper_sha256": "f15a35a26b88bc2d4a5eab83ed27f13a14007ec4fe25ac456631cf544efb7952",
+  "banks": {
+    "0": {
+      "bytes": 32768,
+      "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8",
+      "reset": "F818"
+    },
+    "1": {
+      "bytes": 32768,
+      "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211",
+      "reset": "F000"
+    },
+    "2": {
+      "bytes": 32768,
+      "sha256": "cbb006447ceb2120cf63fc9ce3d58a3fe78c50a1ca696bb016ea055edddf4689",
+      "reset": "F818"
+    },
+    "3": {
+      "bytes": 32768,
+      "sha256": "4462b67074947082018ad24975f3e87cde8934662fe5c2c74107acb248d8d98c",
+      "reset": "F000"
+    }
+  },
+  "flash_sha256": "e88d0e5474ce7e4b184291f6075da47052b6c610c2447af7c3fec8ce543b3879"
+}

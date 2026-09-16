@@ -23,6 +23,17 @@ size measurement, and required hardware proof are complete.
   [board record](../LOGS/ASMF2_SIZE_2026-09-15.md), including the initial
   S9 mismatch and recovery. HIMON and STR8 remain preserved.
 
+### Accepted: measured APMAN size reduction
+
+- [x] Qualify shared INSTALL package-card updates and APS/AP D carrier
+  formatting. The linked BODY shrinks from 3,072 to 3,031 bytes, ending at
+  `$7BD7` with 41 overlay bytes free; the envelope shrinks to `$0C05`.
+  Resident HIMON/ASM images, the carried worker, RAM allocation, and carrier
+  sector allocation are unchanged. Eighteen old/new differential cases,
+  full regression, eight exact board-output comparisons, real INSTALL and
+  four-bank readback, and physical-reset rediscovery/fresh ASM all pass. See
+  [size qualification](../AP/APMAN_SIZE_REDUCTION_2026-09-16.md).
+
 ### Candidate: APMAN bank/sector LED activity
 
 - [ ] Accept APMAN's banked-media activity display on hardware. The common
@@ -34,8 +45,15 @@ size measurement, and required hardware proof are complete.
   `$7C00` overlay limit. COM4 accepted the guarded B2:8 erase/install, exact
   `$0C2A` discovery and inspection, full `APS`, `AP L`, named BANKAUDIT
   execution, CRC report, Bank-3 restoration, and return to HIMON on 2026-09-10.
-  Remaining board proof: operator-observed Bank 0-2/sector LED changes and a
-  physical-reset recovery.
+  At that September-10 gate, operator-observed Bank 0-2/sector LED changes and
+  physical-reset recovery remained pending.
+
+  The [2026-09-16 Bank-2 cycle](../LOGS/HIMON_AP_BANK2_2026-09-16.md) installs
+  the corrected `$0C00` BODY / `$0C2E` envelope and proves persistent scan,
+  inspect, load/run, real ASM INSTALL, fresh-session return, and exact flash
+  isolation. Physical RESET and post-reset discovery/run/fresh ASM also pass.
+  The LED item remains unchecked
+  until the operator-observed display gate is also satisfied.
 
 ### Candidate: Peter Jennings Microchess AP
 
@@ -238,6 +256,26 @@ B1:F backup, and `Q` rejection through `HSH_NF!`.
   S19 files are byte-identical; `asm-test` passes. This establishes one Phase 0
   contract baseline but does not complete the wider byte-ownership audit or AP
   source extraction.
+
+  The [2026-09-16 baseline](../LOGS/HIMON_AP_BASELINE_2026-09-16.md) adds
+  reproducible frozen-stamp artifacts, full host regression, a generated
+  physical byte-ownership ledger, and read-only COM4 Bank-3 identity proof.
+  HIMON is 11,754 bytes (2,966 dedicated AP; 2,681 shared; 6,107 other),
+  ASM-F2 is 15,235 bytes, and APMAN BODY/package is 3,068/3,114 bytes.
+  The [Step-2 interface/RAM audit](../AP/HIMON_AP_INTERFACE_RAM_AUDIT_2026-09-16.md)
+  is complete, with 23 host characterization cases. It exposed the original
+  contract hazards: manager bootstrap destroys retained ASM name storage, staged INSTALL
+  sources can be lost before worker entry, absent-manager returns are not
+  deterministic failures, and duplicate status is overwritten by NOT_FOUND.
+  The [functional correction and Step-3 extraction](../AP/HIMON_AP_CONTRACT_CHANGE_2026-09-16.md)
+  address these separately: explicit TAKEOVER adds `$2000-$6FFF`, while ordinary
+  LOAD preserves `$2000-$4FFF`; a durable `$7E6A` flag prevents stale ASM resume.
+  HIMON is now 11,868 bytes (420 free); APMAN BODY/package is 3,072/3,118 bytes
+  with no overlay headroom; ASM remains 15,235 bytes. Fifty-three current host
+  contract cases and thirteen COM4 checks cover the correction. AP source is
+  extracted in place against the refreshed baseline. Bank 2 may be erased/reused
+  for tooling; BSO2 was temporary validation. Persistent carrier setup remains
+  next; the wider modularization, LED/reset and AP Store gates stay unchecked.
 
 - [x] Add the simple carrier path `SEAL> INSTALL package Bn` for Banks 0-2.
   The proven implementation finds the first completely erased and unreserved 4K

@@ -85,6 +85,9 @@ function Write-Doc {
 $root = (Resolve-Path -LiteralPath $Src).Path
 $outRoot = (Resolve-Path -LiteralPath $OutDir).Path
 
+
+. (Join-Path $PSScriptRoot 'read_wdc_source.ps1')
+
 $operationalSourceSpecs = @(
     'LIB/ftdi/*.asm',
     'LIB/dev/*.asm',
@@ -92,6 +95,7 @@ $operationalSourceSpecs = @(
     'TESTS/ftdi-backend-debug.asm',
     'HIMON/himon.asm',
     'HIMON/*.inc',
+    'AP/*.inc',
     'HIMON/fnv1a-fold.asm'
 )
 
@@ -128,6 +132,19 @@ $labelPattern = '^\s*([A-Za-z_][A-Za-z0-9_]*):'
 $callPattern = '^\s*(?:[A-Za-z_?][A-Za-z0-9_?]*:\s*)?(JSR|JMP)\s+([A-Za-z_?][A-Za-z0-9_?]*)\b'
 $instructionPattern = '^\s*(?:[A-Za-z_?][A-Za-z0-9_?]*:\s*)?([A-Za-z]{2,4})\b(?:\s+([^;]+))?'
 
+# The manager's straight-line HIMON fragments retain their parent's global
+# label. Attribute their edges to that label, with the fragment's source path,
+# instead of silently dropping calls before a fragment's first global label.
+$managerIncludeContexts = @{}
+$managerContext = $null
+foreach ($line in (Read-ActiveSourceLines -Path (Join-Path $root 'AP/ap-manager.inc'))) {
+    if ($line -match $labelPattern) { $managerContext = $matches[1] }
+    if ($line -match '^\s*INCLUDE\s+"(HIMON/himon-ap-manager-[^"]+\.inc)"') {
+        if (-not $managerContext) { throw 'Manager inline include has no parent label' }
+        $managerIncludeContexts[$matches[1]] = $managerContext
+    }
+}
+
 $stackTrackedOps = @('PHA', 'PHP', 'PHX', 'PHY', 'PLA', 'PLP', 'PLX', 'PLY', 'JSR', 'JMP', 'BRK', 'TXS')
 
 $routines = New-Object System.Collections.Generic.List[object]
@@ -139,8 +156,8 @@ $stackEvents = New-Object System.Collections.Generic.List[object]
 
 foreach ($file in $files) {
     $rel = Get-DocPath -Path (Get-RelPath -Root $root -Path $file.FullName)
-    $lines = Get-Content -LiteralPath $file.FullName
-    $current = $null
+    $lines = Read-ActiveSourceLines -Path $file.FullName
+    $current = if ($managerIncludeContexts.ContainsKey($rel)) { $managerIncludeContexts[$rel] } else { $null }
     $lastRoutineRefs = @()
 
     for ($i = 0; $i -lt $lines.Count; $i++) {
@@ -256,7 +273,7 @@ $himonTreeEdges = @(
     $edges |
     Where-Object {
         $_.File -eq 'HIMON/himon.asm' -or
-        $_.File -like 'HIMON/*.inc'
+        $_.File -like 'HIMON/*.inc' -or $_.File -like 'AP/*.inc'
     } |
     Group-Object Source, Target |
     ForEach-Object {
@@ -725,9 +742,9 @@ foreach ($file in $files) {
 }
 
 $himonCommandRows = New-Object System.Collections.Generic.List[object]
-foreach ($docPath in ($sourcePathByDocPath.Keys | Where-Object { $_ -eq 'HIMON/himon.asm' -or $_ -like 'HIMON/*.inc' } | Sort-Object)) {
+foreach ($docPath in ($sourcePathByDocPath.Keys | Where-Object { $_ -eq 'HIMON/himon.asm' -or $_ -like 'HIMON/*.inc' -or $_ -like 'AP/*.inc' } | Sort-Object)) {
     $sourcePath = $sourcePathByDocPath[$docPath]
-    $sourceLines = Get-Content -LiteralPath $sourcePath
+    $sourceLines = Read-ActiveSourceLines -Path $sourcePath
     $pendingFnv = $null
     for ($i = 0; $i -lt $sourceLines.Count; $i++) {
         $line = $sourceLines[$i]
@@ -833,7 +850,7 @@ foreach ($r in ($routines | Sort-Object File, Line, Name)) {
 Write-Doc -Name 'ROUTINE_CONTRACTS.md' -Lines $lines
 
 $lines = @('# R-YORS HIMON Routine Tree') + $header
-$lines += 'Tree scope: current HIMON source only (`HIMON/himon.asm` and HIMON include files).'
+$lines += 'Tree scope: current HIMON source only (`HIMON/himon.asm`, HIMON includes, and resident `AP/*.inc`).'
 $lines += ''
 $lines += 'The 40 strongest direct edges are shown as a top-down family overview and short detail panels. Use `DOC/GENERATED/HIMON_EDGE_DUMP.md` for the full edge listing.'
 $lines += ''
@@ -1002,7 +1019,7 @@ $himonEdges = @(
     $edges |
     Where-Object {
         $_.File -eq 'HIMON/himon.asm' -or
-        $_.File -like 'HIMON/*.inc'
+        $_.File -like 'HIMON/*.inc' -or $_.File -like 'AP/*.inc'
     }
 )
 
@@ -1050,7 +1067,7 @@ $lines += ''
 $lines += Get-MermaidBreakdownLines -Rows $himonCommandEdges -OverviewLabel 'HIMON command calls' -GroupKey { param($edge) Get-MapFamily $edge.Source } -FormatEdge $routineEdgeFormat
 Write-Doc -Name 'HIMON_COMMAND_MAP.md' -Lines $lines
 
-$hashSourceFiles = @('HIMON/himon.asm', 'HIMON/fnv1a-fold.asm')
+$hashSourceFiles = @($sourcePathByDocPath.Keys | Where-Object { $_ -like 'HIMON/*' -or $_ -like 'AP/*.inc' })
 $hashEdges = @(
     $edges |
     Where-Object {
@@ -1483,7 +1500,7 @@ function Get-OwnedStackRows {
     $rows = @()
     foreach ($key in ($stackEventsByKey.Keys | Sort-Object)) {
         $file = Get-StackFileFromKey $key
-        if ($file -notlike "$FilePrefix*") { continue }
+        if (-not ($file.StartsWith($FilePrefix) -or ($FilePrefix -eq 'HIMON/' -and $file.StartsWith('AP/')))) { continue }
         $name = Get-StackNameFromKey $key
         $rows += Get-StackRow -Scope $Scope -ScopeSet $ScopeSet -Cache $Cache -Name $name -File $file -Kind 'routine'
     }
@@ -1515,7 +1532,7 @@ function Get-HimonCommandRelatedKeys {
     }
 
     $keys = @()
-    foreach ($label in ($labels | Where-Object { $_.File -like 'HIMON/*' })) {
+    foreach ($label in ($labels | Where-Object { $_.File -like 'HIMON/*' -or $_.File -like 'AP/*.inc' })) {
         $include = $false
         foreach ($name in $exactNames) {
             if ($label.Name -eq $name) {
@@ -1585,6 +1602,7 @@ $lines += '- Counts each active `JSR` return address as 2 bytes.'
 $lines += '- Counts explicit 65C02 pushes `PHA`, `PHP`, `PHX`, and `PHY` as 1 byte each; matching pulls reduce the current explicit depth.'
 $lines += '- Counts `BRK` as a 3-byte hardware frame at the instruction site.'
 $lines += '- Treats direct `JMP label` as a tail path with no extra return address.'
+$lines += '- Excludes literal IF 0 branches (and the inactive ELSE of IF 1); other build conditions remain conservative.'
 $lines += '- Uses static, branch-insensitive paths; command rows choose the deepest related command label so split bodies such as `CMD_L_*` are included.'
 $lines += '- Does not add the hardware NMI/IRQ entry frame to trap rows; those rows start at the handler label. Indirect `JMP (...)` targets and unresolved external targets are not expanded.'
 $lines += ''
@@ -1661,7 +1679,8 @@ $lines += '| Record Frontdoor (RFD) | `$F009-$F00F` | STR8 record service | Fixe
 $lines += '| APMAN Command Shadow / User Low RAM | `$1A00-$1AFF` / `$1B00-$1FFF` | APMAN phase / user | Command shadow is transient while AP/APS/INSTALL delegates; the upper 1280 bytes remain user/free outside another phase owner. |'
 $lines += '| Recovery State Capsule (RSC) | `$7DE9-$7DFF` | STR8 | Compact bank/sector/copy/update control state plus the published Bank Jump Record at `$7DFD-$7DFF`. |'
 $lines += '| AP Island Runway (AIR) | `$2000-$4FFF` | AP lifecycle | Build Bay `$2000`, Envelope Bay `$3000`, Run/Tray Bay `$4000`. |'
-$lines += '| ASM Work Hold / Safe / Volatile decks (AWH/SOD/VOD) | `$5000-$6D6D` / `$6D6E-$6FFF` / `$7000-$7CFF` | ASM/HIMON/APMAN | Current ASM UDATA, small application headroom, then phase-owned APMAN/loader/tool space below the protected `$7Dxx` page. |'
+$lines += '| ASM Work Hold / Safe / Volatile decks (AWH/SOD/VOD) | `$5000-$6D6D` / `$6D6E-$6FFF` / `$7000-$7CFF` | ASM/HIMON/APMAN | ASM UDATA while ASM owns RAM; explicit AP takeover can use $2000-$6FFF. APMAN/loader/tool space remains below the protected `$7Dxx` page. |'
+$lines += '| ASM SEAL resume | `$7E6A` | ASM/HIMON/APMAN | Durable flag outside takeover RAM; cleared by reset, manager entry, and a valid takeover before BODY copy. |'
 $lines += '| High Service Deck / I/O Bulkhead (HSD/IOB) | `$7E00-$7EFF` / `$7F00-$7FFF` | HIMON/STR8-N / devices | Published service state, including RTC, and side-effectful device boundary. |'
 $lines += '| Bank Directory Journal / Bank Select Door (BDJ/BSD) | `$FFB0-$FFEF` / `$F010` then RAM `$0203` | STR8-N | COMPLETE records authorize J0-J2; the resident door copies and enters the return-capable RAM selector. |'
 $lines += '| Reporter Rebase Table (RBT) | movable reporter BODY-relative | session reporter | Private `SR/01` rows that rebase internal addresses; not an AP Capsule ABI field. |'

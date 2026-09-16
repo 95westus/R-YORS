@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'read_himon_source.ps1')
 
 function Fail-Check([string]$Message) {
     throw "HIMON banked AP check: $Message"
@@ -401,7 +402,7 @@ foreach ($path in @($HimonSourcePath, $HimonS19Path, $HimonMapPath, $PublicContr
     if (-not (Test-Path -LiteralPath $path)) { Fail-Check "missing input $path" }
 }
 
-$sourceLines = [System.IO.File]::ReadAllLines((Resolve-Path $HimonSourcePath))
+$sourceLines = ((Read-HimonSource -Path $HimonSourcePath) -split '\r?\n')
 $codeText = ($sourceLines | ForEach-Object { ($_ -split ';', 2)[0] }) -join "`n"
 if ($codeText -notmatch 'HIM_AP_RELOC_MAX\s+EQU\s+\$([0-9A-Fa-f]+)') {
     Fail-Check 'HIMON AP relocation maximum is missing'

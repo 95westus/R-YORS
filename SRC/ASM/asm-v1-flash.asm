@@ -75,6 +75,7 @@ ASMF_CMD_PTR_LO        EQU             $82
 ASMF_CMD_PTR_HI        EQU             $83
 ; HIMON retains the canonical top-level command in its fixed input buffer.
 ASMF_HIM_CMD_ARG      EQU             $7A04
+ASMF_POST_FLAG        EQU             ASM_ABI_SESSION_RESUME
 
 HIM_SVC_FLASH_INSTALL_LO EQU           ASM_ABI_FLASH_INSTALL
 HIM_SVC_FLASH_INSTALL_HI EQU           ASM_ABI_FLASH_INSTALL+$01
@@ -490,7 +491,8 @@ ASMF_INSTALL_BANK:     STA             APMAN_INSTALL_BANK
                         CMP             #$C0
                         BCC             ASMF_INSTALL_BAD_RANGE
                         JSR             ASMF_AP_SERVICE
-                        JMP             ASMF_LOOP
+; Staging destroys low names even on failed discovery. Begin a fresh session.
+                        JMP             ASMF_ENTRY_NEW_SESSION
 
                         IF              ASM_PACKAGE_CHECK_ENABLED
 ASMF_CHECK_CMD:
@@ -1012,7 +1014,7 @@ ASMF_CMD_LOAD:          DB              "LOAD",0
 ASMF_RESULT:            DB              $00
 ASMF_PC_LO:             DB              $00
 ASMF_PC_HI:             DB              $00
-ASMF_POST_FLAG:         DB              $00
+ASMF_POST_RESERVED:     DB              $00 ; retain following UDATA offsets
 ASMF_RELOCATE_LO:       DB              $00
 ASMF_RELOCATE_HI:       DB              $00
 ASMF_ARG0_LO:           DB              $00

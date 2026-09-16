@@ -1,0 +1,34 @@
+{
+  "apman-v1.ap": {
+    "source": "C:\\SRC\\R-YORS\\SRC\\BUILD\\bin\\apman-v1.ap",
+    "sha256": "4bf5ad6432f379acca19adc2d352fcacf207a1fcce5bd842beb219235aab67ef"
+  },
+  "apman-v1-bank2-8000.bin": {
+    "source": "C:\\SRC\\R-YORS\\SRC\\BUILD\\bin\\apman-v1-bank2-8000.bin",
+    "sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9"
+  },
+  "apman-v1-bank2-8000.s19": {
+    "source": "C:\\SRC\\R-YORS\\SRC\\BUILD\\s19\\apman-v1-bank2-8000.s19",
+    "sha256": "506c65862ed4193f946ca33ff0512e9b1637263338d0744dc857aab07d98608d"
+  },
+  "bank-maint-2000.s19": {
+    "source": "C:\\SRC\\STR8-N\\BUILD\\v1.34\\s19\\str8n-v1.34-bank-maint-2000.s19",
+    "sha256": "95aee537e486e6a16e40dbd3ce7baa181d018f44ab13f6a29601779d77650c2f"
+  },
+  "bank-stage-2000.s19": {
+    "source": "C:\\SRC\\R-YORS\\LOCAL\\bso2-b2\\tools\\bank-stage-2000.s19",
+    "sha256": "f15a35a26b88bc2d4a5eab83ed27f13a14007ec4fe25ac456631cf544efb7952"
+  },
+  "bank-stage-2000.asm": {
+    "source": "C:\\SRC\\R-YORS\\LOCAL\\bso2-b2\\tools\\bank-stage-2000.asm",
+    "sha256": "45ff4998bc0f529051d06d0ceba91705f2bf38f5f21f4226dd538147e788b9a2"
+  },
+  "bank_archive.py": {
+    "source": "C:\\SRC\\R-YORS\\LOCAL\\bso2-b2\\tools\\bank_archive.py",
+    "sha256": "fa1030dd91543519a6f694788f5105752def83ebbf00cf3c690d5c557e862a47"
+  },
+  "console.py": {
+    "source": "C:\\SRC\\R-YORS\\SRC\\BUILD\\tmp\\himon-size-board\\console.py",
+    "sha256": "fed404826a5d41a89675f153dc07fa53a2f727e50334d4ed2db38cbcc953c815"
+  }
+}

@@ -1,0 +1,274 @@
+--- before/SRC/AP/ap-manager.inc
++++ after/SRC/AP/ap-manager.inc
+@@ -21,22 +21,13 @@
+                         LDA             #APMAN_STATUS_BAD_RANGE
+                         STA             APMAN_STATUS
+                         STA             HIM_AP_STATUS
+-                        LDX             #<MSG_AP_ERR
+-                        LDY             #>MSG_AP_ERR
+-                        JSR             HIM_WRITE_HBSTRING
+-                        LDA             APMAN_STATUS
+-                        JSR             SYS_WRITE_HEX_BYTE
+-                        JSR             SYS_WRITE_CRLF
++                        INCLUDE         "HIMON/himon-ap-manager-source-error.inc"
+                         LDA             APMAN_STATUS
+                         CLC
+                         RTS
+ HIM_APMAN_BEGIN:
+                         STZ             HIM_ASM_SESSION_RESUME
+-                        LDX             #$00
+-?CMD_COPY:             LDA             CMD_BUF,X
+-                        STA             $1A00,X
+-                        INX
+-                        BNE             ?CMD_COPY
++                        INCLUDE         "HIMON/himon-ap-manager-shadow.inc"
+                         LDA             #$02
+                         STA             CMD_IO_TMP
+ ?BANK:                  LDA             #$80
+@@ -89,10 +80,7 @@
+                         BNE             ?SECTOR
+                         DEC             CMD_IO_TMP
+                         BPL             ?BANK
+-                        LDX             #<MSG_APMAN_NF
+-                        LDY             #>MSG_APMAN_NF
+-                        JSR             HIM_WRITE_HBSTRING
+-                        JSR             SYS_WRITE_CRLF
++                        INCLUDE         "HIMON/himon-ap-manager-missing.inc"
+                         LDA             #APMAN_STATUS_NO_MANAGER
+                         STA             APMAN_STATUS
+                         STA             HIM_AP_STATUS
+--- before/SRC/Makefile
++++ after/SRC/Makefile
+@@ -81,7 +81,7 @@
+ HIM_SUBDIR := $(HIMON_DIR)
+ HIMON_SRC := $(HIM_SUBDIR)/himon.asm
+ # Resident AP and its HIMON adapters remain linked in-place into both variants.
+-# HIMON_INC's wildcard also tracks the nested HIMON/himon-ap-resolver.inc.
++# HIMON_INC's wildcard also tracks the nested resolver and manager adapters.
+ HIMON_AP_INC := AP/ap-contract.inc AP/ap-manager.inc AP/ap-core.inc AP/ap-link.inc AP/ap-space.inc
+ HIMON_INC := $(wildcard $(HIM_SUBDIR)/*.inc) $(HIMON_AP_INC)
+ HIMON_IMAGE_EQ := $(HIM_SUBDIR)/himon-image-eq.inc
+@@ -730,7 +730,7 @@
+ 	@echo "ASM v1 smoke checks passed."
+ 
+ .PHONY: himon-ap-contract-check himon-ap-boundary-check
+-himon-ap-boundary-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19)
++himon-ap-boundary-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
+ 	$(PYTHON) -B tools/check_himon_ap_boundary.py --output "$(BUILD_DIR)/tmp/himon-ap-boundary.json"
+ 
+ himon-ap-contract-check: himon-ap-boundary-check $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
+--- before/SRC/tools/check_himon_ap_boundary.py
++++ after/SRC/tools/check_himon_ap_boundary.py
+@@ -1,14 +1,16 @@
+-"""Check AP's catalog boundary and execute the HIMON provider from linked bytes."""
++"""Check AP/HIMON ownership and execute resolver/manager boundaries from linked bytes."""
+ import argparse
+ import json
+ from pathlib import Path
+ import re
+ 
+-from audit_himon_ap_contracts import ROOT, Machine, fnv, import_record, word
++from audit_himon_ap_contracts import ROOT, Machine, fnv, import_record, word, package
+ from report_himon_ap_baseline import sha
+ 
+ ENTRY = 'HIM_AP_LINK_RESOLVE_SLOT_X'
+ OWNER = 'HIMON/himon-ap-resolver.inc'
++MANAGER_OWNERS = ['HIMON/himon-ap-manager-'+name+'.inc'
++                  for name in ('source-error','shadow','missing')]
+ 
+ 
+ def check_source(src):
+@@ -28,6 +30,12 @@
+     owner = active[OWNER]
+     if len(re.findall(rf'(?m)^{ENTRY}:', owner)) != 1:
+         raise ValueError('HIMON adapter must provide the existing slot interface')
++    manager = active['AP/ap-manager.inc']
++    if re.search(r'\b(?:CMD_BUF|HIM_WRITE_HBSTRING|SYS_WRITE_HEX_BYTE|SYS_WRITE_CRLF|MSG_AP_ERR|MSG_APMAN_NF)\b',manager):
++        raise ValueError('AP manager bypasses HIMON command-shadow/diagnostic ownership')
++    for name in MANAGER_OWNERS:
++        if len(re.findall(rf'(?m)^\s*INCLUDE\s+"{re.escape(name)}"\s*$',manager)) != 1 or not active.get(name,'').strip():
++            raise ValueError('Missing/duplicated HIMON inline manager adapter: '+name)
+ 
+ 
+ def main():
+@@ -38,12 +46,15 @@
+     source = {p.relative_to(ROOT/'SRC').as_posix(): p.read_text()
+               for p in (ROOT/'SRC/AP').glob('*.inc')}
+     source[OWNER] = (ROOT/'SRC'/OWNER).read_text()
++    source.update({name:(ROOT/'SRC'/name).read_text() for name in MANAGER_OWNERS})
+     check_source(source)
+     # Prove the architectural gate detects an accidental direct lookup/kind read.
+     negatives = []
+-    for bad in ('JSR THE_JOIN_FIND', 'AND #CMD_HASH_KIND_EXEC'):
++    for filename,bad in [('AP/ap-link.inc','JSR THE_JOIN_FIND'),('AP/ap-link.inc','AND #CMD_HASH_KIND_EXEC'),
++                         ('AP/ap-manager.inc','LDA CMD_BUF,X'),('AP/ap-manager.inc','JSR HIM_WRITE_HBSTRING'),
++                         ('AP/ap-manager.inc','LDX #<MSG_APMAN_NF')]:
+         altered = dict(source)
+-        altered['AP/ap-link.inc'] += '\n                        '+bad+'\n'
++        altered[filename] += '\n                        '+bad+'\n'
+         try:
+             check_source(altered)
+         except ValueError:
+@@ -78,16 +89,68 @@
+         assert m.m.ram[address:address+2] == word(expected)
+         assert bytes(m.m.ram[0x2000:0x5000]) == before
+         assert not result['bank_visits']
+-        result.update(kind=kind,name=name.decode(),slot=slot,resolved=f'{expected:04X}')
++        result.update(case_type='resolver',kind=kind,name=name.decode(),slot=slot,resolved=f'{expected:04X}')
++        cases.append(result)
++    # The entire page, including an early NUL and the last byte, belongs to the
++    # shadow contract. Stop before staging so both adjacent redzones are live.
++    command = bytes((i*37+11)&255 for i in range(256))
++    command = command[:5]+b'\0'+command[6:]
++    for mode in (1,2,3):
++        m=Machine(args.build_dir,top)
++        m.m.ram[0x7A00:0x7B00]=command
++        m.m.ram[0x19FF:0x1B01]=b'\xA5'*258
++        m.m.ram[0x7E6A]=1
++        m.m.ram[0x7C60]=mode
++        m.set('HIM_AP_OP',4)
++        if mode==3:
++            data=package(exported=True)
++            m.m.ram[0x3000:0x3000+len(data)]=data
++            m.m.ram[0x7C62:0x7C64]=word(0x3000)
++        result=m.run('HIM_AP_SERVICE',stop=m.s['HIM_AP_STAGE_BANK_SOURCE'])
++        assert result['result']=='stopped-at-caller-boundary' and not result['bank_visits']
++        assert m.m.ram[0x1A00:0x1B00]==command and m.m.ram[0x7A00:0x7B00]==command
++        assert m.m.ram[0x19FF]==m.m.ram[0x1B00]==0xA5 and m.m.ram[0x7E6A]==0
++        result.update(case_type='manager',name=f'whole-command-page-mode-{mode}')
++        cases.append(result)
++    for address in (0x0A00,0x3000):
++        m=Machine(args.build_dir,top)
++        m.m.ram[0x7C60]=3
++        m.m.ram[0x7C62:0x7C64]=word(address)
++        m.m.ram[0x7E6A]=1
++        m.set('HIM_AP_OP',4)
++        before=bytes(m.m.ram[0x200:0x7C00])
++        result=m.run('HIM_AP_SERVICE')
++        assert not result['carry'] and result['a']==result['ap_status']==result['manager_status']==0xD4
++        assert result['output']=='APERR=$D4\r\n' and not result['bank_visits']
++        assert bytes(m.m.ram[0x200:0x7C00])==before and m.m.ram[0x7E6A]==1
++        result.update(case_type='manager',name=f'reject-before-shadow-{address:04X}')
++        cases.append(result)
++    for corrupt in (False,True):
++        m=Machine(args.build_dir,top)
++        m.m.ram[0x7C60]=2
++        m.m.ram[0x7A00:0x7B00]=command
++        m.m.ram[0x1B00]=0xA5
++        m.m.ram[0x7E6A]=1
++        m.set('HIM_AP_OP',4)
++        if corrupt:
++            m.m.banks[2][:0x1000]=(args.build_dir/'bin/apman-v1-bank2-8000.bin').read_bytes()
++            m.m.banks[2][100]^=1
++        result=m.run('HIM_AP_SERVICE')
++        assert not result['carry'] and result['a']==result['ap_status']==result['manager_status']==0xDA
++        assert result['output']=='APMAN NF\r\n'
++        assert m.m.ram[0x1A00:0x1B00]==command and m.m.ram[0x7A00:0x7B00]==command
++        assert m.m.ram[0x1B00]==0xA5 and m.m.ram[0x7E6A]==0
++        result.update(case_type='manager',name='corrupt-manager' if corrupt else 'absent-manager')
+         cases.append(result)
+     args.output.parent.mkdir(parents=True,exist_ok=True)
+     inputs = {name:sha((args.build_dir/name).read_bytes()) for name in
+               ('s19/himon-rom-c000.s19','s19/himon-rom-c000.map',
+-               's19/asm-v1-flash-8000.s19','s19/asm-v1-flash-8000.map')}
++               's19/asm-v1-flash-8000.s19','s19/asm-v1-flash-8000.map',
++               's19/apman-7000.map','bin/apman-v1-bank2-8000.bin')}
+     args.output.write_text(json.dumps(dict(result='PASS',inputs=inputs,str8_sha256=sha(top),
+         source_sha256={n:sha((ROOT/'SRC'/n).read_bytes()) for n in source},
+         tool_sha256=sha(Path(__file__).read_bytes()),negative_boundary_cases=negatives,cases=cases),indent=2)+'\n')
+-    print('PASS AP catalog boundary; 2 bypass negatives; 6 linked resolver cases')
++    print('PASS AP/HIMON boundaries; 5 bypass negatives; 6 resolver + 7 manager cases')
+ 
+ 
+ if __name__ == '__main__':
+--- before/SRC/tools/gen_docs.ps1
++++ after/SRC/tools/gen_docs.ps1
+@@ -132,6 +132,19 @@
+ $callPattern = '^\s*(?:[A-Za-z_?][A-Za-z0-9_?]*:\s*)?(JSR|JMP)\s+([A-Za-z_?][A-Za-z0-9_?]*)\b'
+ $instructionPattern = '^\s*(?:[A-Za-z_?][A-Za-z0-9_?]*:\s*)?([A-Za-z]{2,4})\b(?:\s+([^;]+))?'
+ 
++# The manager's straight-line HIMON fragments retain their parent's global
++# label. Attribute their edges to that label, with the fragment's source path,
++# instead of silently dropping calls before a fragment's first global label.
++$managerIncludeContexts = @{}
++$managerContext = $null
++foreach ($line in (Read-ActiveSourceLines -Path (Join-Path $root 'AP/ap-manager.inc'))) {
++    if ($line -match $labelPattern) { $managerContext = $matches[1] }
++    if ($line -match '^\s*INCLUDE\s+"(HIMON/himon-ap-manager-[^"]+\.inc)"') {
++        if (-not $managerContext) { throw 'Manager inline include has no parent label' }
++        $managerIncludeContexts[$matches[1]] = $managerContext
++    }
++}
++
+ $stackTrackedOps = @('PHA', 'PHP', 'PHX', 'PHY', 'PLA', 'PLP', 'PLX', 'PLY', 'JSR', 'JMP', 'BRK', 'TXS')
+ 
+ $routines = New-Object System.Collections.Generic.List[object]
+@@ -144,7 +157,7 @@
+ foreach ($file in $files) {
+     $rel = Get-DocPath -Path (Get-RelPath -Root $root -Path $file.FullName)
+     $lines = Read-ActiveSourceLines -Path $file.FullName
+-    $current = $null
++    $current = if ($managerIncludeContexts.ContainsKey($rel)) { $managerIncludeContexts[$rel] } else { $null }
+     $lastRoutineRefs = @()
+ 
+     for ($i = 0; $i -lt $lines.Count; $i++) {
+--- before/SRC/tools/package_component_releases.py
++++ after/SRC/tools/package_component_releases.py
+@@ -194,7 +194,9 @@
+                 for filename in ['himon.asm', 'himon-disasm.inc', 'himon-shared-eq.inc']:
+                     put(ROOT / 'SRC/HIMON' / filename, 'SOURCE/' + filename)
+                 # Retain the extracted implementation in future source-reference bundles.
+-                for filename in ['himon-ap-adapter.inc', 'himon-ap-resolver.inc']:
++                for filename in ['himon-ap-adapter.inc', 'himon-ap-resolver.inc',
++                                 'himon-ap-manager-source-error.inc',
++                                 'himon-ap-manager-shadow.inc', 'himon-ap-manager-missing.inc']:
+                     put(ROOT / 'SRC/HIMON' / filename, 'SOURCE/HIMON/' + filename)
+                 for path in sorted((ROOT / 'SRC/AP').glob('*.inc')):
+                     put(path, 'SOURCE/AP/' + path.name)
+--- before/SRC/tools/read_himon_source.ps1
++++ after/SRC/tools/read_himon_source.ps1
+@@ -11,7 +11,7 @@
+     if (-not $SourceRoot) { $SourceRoot = Split-Path -Parent (Split-Path -Parent $full) }
+     if ($Parents -contains $full) { throw "Cyclic HIMON/AP include: $full" }
+     $text = [IO.File]::ReadAllText($full)
+-    $pattern = '(?m)^[ \t]*INCLUDE[ \t]+"(AP/[^"\r\n]+\.inc|HIMON/himon-ap-(?:adapter|resolver)\.inc)"[ \t]*\r?$'
++    $pattern = '(?m)^[ \t]*INCLUDE[ \t]+"(AP/[^"\r\n]+\.inc|HIMON/himon-ap-(?:adapter|resolver|manager-(?:source-error|shadow|missing))\.inc)"[ \t]*\r?$'
+     return [regex]::Replace($text, $pattern, {
+         param($match)
+         Read-HimonSource -Path (Join-Path $SourceRoot $match.Groups[1].Value) `
+--- before/SRC/HIMON/himon-ap-manager-source-error.inc
++++ after/SRC/HIMON/himon-ap-manager-source-error.inc
+@@ -0,0 +1,10 @@
++; HIMON-owned inline manager adapter; included under HIM_APMAN_SOURCE_BAD.
++; Render the already-set manager source error; AP reloads status and returns C=0.
++; This is not a callable routine. Keep the parent label/local-label scope.
++
++                        LDX             #<MSG_AP_ERR
++                        LDY             #>MSG_AP_ERR
++                        JSR             HIM_WRITE_HBSTRING
++                        LDA             APMAN_STATUS
++                        JSR             SYS_WRITE_HEX_BYTE
++                        JSR             SYS_WRITE_CRLF
+--- before/SRC/HIMON/himon-ap-manager-shadow.inc
++++ after/SRC/HIMON/himon-ap-manager-shadow.inc
+@@ -0,0 +1,9 @@
++; HIMON-owned inline manager adapter; included under HIM_APMAN_BEGIN.
++; Copy the entire command page to $1A00 before manager overlay loading; falls through.
++; This is not a callable routine. Keep the parent label/local-label scope.
++
++                        LDX             #$00
++?CMD_COPY:             LDA             CMD_BUF,X
++                        STA             $1A00,X
++                        INX
++                        BNE             ?CMD_COPY
+--- before/SRC/HIMON/himon-ap-manager-missing.inc
++++ after/SRC/HIMON/himon-ap-manager-missing.inc
+@@ -0,0 +1,8 @@
++; HIMON-owned inline manager adapter; included under HIM_APMAN_BEGIN.
++; Render absent/corrupt manager text; AP then sets DA in both status cells and returns C=0.
++; This is not a callable routine. Keep the parent label/local-label scope.
++
++                        LDX             #<MSG_APMAN_NF
++                        LDY             #>MSG_APMAN_NF
++                        JSR             HIM_WRITE_HBSTRING
++                        JSR             SYS_WRITE_CRLF

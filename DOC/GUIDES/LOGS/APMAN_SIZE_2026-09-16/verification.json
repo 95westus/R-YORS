@@ -1,0 +1,222 @@
+{
+  "result": "PASS",
+  "size": {
+    "result": "PASS",
+    "artifacts": [
+      {
+        "path": "s19/himon-c000.s19",
+        "changed": false,
+        "before_sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+        "after_sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+        "before_file_bytes": 32652,
+        "after_file_bytes": 32652
+      },
+      {
+        "path": "s19/himon-c000.map",
+        "changed": false,
+        "before_sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+        "after_sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+        "before_file_bytes": 47118,
+        "after_file_bytes": 47118
+      },
+      {
+        "path": "s19/himon-rom-c000.s19",
+        "changed": false,
+        "before_sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+        "after_sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+        "before_file_bytes": 32652,
+        "after_file_bytes": 32652
+      },
+      {
+        "path": "s19/himon-rom-c000.map",
+        "changed": false,
+        "before_sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+        "after_sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+        "before_file_bytes": 47118,
+        "after_file_bytes": 47118
+      },
+      {
+        "path": "bin/himon-rom-c000.bin",
+        "changed": false,
+        "before_sha256": "1ac1946839e14a251a055939f9b35f5dd6b2432c1fd4ef12f5ef978cab3e102c",
+        "after_sha256": "1ac1946839e14a251a055939f9b35f5dd6b2432c1fd4ef12f5ef978cab3e102c",
+        "before_file_bytes": 32768,
+        "after_file_bytes": 32768
+      },
+      {
+        "path": "s19/asm-v1-flash-8000.s19",
+        "changed": false,
+        "before_sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5",
+        "after_sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5",
+        "before_file_bytes": 41918,
+        "after_file_bytes": 41918
+      },
+      {
+        "path": "s19/asm-v1-flash-8000.map",
+        "changed": false,
+        "before_sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e",
+        "after_sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e",
+        "before_file_bytes": 66253,
+        "after_file_bytes": 66253
+      },
+      {
+        "path": "s19/apman-7000.s19",
+        "changed": true,
+        "before_sha256": "7c15c2ee91989d095f0e024dea2b1eef571718508433ca73b8d891d4f7e21e33",
+        "after_sha256": "85497d68a187c711343c7c73067cbe6ea254173305c93991b5903573a7cf54fc",
+        "before_file_bytes": 8460,
+        "after_file_bytes": 8354
+      },
+      {
+        "path": "s19/apman-7000.map",
+        "changed": true,
+        "before_sha256": "8378ca8e36ac0c89d3c7bb65c02b0392e6799f8f5c185cff4d5c49e1d51fe03a",
+        "after_sha256": "61e40b9bece99f083637ff65a601207716adc00b217c27c24a63f2604e42ce3f",
+        "before_file_bytes": 11948,
+        "after_file_bytes": 11987
+      },
+      {
+        "path": "bin/apman-v1.ap",
+        "changed": true,
+        "before_sha256": "4bf5ad6432f379acca19adc2d352fcacf207a1fcce5bd842beb219235aab67ef",
+        "after_sha256": "c53f820a05b0b7cd5921518f97beebb12a3f2c247d2526dfa2ac0ca91be0555e",
+        "before_file_bytes": 3118,
+        "after_file_bytes": 3077
+      },
+      {
+        "path": "bin/apman-v1-bank2-8000.bin",
+        "changed": true,
+        "before_sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9",
+        "after_sha256": "1fed29fe2236e8c2e8aaba574d5dc452f8885efac75060c33a4eb02c8edc779b",
+        "before_file_bytes": 4096,
+        "after_file_bytes": 4096
+      },
+      {
+        "path": "s19/apman-v1-bank2-8000.s19",
+        "changed": true,
+        "before_sha256": "506c65862ed4193f946ca33ff0512e9b1637263338d0744dc857aab07d98608d",
+        "after_sha256": "8863906bb030e7b1ddeb493b0d92f93a026c19f0005583b572b14cc71da7fd2c",
+        "before_file_bytes": 9740,
+        "after_file_bytes": 9740
+      },
+      {
+        "path": "s19/ryors-v1.2-asm-bank3-8-b.s19",
+        "changed": false,
+        "before_sha256": "79af47c34c28ebdfcb582f15b9fbec2e21db4e158c3a91a0870203ef28a27414",
+        "after_sha256": "79af47c34c28ebdfcb582f15b9fbec2e21db4e158c3a91a0870203ef28a27414",
+        "before_file_bytes": 38924,
+        "after_file_bytes": 38924
+      },
+      {
+        "path": "s19/ryors-v1.2-himon-bank3-c-e.s19",
+        "changed": false,
+        "before_sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648",
+        "after_sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648",
+        "before_file_bytes": 29196,
+        "after_file_bytes": 29196
+      },
+      {
+        "path": "s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
+        "changed": false,
+        "before_sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9",
+        "after_sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9",
+        "before_file_bytes": 68108,
+        "after_file_bytes": 68108
+      }
+    ],
+    "identical_resident_artifacts": 10,
+    "timestamp_exclusions": [],
+    "body_before": 3072,
+    "body_after": 3031,
+    "overlay_headroom": 41,
+    "package_before": 3118,
+    "package_after": 3077,
+    "carrier_bytes_before": 4096,
+    "carrier_bytes_after": 4096,
+    "bank3_bytes_saved": 0,
+    "body_and_envelope_bytes_saved": 41,
+    "sectors_released": 0,
+    "breakdown": {
+      "install_facts": 19,
+      "carrier_summary": 22
+    },
+    "worker_bytes": 555,
+    "worker_sha256": "ffcdb4201c913fc9b3e3f3d438a98940f76967c5e62f843a2dc32cff1d1ad1b2",
+    "persistent_ram_growth": 0,
+    "additional_call_overhead_cycles": 12,
+    "additional_transient_stack_bytes": 2
+  },
+  "board_checks": {
+    "manager": [
+      "persistent manager bootstrap and complete inventory",
+      "exact installed manager identity/length/load address",
+      "AP D B2 APMAN validates and inspects stored manager",
+      "AP D B2 8000 validates and inspects stored manager",
+      "AP B2 APMAN 2000 self-execution guard",
+      "AP L B2 APMAN 5000 self-execution guard",
+      "persistent manager loads linked child at 5000 without running",
+      "persistent manager links/runs BANKAUDIT at 5000 and returns",
+      "missing child returns one D1 diagnostic/status"
+    ],
+    "install": [
+      "onboard source/package exactly matches independent expected AP bytes",
+      "ASM INSTALL writes B2:9 through carried worker and returns AC",
+      "INSTALL returns fresh ASM at 2000 with zero symbol/fixup counts",
+      "INSTALL preserves source package and all Bank 3 bytes"
+    ],
+    "fixture": [
+      "APTEST exact BODY at 2000; entry +2; return to HIMON",
+      "APTEST exact BODY at 5000; entry +2; return to HIMON",
+      "APTEST exact BODY at 6FFA; entry +2; return to HIMON",
+      "resident MANAGER + persistent child RTS returns A=5A/C=1 to RAM caller",
+      "BODY crossing 7000 rejected before copy; redzone preserved",
+      "ASM stale resume refused after persistent takeover",
+      "persistent AP after STR8 software W entry",
+      "persistent AP after STR8 software C entry"
+    ],
+    "isolation": [
+      "exact final four-bank readback; only authorized B2 and D2 changes"
+    ],
+    "physical": [
+      "receive-only RST H / STR8-N 1.34 / default warm HIMON recovery",
+      "reset clears ASM resume and rediscovers both B2 carriers",
+      "post-reset APTEST executes at 5002 with exact BODY",
+      "post-reset fresh ASM assembles and runs A=AC/C=1",
+      "post-reset complete Bank 3 remains exact"
+    ]
+  },
+  "board_workflow_checks": 27,
+  "board_exact_output_comparisons": 8,
+  "hardware_crc_fields": 32,
+  "physical_reset": true,
+  "changed_bank3_addresses": [
+    "FFDC"
+  ],
+  "preserved": [
+    "Banks 0 and 1",
+    "Bank 2 sectors 9-F",
+    "all Bank 3 bytes except D2 journal FFDC",
+    "all earlier transcripts and unrelated initial files"
+  ],
+  "changed_initial_files": [
+    "DOC/GENERATED/HIMON_AP_BASELINE.md",
+    "DOC/GUIDES/AP/AP_OIL_GUIDE.md",
+    "DOC/GUIDES/ASM/TEST_PLAN.md",
+    "DOC/GUIDES/PLANNING/FOUR_MODULE_PLAN.md",
+    "DOC/GUIDES/PLANNING/TODO.md",
+    "SRC/APPS/apman-7000.asm",
+    "SRC/Makefile"
+  ],
+  "final_bank_sha256": [
+    "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8",
+    "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211",
+    "0b67c0fc66568f8903927d4014069a306a8ea8838fc557991813828bbe01a13c",
+    "39718b56169da58f52443e537efff0f4c59a7c0822581c9138d1dd36109bd614"
+  ],
+  "final_flash_sha256": "81bc7400407662a66b65deac09ead6c7c768fdbda48e17d21f130e43517e7642",
+  "pending": [
+    "visual LED acceptance",
+    "NMI"
+  ],
+  "final_state": "HIMON prompt in Bank 3; COM4 closed"
+}

@@ -7,6 +7,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'read_himon_source.ps1')
 
 function Fail([string]$Message) {
     throw "APMAN inspect check: $Message"
@@ -29,7 +30,7 @@ function Map([string]$Name) {
 }
 
 $source = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $SourcePath))
-$himonSource = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $HimonSourcePath))
+$himonSource = (Read-HimonSource -Path $HimonSourcePath)
 $apDispatchStart = $himonSource.IndexOf('CMD_AP:')
 $apDispatchEnd = $himonSource.IndexOf('CMD_AP_SRC_OK:')
 if ($apDispatchStart -lt 0 -or $apDispatchEnd -le $apDispatchStart) {

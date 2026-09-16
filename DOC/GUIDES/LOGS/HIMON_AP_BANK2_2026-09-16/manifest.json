@@ -1,0 +1,233 @@
+{
+  "scope": "Bank-2 persistent APMAN provisioning and board cycle",
+  "board_port": "COM4",
+  "baud": 115200,
+  "check_count": 27,
+  "dependencies": {
+    "LOCAL/himon-ap-change-20260916/board.py": "4968fd5e749caf7b965957f190318cea0c1a7f77a635fd0836918adf8a2a1e7e",
+    "SRC/tools/audit_himon_ap_contracts.py": "ea0ac6a2cf23d2d92aec09e161dbb017dd16092e96c19ff60ff898deed742e46",
+    "SRC/tools/report_himon_ap_baseline.py": "fc78a3f45d799725b7755e7c91e1c50634b06be9ef165565008bba4da0f77e31"
+  },
+  "artifacts": [
+    {
+      "path": "apman-v1-bank2-8000.bin",
+      "bytes": 4096,
+      "sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9"
+    },
+    {
+      "path": "apman-v1-bank2-8000.s19",
+      "bytes": 9740,
+      "sha256": "506c65862ed4193f946ca33ff0512e9b1637263338d0744dc857aab07d98608d"
+    },
+    {
+      "path": "apman-v1.ap",
+      "bytes": 3118,
+      "sha256": "4bf5ad6432f379acca19adc2d352fcacf207a1fcce5bd842beb219235aab67ef"
+    },
+    {
+      "path": "aptest-2000.a",
+      "bytes": 69,
+      "sha256": "dae1b9b89e56094697e6a40fcfad6569d427a4f032298b7973cc696d26b9cc3f"
+    },
+    {
+      "path": "aptest-expected.ap",
+      "bytes": 52,
+      "sha256": "310a0dd1629149ebb1af41dc29ba2dbbaf0ed47994993b10835ef35f561bb3dd"
+    },
+    {
+      "path": "aptest-onboard.ap",
+      "bytes": 52,
+      "sha256": "310a0dd1629149ebb1af41dc29ba2dbbaf0ed47994993b10835ef35f561bb3dd"
+    },
+    {
+      "path": "artifact-identity.json",
+      "bytes": 2779,
+      "sha256": "96c9ab54707ab5df24eee30f6568ccb75514bd165249ad3d4be9ea9185fdfce3"
+    },
+    {
+      "path": "bank-maint-2000.s19",
+      "bytes": 18114,
+      "sha256": "95aee537e486e6a16e40dbd3ce7baa181d018f44ab13f6a29601779d77650c2f"
+    },
+    {
+      "path": "bank-stage-2000.asm",
+      "bytes": 4052,
+      "sha256": "45ff4998bc0f529051d06d0ceba91705f2bf38f5f21f4226dd538147e788b9a2"
+    },
+    {
+      "path": "bank-stage-2000.s19",
+      "bytes": 349,
+      "sha256": "f15a35a26b88bc2d4a5eab83ed27f13a14007ec4fe25ac456631cf544efb7952"
+    },
+    {
+      "path": "bank_archive.py",
+      "bytes": 7024,
+      "sha256": "fa1030dd91543519a6f694788f5105752def83ebbf00cf3c690d5c557e862a47"
+    },
+    {
+      "path": "before-b0.bin",
+      "bytes": 32768,
+      "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8"
+    },
+    {
+      "path": "before-b1.bin",
+      "bytes": 32768,
+      "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211"
+    },
+    {
+      "path": "before-b2.bin",
+      "bytes": 32768,
+      "sha256": "cbb006447ceb2120cf63fc9ce3d58a3fe78c50a1ca696bb016ea055edddf4689"
+    },
+    {
+      "path": "before-b3.bin",
+      "bytes": 32768,
+      "sha256": "4462b67074947082018ad24975f3e87cde8934662fe5c2c74107acb248d8d98c"
+    },
+    {
+      "path": "before-readback.json",
+      "bytes": 890,
+      "sha256": "70aaf4920d7bdcad1c8e0f7496d63aaaff3a90cdda1c725dd45d26c0e98f2337"
+    },
+    {
+      "path": "boundary-sentinel.s19",
+      "bytes": 56,
+      "sha256": "f3e57e757dc83edd821f58eec96dc8eeca2df974e6a5047fce46c21c48ab4c93"
+    },
+    {
+      "path": "child-return.s19",
+      "bytes": 334,
+      "sha256": "795e6c2432fa54b63909dabb318fa61e510bd2634ff947dd5097ef78111b1c1c"
+    },
+    {
+      "path": "console.py",
+      "bytes": 3015,
+      "sha256": "fed404826a5d41a89675f153dc07fa53a2f727e50334d4ed2db38cbcc953c815"
+    },
+    {
+      "path": "enrolled-b3.bin",
+      "bytes": 32768,
+      "sha256": "3eead7cab55b85c887eb67ff1720584931d5fee934a099e3c88358029927c533"
+    },
+    {
+      "path": "erased-b2.bin",
+      "bytes": 32768,
+      "sha256": "2d864c0b789a43214eee8524d3182075125e5ca2cd527f3582ec87ffd94076bc"
+    },
+    {
+      "path": "final-b0.bin",
+      "bytes": 32768,
+      "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8"
+    },
+    {
+      "path": "final-b1.bin",
+      "bytes": 32768,
+      "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211"
+    },
+    {
+      "path": "final-b2.bin",
+      "bytes": 32768,
+      "sha256": "52011800db06a1c13b3c86688f1a55d35e079590e8b92073a11253e82c84fb44"
+    },
+    {
+      "path": "final-b3.bin",
+      "bytes": 32768,
+      "sha256": "3eead7cab55b85c887eb67ff1720584931d5fee934a099e3c88358029927c533"
+    },
+    {
+      "path": "final-readback.json",
+      "bytes": 890,
+      "sha256": "7876014a46309876dfb2b53109e26f52810dd5876b4357f8b388d45ac0a64983"
+    },
+    {
+      "path": "fixture-tests.json",
+      "bytes": 477,
+      "sha256": "bd6930ede5cfda356eca9202854a76f51ad3250184976658bc3b51d7fbf606f0"
+    },
+    {
+      "path": "inputs.json",
+      "bytes": 1533,
+      "sha256": "abd393c15346d55b00497c5bd2789ca7ed7abe1c181bc85cb3edb6c6ceb8458e"
+    },
+    {
+      "path": "install-tests.json",
+      "bytes": 278,
+      "sha256": "5ca5489a2eeadbf8006c86c16c783d18d7e2ab9d5e4e46fc1855a65100e4e14c"
+    },
+    {
+      "path": "isolation-tests.json",
+      "bytes": 77,
+      "sha256": "b3324e0bd5f79c848cf1f751060d26af418881b8fe7cd89b0bd2c1f47e226b70"
+    },
+    {
+      "path": "maintenance-before.txt",
+      "bytes": 533,
+      "sha256": "e619bc34fd9771f3873d8fb8e8b874cb805f577261eaa79335f2efb5847b4dc7"
+    },
+    {
+      "path": "maintenance-erased.txt",
+      "bytes": 533,
+      "sha256": "5c41b37f6804b2df6d56934bd0028d78f36bd6a05bb373fde55b6fa99e0a64a3"
+    },
+    {
+      "path": "manager-bankaudit.txt",
+      "bytes": 350,
+      "sha256": "3f2f945228f8cc8bccd1bb0b27353757253767a46fda2ca120f623582ff0f13a"
+    },
+    {
+      "path": "manager-tests.json",
+      "bytes": 514,
+      "sha256": "fe5693087c90a28dd7835c3e95dd4050b6c8504b0ecf3b05dd3da16159332ea0"
+    },
+    {
+      "path": "persistent-inventory.txt",
+      "bytes": 492,
+      "sha256": "5ec5cb3ebf1e7aafe4078a3a54d4d263d57b0c232f4b6018903596044ccc403f"
+    },
+    {
+      "path": "physical-reset.txt",
+      "bytes": 74,
+      "sha256": "2e9d27f9d77a7472cc354e85bcc2443df317f47fadbcddb8b825d8bfda52a7e3"
+    },
+    {
+      "path": "physical-tests.json",
+      "bytes": 296,
+      "sha256": "aeefa460246dab714157484f0525f5ecc731438d381ba8cfd1a980f02341f829"
+    },
+    {
+      "path": "provision.py",
+      "bytes": 7749,
+      "sha256": "ee1a8839dab4da36e1ec4c2296a4fbf90c6fa99638b15b8860bb2edcb5304128"
+    },
+    {
+      "path": "qualify.py",
+      "bytes": 8809,
+      "sha256": "a89250e0defacd9876e8bae96ac9f56a143da0da172afa7f27798ea4795d61b8"
+    },
+    {
+      "path": "reclaimed-b3.bin",
+      "bytes": 32768,
+      "sha256": "5b92d315ef7742fbe577ae7a32a1a338170447241c8cfd893e2f2c45efd7ca7e"
+    },
+    {
+      "path": "record_evidence.py",
+      "bytes": 7291,
+      "sha256": "a46c0cbd2a4f572afbf4da63375029b45c40ff417eae472be21bc652115c3606"
+    },
+    {
+      "path": "reset_check.py",
+      "bytes": 2155,
+      "sha256": "69a72ecbbb53723dd8cb60166419407a6f2dc17706c52d782b163c6f3a3649eb"
+    },
+    {
+      "path": "serial-com4.jsonl",
+      "bytes": 7225388,
+      "sha256": "10f4e85620560c454845be140df291402ddc389ef8995c8cc7d3e0ea7be61139"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 2597,
+      "sha256": "6cdd6d703e9c579473ff4440db927dce0dc74ef803b396a7132c165a64ace05e"
+    }
+  ]
+}

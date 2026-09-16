@@ -1,0 +1,461 @@
+{
+  "result": "PASS",
+  "inputs": {
+    "s19/himon-rom-c000.s19": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e",
+    "s19/himon-rom-c000.map": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+    "s19/asm-v1-flash-8000.s19": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5",
+    "s19/asm-v1-flash-8000.map": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e"
+  },
+  "str8_sha256": "9538d97854ba9d5d76143cba0fedb3b2e7ce18f977ce89557406e63404026cb7",
+  "source_sha256": {
+    "AP/ap-contract.inc": "b825650614ccad35a52fa1fab85b361175b72c9a687238c183b97f0029dda8c1",
+    "AP/ap-core.inc": "04b7c1f00bee902bf4ddc35595717238bf8b081152b33e9802248536cd2fffff",
+    "AP/ap-link.inc": "8b1b095eb22c5f5241e9f3f16555000060563d5c3cf8bf43059b3527b852a5f4",
+    "AP/ap-manager.inc": "dce915553e5716282c2ea211897bf55ec95e0910b3cc72fc21486d19836348b6",
+    "AP/ap-space.inc": "e69a0539d282c710d713d3d2fc4a459285c9507a855d882d9bf6f8107a5f6360",
+    "HIMON/himon-ap-resolver.inc": "49cea7005d31077c25c4f3d01b16fd73c8d374ace0c77bbc423f90cc1573c05f"
+  },
+  "tool_sha256": "3e7dbd46b9acb192fdc97de08cc50847045458c22ab81b7e9794e5eacc1956a1",
+  "negative_boundary_cases": [
+    "JSR THE_JOIN_FIND",
+    "AND #CMD_HASH_KIND_EXEC"
+  ],
+  "cases": [
+    {
+      "entry": "HIM_AP_LINK_RESOLVE_SLOT_X",
+      "result": "return",
+      "a": 226,
+      "x": 0,
+      "y": 7,
+      "carry": true,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 8,
+      "steps": 530634,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32195,
+          32197
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32195,
+          32197
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "kind": 1,
+      "name": "FNV1A_INIT",
+      "slot": 0,
+      "resolved": "E29F"
+    },
+    {
+      "entry": "HIM_AP_LINK_RESOLVE_SLOT_X",
+      "result": "return",
+      "a": 239,
+      "x": 0,
+      "y": 7,
+      "carry": true,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 8,
+      "steps": 597972,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32195,
+          32197
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32195,
+          32197
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "kind": 2,
+      "name": "BOUNDARY_DATA",
+      "slot": 0,
+      "resolved": "EF08"
+    },
+    {
+      "entry": "HIM_AP_LINK_RESOLVE_SLOT_X",
+      "result": "return",
+      "a": 1,
+      "x": 0,
+      "y": 7,
+      "carry": false,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 8,
+      "steps": 530630,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "kind": 2,
+      "name": "FNV1A_INIT",
+      "slot": 0,
+      "resolved": "CAFE"
+    },
+    {
+      "entry": "HIM_AP_LINK_RESOLVE_SLOT_X",
+      "result": "return",
+      "a": 0,
+      "x": 0,
+      "y": 7,
+      "carry": false,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 8,
+      "steps": 597967,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "kind": 1,
+      "name": "BOUNDARY_DATA",
+      "slot": 0,
+      "resolved": "CAFE"
+    },
+    {
+      "entry": "HIM_AP_LINK_RESOLVE_SLOT_X",
+      "result": "return",
+      "a": 248,
+      "x": 0,
+      "y": 0,
+      "carry": false,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 8,
+      "steps": 689926,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          210,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "kind": 1,
+      "name": "BOUNDARY_ABSENT",
+      "slot": 0,
+      "resolved": "CAFE"
+    },
+    {
+      "entry": "HIM_AP_LINK_RESOLVE_SLOT_X",
+      "result": "return",
+      "a": 226,
+      "x": 0,
+      "y": 7,
+      "carry": true,
+      "ap_status": 0,
+      "manager_status": 204,
+      "stack_peak_bytes_including_entry": 8,
+      "steps": 530703,
+      "writes": [
+        [
+          176,
+          180
+        ],
+        [
+          209,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32195,
+          32197
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "changed": [
+        [
+          176,
+          180
+        ],
+        [
+          209,
+          213
+        ],
+        [
+          224,
+          226
+        ],
+        [
+          252,
+          254
+        ],
+        [
+          504,
+          510
+        ],
+        [
+          32195,
+          32197
+        ],
+        [
+          32358,
+          32360
+        ]
+      ],
+      "bank_visits": [],
+      "output": "",
+      "kind": 1,
+      "name": "FNV1A_INIT",
+      "slot": 1,
+      "resolved": "E29F"
+    }
+  ]
+}

@@ -1,0 +1,2837 @@
+[
+  {
+    "path": ".gitattributes",
+    "bytes": 880,
+    "sha256": "d934dc5d3ce80d68533e490836427e49f3ba1d652133c482e0615492fe75428f"
+  },
+  {
+    "path": ".github/ISSUE_TEMPLATE/board-proof.yml",
+    "bytes": 1266,
+    "sha256": "2090c084da1aa2dd7030ea85c2b3efb8069e2512d02b49207749dd56a05d8698"
+  },
+  {
+    "path": ".github/release.yml",
+    "bytes": 547,
+    "sha256": "89059fe29f1c9eabe958f6e90f99cc1813aaa9c12731980b38a19e29a238672b"
+  },
+  {
+    "path": ".github/workflows/release-self-hosted.yml",
+    "bytes": 614,
+    "sha256": "1442253df5cf36d9a9a2b78a4c7911922c353fde957d44b3a4f13364948088fe"
+  },
+  {
+    "path": ".gitignore",
+    "bytes": 1870,
+    "sha256": "56bfd893d0e5ca3f8ece56e71892dcb9cc595548b068ae81973a70d62868accf"
+  },
+  {
+    "path": "AGENTS.md",
+    "bytes": 1717,
+    "sha256": "c2e8ffab7c090593611d1cf7f19904b8f1c8e9d37d39592419bd72f352f0483d"
+  },
+  {
+    "path": "DOC/GENERATED/CALL_ORDER.md",
+    "bytes": 8614,
+    "sha256": "86761c39eea7b951680e05710b58950890e28947053f0004aa62b6028ecc13e2"
+  },
+  {
+    "path": "DOC/GENERATED/CMD_FLOW_MAP.md",
+    "bytes": 5031,
+    "sha256": "60f457158815dbbe816b4b84793a35df9302147e4ff9a9fabeb740e1fb90d0e9"
+  },
+  {
+    "path": "DOC/GENERATED/CONTROL_DECK_MAP.md",
+    "bytes": 7001,
+    "sha256": "cabb4b2dddc5c8945301d5f556193bb4f3aea7758013519feb0349351724dfd8"
+  },
+  {
+    "path": "DOC/GENERATED/HASH_ROUTINE_MAP.md",
+    "bytes": 16760,
+    "sha256": "b6a40215fc8ec4a86c1c59f406670bf4b64bb3ae24e7223eae13f9f71befea2d"
+  },
+  {
+    "path": "DOC/GENERATED/HIMON_COMMAND_MAP.md",
+    "bytes": 5099,
+    "sha256": "3297197be314f88bdfe3116c10b2b3319e1aa9f390269621f5bfa800e0b255de"
+  },
+  {
+    "path": "DOC/GENERATED/HIMON_EDGE_DUMP.md",
+    "bytes": 97637,
+    "sha256": "1ddd8268962882c15c2bd0f51a6fbffea7b679ec265fae4a778e78ac060f7cff"
+  },
+  {
+    "path": "DOC/GENERATED/HIMON_ROUTINE_TREE.md",
+    "bytes": 5054,
+    "sha256": "c8d258afe0add4e4e0e640f63d7d3a701991bb96cb502121707f760622586f25"
+  },
+  {
+    "path": "DOC/GENERATED/HIMON_SUPPORT_MAP.md",
+    "bytes": 2934,
+    "sha256": "7fe783ec86a6e840516645c26783207ad42ff0de0e9b25adef8bbf85b1a454de"
+  },
+  {
+    "path": "DOC/GENERATED/INTERRUPT_VECTOR_MAP.md",
+    "bytes": 8340,
+    "sha256": "7a9d7dda495a8825054a02dc8d3271ec37812e28a4af89ca890ae7482ed917f0"
+  },
+  {
+    "path": "DOC/GENERATED/MAP_OF_MAPS.md",
+    "bytes": 6329,
+    "sha256": "ddbc905069e461ebbd756dad70803425684b771d29248eddf40413d31453579f"
+  },
+  {
+    "path": "DOC/GENERATED/ROUTINE_CLASS_DIAGRAM.md",
+    "bytes": 3020,
+    "sha256": "d8d1d83e898add4ac4a8027eb099daa284dfcb7254644ef956e2cba62d1ae30c"
+  },
+  {
+    "path": "DOC/GENERATED/ROUTINE_COMPONENTS.md",
+    "bytes": 988,
+    "sha256": "4f0e4226466a2d39d043089c8197c7c3c980a362f649f41bee06d4f5730c39b8"
+  },
+  {
+    "path": "DOC/GENERATED/ROUTINE_CONTRACTS.md",
+    "bytes": 47386,
+    "sha256": "e4932edfec6e7040158689be2a3342224c9ff4501bbffab58e3731617782f5c3"
+  },
+  {
+    "path": "DOC/GENERATED/ROUTINE_GRAPH_INSIGHTS.md",
+    "bytes": 2717,
+    "sha256": "99c7477da1614ad293185bb9227ee3f0c81b836c45ddb072084c69eb0ecd9577"
+  },
+  {
+    "path": "DOC/GENERATED/ROUTINE_PREFIX_MAP.md",
+    "bytes": 4447,
+    "sha256": "1200934f817c80c862b8f98de6ec6999da4aaefae6e0852995fe7adf7e8b0fa1"
+  },
+  {
+    "path": "DOC/GENERATED/ROUTINE_WORD_TREE.md",
+    "bytes": 9626,
+    "sha256": "1e94cd69e6093c510cf20ebf2d9f5a2a7428d385b3dbd4234822f664002fe66a"
+  },
+  {
+    "path": "DOC/GENERATED/STACK_DEPTH_MAP.md",
+    "bytes": 18626,
+    "sha256": "e2fd5bd0ef0c2a175f4baacc65e2c31d13a289e99273c0237a21839392e5c056"
+  },
+  {
+    "path": "DOC/GUIDES/AP/AP_OIL_GUIDE.md",
+    "bytes": 7610,
+    "sha256": "39eaf4f467895f55be4fd8f7f0d3a7b8666af57b2e4598076acff11ac7bcd4f8"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/ADDRESS_PRACTICES.md",
+    "bytes": 18396,
+    "sha256": "cc45c15d08dcdadee995552cc13882d78cd12264112d5a7bbb2fc111ebaa556d"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/APMAN_APC_DISSECTION.md",
+    "bytes": 7637,
+    "sha256": "dabece5ce40b944a583757bd79e0c61fbcdb2469893b2516326ab5c808f960ed"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/APMAN_INSPECT_BOARD_TEST.md",
+    "bytes": 3698,
+    "sha256": "40d0ffbe098e2a9dbc75577fd48c2015d39c450f527703b61fce6afcdfc09462"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/APMAN_V1_BOARD_TEST.md",
+    "bytes": 9776,
+    "sha256": "a8782241994b817a53361db7a1ddd4850e85d137fc61006c9977753f713e2d9e"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/APV2_INSTALLED_TEST_CARDS.md",
+    "bytes": 8455,
+    "sha256": "780b40495398b132bf9283d3a057f48c0fc03f32074efa7e81a1166c72f54eb6"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/AP_LINKER_CURRENT_IMAGE_GATES.md",
+    "bytes": 6527,
+    "sha256": "eb333832547a7c848af8b65d3b06f0f3eaf0c894b2a5c73b60f76c22ed9c51de"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/AP_STORE_V1_CHAIN_TOOL_BOARD_TEST.md",
+    "bytes": 10022,
+    "sha256": "895449e2b052aaa8c57145841e9170b63e05e418f478a7704443fb5c74a66e9e"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/AP_STORE_V1_FULL_CYCLE_BOARD_TEST.md",
+    "bytes": 4901,
+    "sha256": "3b9872f7422f6c8fc746e3b31c85b0e72766fca6b68671ff3069b99863769868"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/AP_STORE_V1_OBJECT_TOOL_BOARD_TEST.md",
+    "bytes": 8512,
+    "sha256": "05c78aabd6525c85ff36902b97501dd4bdf7319f1eec21046a62ccbc45e69fa1"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/AP_STORE_V1_SECTOR_TOOL_BOARD_TEST.md",
+    "bytes": 7615,
+    "sha256": "a3acd61a5dc7ea5a50795b2c88dc16d9ecc3a7029dfe2c7d7f58dc6f045d13b7"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/AP_STORE_V1_SLICE6_BOARD_TEST.md",
+    "bytes": 11737,
+    "sha256": "f0cde55a8017bcba4b4177c160d70e75f63cff37d16b6db56236a8f7ed924ec9"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/ASM_ABI_V1.md",
+    "bytes": 7441,
+    "sha256": "d639fb5a5869a0fd1df71fd7614ece7bff746a392431d0f4762e729c3e587f39"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/ASM_CALL_MAP.md",
+    "bytes": 11273,
+    "sha256": "637e70473cdb58a866be500111d7a2174a9a192cc604d562581f44be7e60225d"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/ASM_DIALECT_CROSSWALK.md",
+    "bytes": 8112,
+    "sha256": "65d7dfa36d79eba4e70b440f2deb54f3dfb9fe562d2570898f680bcf0ae590e0"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/ASM_SHARED_ROUTINES_AUDIT.md",
+    "bytes": 10469,
+    "sha256": "4377a9bf2ad0a13ac1fc2ac652310f98e07556ea4cd4dcd095708720b6016c5f"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/ASM_USER_GUIDE.md",
+    "bytes": 38173,
+    "sha256": "34629d3500ae1f71587135597a7cc2e8dfca70eaeb48a5e3837261a6584be89c"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/B3_RECLAIM_BOARD_CARD.md",
+    "bytes": 1476,
+    "sha256": "fb450976c933dfbc8320b8da88863f28c926484096362a18534c1c1b16b2aa74"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/BANKED_AP_CARRIER_VS_AP_STORE.md",
+    "bytes": 6274,
+    "sha256": "11b381158afa8d373a2c7b992374a2a4e6a85d1c35eca6c901b742ebbc222878"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/BANK_AUDIT_AP_CARD.md",
+    "bytes": 4112,
+    "sha256": "b3b6f9f213acca4c5ed23d4f5d92846b20697533e3ad74243b45ec77b973347f"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/BANK_DUMP_AP_CARD.md",
+    "bytes": 7989,
+    "sha256": "e5c3b2177cffe903510d51ae87266bf1e746099fb57541f64c44d47128439a20"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/BANK_MAINT_RENAME_BOARD_TEST.md",
+    "bytes": 1018,
+    "sha256": "9a641263d307d3119d24f5de8271f22e5582834bafd72f02dd1a0581e71b41ae"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/COMPACT_DC_BOARD_TEST_CARD.md",
+    "bytes": 4555,
+    "sha256": "3d6e35b3653e4a5f0a58e2f473f9e4de1963c1b74c844981e38c7961aa5c56a9"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/DECISIONS.md",
+    "bytes": 54058,
+    "sha256": "bf58bc4c7f85eeda438f986e66eacb0413ffb9e4d48c824349694ae17578efdf"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/FINAL_IMAGE_ONBOARD_TEST_CARDS.md",
+    "bytes": 5421,
+    "sha256": "b4120737d72ad900679459d028c2128b74b23876c8a225dd76bfe4172422dac4"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/FLASH_8000_GAME_PLAN.md",
+    "bytes": 15358,
+    "sha256": "ba1e829b8a72fc8eee41d24d15135cfa985f2e6551531e3d6e4c1f6f2053ad98"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/HASHED_ASM.md",
+    "bytes": 193216,
+    "sha256": "aca508299b959298808cd2c9e30e78db46413e91c89c462a024a5b56e95be004"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/INTERACTIVE_BATCH.md",
+    "bytes": 5399,
+    "sha256": "ba16f478525e962379beb08e3ecb6b84ea63a8068e72a681aebb1b5029a6f6ea"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/LIFE16_BANK2_EXAMPLE.md",
+    "bytes": 7631,
+    "sha256": "2c0225f2e60ff54cf1939231bec922db41cd47ca4ffa4dc9c89e272e9bd946b9"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/LIFE16_QUICK_CARD.md",
+    "bytes": 2307,
+    "sha256": "afc91705ba3aca53c21b1fe979d13d3d2640117cb2959b2f71459df17f87fe71"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/MICROCHESS_AP.md",
+    "bytes": 25667,
+    "sha256": "4f758bcd273ad6435f0ab2c3ecf47a31b7b21d4fbb84b34c7f2b0fe29b49218b"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/MOVABLE_MODULES.md",
+    "bytes": 34010,
+    "sha256": "79a77972d7efafc6855bd5ee5602809be23fe3fd828218fb727ff7ec00c26ab1"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/PIA_LED_BANKED_AP_CARD.md",
+    "bytes": 2660,
+    "sha256": "5843205c86ae9e69a869956358397ad81b4780314aa5802c1892c889ab59dd0d"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/RTERM_ADVANCED_DEMO.md",
+    "bytes": 7396,
+    "sha256": "0879b69ae6389621b59bc4897dcc54055a41e6bb03194bc683ebe179ca66101b"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/ASMTEST_3000.asm",
+    "bytes": 484,
+    "sha256": "8b6849ca518721a03dbcc73a57b40cf4e94e6204d5834c47633118eafd5d6d40"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/ASM_LINE_ECHO_7000.asm",
+    "bytes": 980,
+    "sha256": "fdf46cb3633c12f9136b21c47c015f3c7734a1c1905193f13236114dafa2164f"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/README.md",
+    "bytes": 3330,
+    "sha256": "0f1a05d3d9a2f72340efd46cdea42a7d6ba2934747efecde9e621157ab0c37df"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/ap-envelope-1000-fixture-2000.a",
+    "bytes": 569,
+    "sha256": "4d22b1ae972f3fa16230e2d22769e5bfce56ae42efe784955b905c43407d7ccb"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/ap-envelope-1001-fixture-2000.a",
+    "bytes": 584,
+    "sha256": "3c8f79c630259ab5f3606c527c33af8d97f591f687ee48aec752dfb5df3d8142"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/asm-directives-smoke-transient-3000.a",
+    "bytes": 892,
+    "sha256": "2f99108d5f5c19b40ba7433e77df99df297be51d0e253235d664d063c0a7ee73"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-carry-boundary-test.md",
+    "bytes": 4304,
+    "sha256": "8fa78a709f495f93aebb19c1fafc2d26b834adaca77a6ccc7cf6b1d10874a272"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-4800.a",
+    "bytes": 15219,
+    "sha256": "564fb0952d8ba0549998ee11c27bde3c3e2df36a2df66a3bb1d63b975a863723"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/asm-session-report-transient-7000.a",
+    "bytes": 15169,
+    "sha256": "946119057f8a2155eb311431c50f4cba1e643636de963ca932bacdc40d0cd5cd"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/bank0-ap-entry-points.md",
+    "bytes": 5338,
+    "sha256": "8be7eb3ab7eac647c18b5fa1ae29fbe1dc3b4bdf76feac60df020905985f3978"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-print-smoke.a",
+    "bytes": 896,
+    "sha256": "6f9eefb5893b75a87040681f81ca5f14fc6178e94e51359b9c2ee51084b21cee"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-put-2000-test.md",
+    "bytes": 11310,
+    "sha256": "6de1181a89cd765669a6e1c8090e186145fcfe8c86eb4f0d45e5b08d30280071"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-put-transient-2000.a",
+    "bytes": 16365,
+    "sha256": "ff8e60e7aa1f74457e4aa9059ea395cb1a7b34cf1750db4af95e16a9ac87d750"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/bank2put-8000-transient-3000.a",
+    "bytes": 3649,
+    "sha256": "0c6c5e91483f8dbf3bfbd07739052ebdf5efd60259bbf78b109a41ddbff79226"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/bank3-erase-8000-bfff-transient-3000.a",
+    "bytes": 2152,
+    "sha256": "8361f66b42d61788a764164a831e7204dcff4592e434f74dca381e3a48d3be99"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/banked-ap-smoke.a",
+    "bytes": 843,
+    "sha256": "0be9aa8f05f2ff6a44d5e71666925b28e6dd85abc23b20a673807549ebd57f9b"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/banked-rjoin-smoke.a",
+    "bytes": 894,
+    "sha256": "f130d5c22e8870dc29afe730f07af8a3c855ee19ab5c51c0e6ff6090acfbd208"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/bankput-transient-3000.a",
+    "bytes": 3810,
+    "sha256": "d74232f7b8f922f653fb19d3d27a53945917095acff8848be9e798bf4c3537a3"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/biorhythm-2000-test.md",
+    "bytes": 3331,
+    "sha256": "d89ec0e80e0af37f020f89b2a14be0fe5c82f3cbdd4037c2dd64075469d99ca7"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/biorhythm-2000.asm",
+    "bytes": 3726,
+    "sha256": "9af1a0236c2e5fe6d8702a2043e657ed9a871eca0e50217ab333f10da97fa74f"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/dc-forward-2000.a",
+    "bytes": 1085,
+    "sha256": "f66ebaa40b5d3d6360e745e320e5ebbea0b5863b271f9e44e05eb52c8c56b274"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/dc-forward-import-data-2000-test.md",
+    "bytes": 8630,
+    "sha256": "59f39bdef8074a2eaf5cc0bf5f8572c5feaec6e81d9d0f1b6f1912802c0ff62a"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/dc-forward-import-data-2000.a",
+    "bytes": 1377,
+    "sha256": "10a46051337f09dcf6c546e05fdae2d71a76dfa00d4c906704bb1f10e77637a7"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/expr-math-7010-test.md",
+    "bytes": 3184,
+    "sha256": "16048135b82e33b34bfaeaa05af0e189a92e19e427f342da2983e8a34d39696c"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/expr-math-transient-7010.a",
+    "bytes": 551,
+    "sha256": "3a612253c38a5bbe78aebb969151df6e182bd96d47ee616e3034e2d4eff5fc30"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/flash-bank-ap-packages-test.md",
+    "bytes": 6637,
+    "sha256": "ad58dbab72a6edca552f3c40fe0c9bd6b8c7d75579ad4a348916547f7f413ce5"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/flash-bank-dump-ap-2000-test.md",
+    "bytes": 1948,
+    "sha256": "6f98cebf91e4f6640d6f2671725566b9f190171d39262f7159de275628bd0c7c"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/flash-bank-dump-ap-2000.a",
+    "bytes": 8558,
+    "sha256": "d5fc4c0d5e763709fe0076e9f6494e6607612b26bf4bc769f78c408718584a93"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/flash-bank-erase-write-ap-2000.a",
+    "bytes": 10541,
+    "sha256": "58f92047104ae9b787e9202ad5c542811b1aca73bc83d6a39bdb509706ed658c"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/flash-bank-read-ap-2000.a",
+    "bytes": 7094,
+    "sha256": "ba7de1c5dd6a46fdf09877fd09acfd470e248300e2ef3dd702d2582d8d98fb4b"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/flash-erase-bank-ap-2000-test.md",
+    "bytes": 2856,
+    "sha256": "3a177e8d7de1d571cf8ef6fd66ec55862d7d3b634ae80b7eda45127f44de0ced"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/flash-erase-bank-ap-2000.a",
+    "bytes": 10468,
+    "sha256": "f3da294645b734470014fab10ebc91530cf7fd8dbe95247458cfba61946769aa"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/flash-erase-bank-transient-2000.a",
+    "bytes": 7898,
+    "sha256": "524ec6c31c6f4a477663ce12d65c075b84f58dcc81bc1e31846797127b78bc8a"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/flash-erase-bank.asm",
+    "bytes": 7898,
+    "sha256": "524ec6c31c6f4a477663ce12d65c075b84f58dcc81bc1e31846797127b78bc8a"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/import-data-2000.a",
+    "bytes": 997,
+    "sha256": "a225a21f6b0cb6ea00438fbe2fde9affc8032ae57f61d993d0c81ff9e3eb3dc2"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/life-rjoined-6800-test.md",
+    "bytes": 2939,
+    "sha256": "903ac8cea3de26e0c263368dd9826c18aba6c4693cff87b5a8a697700adb60af"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/life-rjoined-6800.asm",
+    "bytes": 4507,
+    "sha256": "14ffc21f3e83efa04d5257b4610b953b1e216083429a27679fbf5104e02e39c2"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/life16-column-2000.a",
+    "bytes": 3913,
+    "sha256": "554532cbbd37ffae460ee224554f83f2f90dfc411a1e7f1090dd44ee78ec23b0"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/local-label-stress-7400-test.md",
+    "bytes": 2253,
+    "sha256": "502ad7983582a87774e80cb642cdf133b2d9f76149dd241511c3016a6cac6106"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/local-label-stress-7400.asm",
+    "bytes": 1248,
+    "sha256": "5ad9b5b014b765649f10b50968dccc47523b9a6e1541b43aa24e4e0988870329"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/missing-import-atomicity-2000.a",
+    "bytes": 586,
+    "sha256": "cb55731876417130c9d156390cee0cc2040d0a49d1cba6794dc8e60a2d82eeae"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/old-bank0ap-commit-transient-2000.a",
+    "bytes": 4322,
+    "sha256": "d6e3a5c39912cc41d36f3c6f285c30cf3bd16a06686787ae6c98ea437285f220"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/old-bank0ap-stage-transient-2000.a",
+    "bytes": 8494,
+    "sha256": "2bf8156f0e70753f453cf713fc0878b0a5a232c478fbe988e197104315b34165"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/pack40-interactive-transient-2000.a",
+    "bytes": 9242,
+    "sha256": "938b3f690651547898f2393a2620b0a7a73bc761cbc9b30b9fac3d20a3d55faa"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/pack40-roundtrip-transient-2000.a",
+    "bytes": 7253,
+    "sha256": "27a6bf1bca0f4b526be6248f03f8ee92946038e12d61d4f17cb52e586f341f7c"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/return-carry-proof-transient-2000.a",
+    "bytes": 261,
+    "sha256": "05e5c5332e4c40dd851377e7a85f6986c868321c23c7b754fa12871f65c630de"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/rjoin-hash-stats-7200-test.md",
+    "bytes": 3325,
+    "sha256": "c2e8f6152cfa056e9fa87dfa073ff01164740f63e00be56fcc57cf28f19a8ea8"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/rjoin-hash-stats-7200.asm",
+    "bytes": 2349,
+    "sha256": "0b57a28aa0e13e066c634cf0277fbff495546a792ca9c1ba10839a213e1fa157"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/spill-roundtrip-2000.a",
+    "bytes": 2182,
+    "sha256": "a4128a150366b4263f8614fa11f611335816d8e77ac9a20b26694ede72b7d297"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8-28k-5a-s19-pause-2000.a",
+    "bytes": 7008,
+    "sha256": "b1dc3a994e81dd7966c22306ded2e223b4285d641fa8d23ca9d960b208b8ecdc"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank-copy-2000.a",
+    "bytes": 10853,
+    "sha256": "6e9f90c1c53b099e3c039450af8621ebb141e1abd10249213ec7971cfb63d880"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank-crc-all-3000.a",
+    "bytes": 3676,
+    "sha256": "d6d3b7aecae16043aa4053fbf100e5148ff593c5a97a30ca5db3cd8096e59c54"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank-select-service-proof-2000.a",
+    "bytes": 3835,
+    "sha256": "38c63eab6bc303cf7da91e2d9230d2c436491d34cb6340c84f29a3c46cb62da6"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank0-ap-smoke.a",
+    "bytes": 1031,
+    "sha256": "9171545e3e39c0175f4134e1cd2d154f6e6e68acdac9f1d89b64bb5240614717"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8-bank0-dense-s19-pause-2000.a",
+    "bytes": 6695,
+    "sha256": "168f6a1560db765823ffd3c1585d6793af75e6cdfe5f9d516b1fbfbe4c28ac6d"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8-highfail-inject-3000.a",
+    "bytes": 6356,
+    "sha256": "1c65c77bdc9e1844e0e79137c33a38a79f5a070195208579248c2cb7c972e029"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8-jump-inventory-3000.a",
+    "bytes": 5466,
+    "sha256": "b6befd194255eb75aafb392a281b13ebb8ab5612fb30b9af9bf1fc90f0f48288"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8-jump-inventory-v1-3000.a",
+    "bytes": 5757,
+    "sha256": "97c810fd7b407a8598f8b6e60087d7ff764fd277c3dfe300689142ba165dbf34"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8-record-phase1-max252.s19",
+    "bytes": 516,
+    "sha256": "9272c6b9897bae9b5ac2e02252216cd2801d1f2fdb46273676aeeeea933bd113"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8-restore-nonerased-3000.a",
+    "bytes": 4080,
+    "sha256": "8337b60449a6f18ed081bccda683a1e6c3da90e0b860c5076a8fe1c2045aec00"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8-worker-tail-proof-3000.a",
+    "bytes": 3697,
+    "sha256": "811a2ac8ed9efee68696c854c7954317668ec7a507449cac65b271e5b8fcb7c1"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8n-topwrite-transient-3000.a",
+    "bytes": 31174,
+    "sha256": "3a4a462493bbb870b8a305e537baedfb0deb3040a7f030de178d81e1f415cae1"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8n-v1-refresh-transient-3000.a",
+    "bytes": 31503,
+    "sha256": "006da9d9fefa01d8280265c59fec824d49ad97ca2e5d504b45518b32818359dd"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/OLD/str8n-v1-topwrite-transient-3000.a",
+    "bytes": 31174,
+    "sha256": "55d252005fa54b2405f909409291e72a0f99f4fa3ad6ccf16d51e59023990116"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/README.md",
+    "bytes": 7939,
+    "sha256": "2269bb577f88d8971e72683f0801d4f619a727c471ee9573bd11160206a1278c"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-chain-b1-o2g1-1a00.s19",
+    "bytes": 133,
+    "sha256": "605160be7aa4ba3f5fcc3750ff95deb6f0b21c9820df196267f649527f646905"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-chain-confirm-1a40.s19",
+    "bytes": 34,
+    "sha256": "bba7853cd6e0cfeef720383c0b44551ef512bba127551c21a07e2d726b14eca6"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-claim-b1s9-1a00.s19",
+    "bytes": 56,
+    "sha256": "229d7b20c48bcfe39b24b6dc6ffb5ab7cebfaaf17269554f895b940797604da5"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-claim-b1sb-1a00.s19",
+    "bytes": 56,
+    "sha256": "6efabfd1647827f515efeb75377754599f1ea7be9986bf467214301c78803be0"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-claim-confirm-1a20.s19",
+    "bytes": 34,
+    "sha256": "032d9322b04238ff259b2da89bdae343d8656c60a69677d9950cacd0697e3c24"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-cycle-install-b1s8-o3g1-1a00.s19",
+    "bytes": 122,
+    "sha256": "5f293265948dda9183165d822a8bdf0cb15dbb42212047827e3327de680a1a97"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-cycle-reader-b1-o1-newest-1a00.s19",
+    "bytes": 106,
+    "sha256": "3ccfe518428b2e4bc0fd94a129e077b814fc390550f069137f9eb30b966b2af3"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-cycle-reader-b1-o3-newest-1a00.s19",
+    "bytes": 106,
+    "sha256": "ec813b004f4c973f2c71b7ce21046e3dfbe688498f8bc2dc91f4101259ff56cb"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-object-b1s9-o1g1-1a00.s19",
+    "bytes": 117,
+    "sha256": "cfdd06183c413c734a3e3395e6eaee0fac13ef1e784f21674a3c2f0e29f4fc0a"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-object-confirm-1a40.s19",
+    "bytes": 34,
+    "sha256": "38f594713a71774db8e27508ad610d19fd8546dcc38d95ca8472eb10c427d753"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-sector-tool-7000.a",
+    "bytes": 10617,
+    "sha256": "5a4a0c333b1368a7c6f47b4cd619ed1334e954296f8538c6ac8237e1ecfdf6ca"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-slice6-delete-b1-o2g1-1a00.s19",
+    "bytes": 110,
+    "sha256": "ecbdcec74aca24e7bd2eb6b8ed4c5151e51f15c6250448820fa90efff9496fa0"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-slice6-newest-b1-o2-1a00.s19",
+    "bytes": 106,
+    "sha256": "b9a3d9a3c9c60349e05f25450594ca104782d85f9700bc8115141644b07d9360"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/ap-store-v1-slice6-stage-b1sb-1a00.s19",
+    "bytes": 50,
+    "sha256": "42765b1c0383463b6aef3bde3577c7c8cd6cca4e171b87b7279c22898b024ab8"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/apv1-reloc50-2000.a",
+    "bytes": 389,
+    "sha256": "710b0ef7c5526affc45fe6b7b0756c6812d68a48a74af42d192ada84ce747e80"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/apv2-export64-2000.a",
+    "bytes": 1350,
+    "sha256": "4cd6bf570c194e191afcde218efea4ef72c68d2e569e71374b3395be8bfaaf6d"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/apv2-import64-2000.a",
+    "bytes": 1355,
+    "sha256": "afe0bc5e9cd79ac2576a4036467014eb237f455882061bf17839222b8a3234f1"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/apv2-named-identity-2000.a",
+    "bytes": 231,
+    "sha256": "e24bf4213916a63c023f164793c8137937a841e2ba64985d975f2bddb493f5ae"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/apv2-reloc64-2000.a",
+    "bytes": 578,
+    "sha256": "f8c355a9f0c825385f0540feb8813e74c878505deeb3aaed4416d897c195f6d1"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/asm-session-report-v1.2-ap-2000.a",
+    "bytes": 26622,
+    "sha256": "a102d5bd3156bfb5311c61d817c9c7acf07dbdc8e2544d5970c387fb65bb8030"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/bank-audit-2000.a",
+    "bytes": 5591,
+    "sha256": "02e20e8efac795543fcdaacf6a2398f5cf157fb0560639227a18fd898d3b2e0a"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/bank-dump-2000.a",
+    "bytes": 11736,
+    "sha256": "0e541cb8d35e28bf86646361ab25af00ab08e9c9927e6f1b2064ccd1b1eaffc8"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/edu-rtc-read-7000.a",
+    "bytes": 7051,
+    "sha256": "bb49681bc29a04e47a237ccc836e37723c3b376c5163e552e785a85ce303f25a"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/expr-negative-rollback-2000.a",
+    "bytes": 445,
+    "sha256": "48acd03b21c249cb3520626749fe0c9908bb478e45f1e85ef4f297b1e241686d"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/expr-operators-ap-2000.a",
+    "bytes": 905,
+    "sha256": "a037723792cb39b72252befc8ba2c1f1ecec1cd623c1c29e73569bf8e798f688"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/led-io-activity-long-3000.a",
+    "bytes": 11359,
+    "sha256": "bd62b8790a96d0779c54ec74ab601cc19cea9fe1fea158a6f2afea69d528a248"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/microchess-2000.a",
+    "bytes": 8822,
+    "sha256": "60d0e8dcab4b46e0869fab87e1334a186d7686f5dbd9a697de7f64c96f155970"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/opcode-reduction-runtime-2000.a",
+    "bytes": 2119,
+    "sha256": "ee316b30cf8e9c22c54af28ed83640dc49d0d82a083796e4b80a9492b4eb70e8"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/pia-led-show-2000.a",
+    "bytes": 1915,
+    "sha256": "b6836738abd76b1621a300e377ac1b620ebee805af30ad071eccb08746cc5455"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/reloc64-direct-2000.a",
+    "bytes": 464,
+    "sha256": "d9d65de704877ed69184a8454816f5fb32fcbdbf62828f0cd7f79f2897fdab37"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/rterm-advanced-7000.a",
+    "bytes": 16785,
+    "sha256": "c2740f7759cd2a60c50a9aa2cdcb0eea47ff1a79c23720ad18f53641dc60da4d"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/seal-workflow-2000.a",
+    "bytes": 269,
+    "sha256": "bab38b37784077132da2313d1e11272689613a2b45f72be63604f301408bebfe"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/str8n-v1.2-ap-link-smoke-2000.a",
+    "bytes": 789,
+    "sha256": "fd72169dc3a2c2f797ca33f8939247659f9e31d377729df771003f17797d50d1"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/str8n-v1.2-bank-crc-all-3000.a",
+    "bytes": 3842,
+    "sha256": "e3e34437e5326187e52242af328241e009deb89e1a9b87fcfc2d77dbfbf89748"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/str8n-v1.2-flash-bank-dump-ap-2000.a",
+    "bytes": 9208,
+    "sha256": "4d113a67603e67b0b4bacd6909a2e0feac665405f950bb8f1fdef3a1f2744f22"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/str8n-v1.2-flash-bank-read-ap-2000.a",
+    "bytes": 7195,
+    "sha256": "2c0d58bd9ca8ad79548275785b8fea5304fd3b8fdf0bceaed54ab8a5899d7abc"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/str8n-v1.2-low-user-canary-7000.a",
+    "bytes": 1596,
+    "sha256": "fe7684edff9f63715313e00de0d95df941e1ce5463b2b5f7a5cb6c2c830e9c1e"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/symbol-name-pool-rollback.a",
+    "bytes": 2974,
+    "sha256": "6f0b39bb59205bb545a8b1103b06d112d995d95d9862ec1e7a388604abf0a104"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/symbol128-slot-rollback.a",
+    "bytes": 2051,
+    "sha256": "76bb90876f1b127729d4595fd8685588d1e7c585180dae58c52ea41a630fb5af"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/terminal-answerback-vt100-3000.a",
+    "bytes": 2925,
+    "sha256": "cd3aa9a1b08cd85961616c7ad0b22bf7a36931652fff14caca86179e07a3fd8a"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/unresolved-addends-2000.a",
+    "bytes": 319,
+    "sha256": "e93dc1d8a27499d4a90afddab7763d8d23ee731a0d85bf496e680a57c6eb0ec0"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/vt102-exerciser-7000.a",
+    "bytes": 9582,
+    "sha256": "d038a43e94fae858ff5f036f698186dff0c4bdd1569d6c8353c3bf086521e559"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SAMPLES/vt525-exerciser-7000.a",
+    "bytes": 10213,
+    "sha256": "64907065775f35c05b16a52255792a81cefc364851c68ef4ae3c60d86398e970"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SIZE_REDUCTION_2026-09-15.md",
+    "bytes": 6414,
+    "sha256": "f6744dea030aaee90fa377f4450bfcc599b3d7ec439ddf2597e0e8e9b6b45d13"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/SYMBOL_XREF.md",
+    "bytes": 17827,
+    "sha256": "f775b3948bc74ad652aa9f949f6fa90619d6ee23154e13ccbbdb81bfbae95c96"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/TEST_HISTORY.md",
+    "bytes": 588861,
+    "sha256": "e603946e5cc0edc0ba43ad5d1af28a0c62faea5d5086ddb49ff1c6d2407ab95a"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/TEST_PLAN.md",
+    "bytes": 23198,
+    "sha256": "f1d344e2b860d9568c38941f1ff00a2481e80369c299750e0715c97a1b499934"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/TEXT_ERRORS_BOARD_TEST.md",
+    "bytes": 3394,
+    "sha256": "4e16c9dcf5e67b2a94cf36359766e85aee90f6a74306161d6426084fdd13c274"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/UNCOMMITTED_BOARD_RETEST_CARD.md",
+    "bytes": 5932,
+    "sha256": "de545d9868bd19102da7cfb7beeb42452b22a74d4e3a90d32f9eb75a271f9713"
+  },
+  {
+    "path": "DOC/GUIDES/ASM/UNCOMMITTED_BOARD_TEST_CARD.md",
+    "bytes": 14516,
+    "sha256": "7b2ab2cb25408feb477589897616a7607fc4d02e7d3f3ba25627324a796cd19a"
+  },
+  {
+    "path": "DOC/GUIDES/CAPABILITIES.md",
+    "bytes": 20760,
+    "sha256": "c9a50d737033a7706c5c301f49e61287f66a7976dbc4d3e4e76dc18334909072"
+  },
+  {
+    "path": "DOC/GUIDES/CATALOG/CATALOG.md",
+    "bytes": 42450,
+    "sha256": "023c84e03fcf37c02a1b04d4ecf7c7a7e810e36708514d132c2cb6db32dc0154"
+  },
+  {
+    "path": "DOC/GUIDES/CATALOG/HREC_JOIN_PROOF.md",
+    "bytes": 21392,
+    "sha256": "25a78ecddb1edaae5ef5e11a91cf5443c3e64c5222a379c393aac5f0de50b0e4"
+  },
+  {
+    "path": "DOC/GUIDES/CATALOG/LIFE_RCAT_MEMBER.md",
+    "bytes": 18175,
+    "sha256": "32cf46d41ce8edeb571d4e8692db82dc63028235716a8761aa540bf4d1e0f0af"
+  },
+  {
+    "path": "DOC/GUIDES/DECISIONS.md",
+    "bytes": 46435,
+    "sha256": "5d042e1ea5a7a7306955cf86f99d68a44d0e1d0ff2a006ab5b09e8645c9408f1"
+  },
+  {
+    "path": "DOC/GUIDES/DOC_FLASH.md",
+    "bytes": 44333,
+    "sha256": "22e63aa050cd634d35c93095afd73b46e89cee76fe9b49a7b8d584d141f7726d"
+  },
+  {
+    "path": "DOC/GUIDES/GLOSSARY.md",
+    "bytes": 27773,
+    "sha256": "bc5b5f5e529562cd3e78b199917d3eaed5f34c8067ae19d794d58efa2a006663"
+  },
+  {
+    "path": "DOC/GUIDES/HASH/HASH.md",
+    "bytes": 24708,
+    "sha256": "c4f2a145f02056e34a6a1c0a0d3bff11134179a678d6521de2ac76cf8503eb43"
+  },
+  {
+    "path": "DOC/GUIDES/HASH/HASH_MAP.md",
+    "bytes": 30436,
+    "sha256": "7faed6ff46ab8469bc08d4a60d6f9f667883cbdc9c7e336837ed22f917463885"
+  },
+  {
+    "path": "DOC/GUIDES/HASH/HASH_TRASH.md",
+    "bytes": 2635,
+    "sha256": "838e03e88d5ddbee796ae7a078a7889606af7f8f300ca9e6a596850cbe1f0d37"
+  },
+  {
+    "path": "DOC/GUIDES/HASH_FLASH.md",
+    "bytes": 40586,
+    "sha256": "e9f9232767bb2bec5129f6b4fc569d7cef7c2c83be0b4e2318886dbeb63f7ba1"
+  },
+  {
+    "path": "DOC/GUIDES/HIMON/HIMON_DEBUG_TESTING.md",
+    "bytes": 18867,
+    "sha256": "4d4b01567fad1c076785f6396e6a16e868d160198ea8620636767bfea64bfb89"
+  },
+  {
+    "path": "DOC/GUIDES/HIMON/HIMON_IO_LED_BOARD_TEST_2026-09-06.md",
+    "bytes": 3594,
+    "sha256": "9bc9725916b3cfe81dda4ddabf81c36bfafecc6ad5288408a476af9daee6eba0"
+  },
+  {
+    "path": "DOC/GUIDES/HIMON/HIMON_LIVE_USB_LED_BOARD_TEST_2026-09-10.md",
+    "bytes": 4719,
+    "sha256": "cee7df500aa007c4430e26a7c3c5414984ffaff40e613c8ff00b2de828d9c4c8"
+  },
+  {
+    "path": "DOC/GUIDES/HIMON/HIMON_MAP.md",
+    "bytes": 35732,
+    "sha256": "08b7c7b1a09327a041a8bb20458e9c504a5a370a75674d499a9e8f8519023ec8"
+  },
+  {
+    "path": "DOC/GUIDES/HIMON/HIMON_SEARCH_IMPLEMENTATION_GUIDE.md",
+    "bytes": 53846,
+    "sha256": "0f0531b89bafea41f7c0739e9fba51b1affca07a236eac1577341997a2b5da82"
+  },
+  {
+    "path": "DOC/GUIDES/HIMON/HIMON_STAGES_CLASSES.md",
+    "bytes": 15958,
+    "sha256": "c324a3f222c86f425545f871c4246e63cd83480fb8c9880c3eaf69337be67799"
+  },
+  {
+    "path": "DOC/GUIDES/HISTORY.md",
+    "bytes": 4655,
+    "sha256": "6cff499ef410d63954b75d3730a1f180bb2bf659533756b2a04be3a1e334cc82"
+  },
+  {
+    "path": "DOC/GUIDES/INDEX.md",
+    "bytes": 327,
+    "sha256": "3199d2f51c4297bbdaf39901197118c7fd4d83ab4401c0027998801f9eb782e6"
+  },
+  {
+    "path": "DOC/GUIDES/INSTALLATION_FLOW.md",
+    "bytes": 20184,
+    "sha256": "ef4dccd4d11bcc4ea50e5cee6733dfce3cceca1b269705a6290d3b2681de555c"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_BANKAUDIT_2026-09-07.md",
+    "bytes": 2793,
+    "sha256": "010dccd29aca048efe233ff4fbfa7aad24f2d144c63b8a4e31f1326fd5365043"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/APMAN_INSPECT_2026-09-10.md",
+    "bytes": 3857,
+    "sha256": "fe5d09edf07da8ebdc1a6e17b6c12adb2a687bda59ddfceb2d3f03a915395136"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/ASMF2_SIZE_2026-09-15.jsonl",
+    "bytes": 2031006,
+    "sha256": "313ab768d70f8653a2b00017a64b01b8d15f7cb096d8779f561a26e9088d61f3"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/ASMF2_SIZE_2026-09-15.md",
+    "bytes": 6557,
+    "sha256": "72ebdd12e020d856d5746ea1c1847edb8cac3e632a575ddb866d66246f0fc1a8"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/ASMF2_TEXT_2026-09-05.md",
+    "bytes": 8231,
+    "sha256": "b21229426374eb33959bac7596c4e1b9f8511cde391c3238ee6bb63c32e79613"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/BSO2_B2_INSTALL_2026-09-15.jsonl",
+    "bytes": 231,
+    "sha256": "ba17e66b36b05d47ad89f35e0a525c90e5981cca0ba7b8e013ec38686bc0cd1d"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/BSO2_B2_INSTALL_2026-09-16.jsonl",
+    "bytes": 3918156,
+    "sha256": "d07b2bae0afbf862532a01295610f0e654f17d4496b7a1b05bcde3de47f00a5e"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/BSO2_B2_INSTALL_2026-09-16.md",
+    "bytes": 5113,
+    "sha256": "a4504d319f5675a158691deb00d6367ed7e0b9131309f617956fd75e6db0486f"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/EDU_RTC_READ_BOARD_TEST_2026-09-07.md",
+    "bytes": 1303,
+    "sha256": "2df37607a6390b1319eca44ca7935ac3fe04b2e1bf08292a2c8e9a4ccd88555e"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/FINAL_RELEASE_BOARD_TEST_2026-09-07.md",
+    "bytes": 2068,
+    "sha256": "cefd9d568759a31aa67ce6f3c0b94b91b0655cf3fb9cdf0269116d204c6b04c3"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md",
+    "bytes": 743180,
+    "sha256": "6719dc98d5cb0d49b41a4a71e8e13e828e458f8b472241fb18a3fc1a95147fe3"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_RESTAMP_2026-09-15.jsonl",
+    "bytes": 731162,
+    "sha256": "948a1fa60c191f9fdd55ae8f362e714aa6e972ef7c06162c1f82a2879425ea3a"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_SIZE_2026-09-15.jsonl",
+    "bytes": 1058696,
+    "sha256": "404819eed1642ee8a6e1bad30cb33501c96f4750f5be776b5429f02f4056bc85"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/HIMON_SIZE_2026-09-15.md",
+    "bytes": 6787,
+    "sha256": "6d82d5a278e691c09f6afcbb7ad119d22d658e2b2bc048c749036b2735072d17"
+  },
+  {
+    "path": "DOC/GUIDES/LOGS/RELEASE_REFRESH_BOARD_TEST_2026-09-07.md",
+    "bytes": 3145,
+    "sha256": "f1aae7a1c7f1f2b9cd1b5c77235469f804512cb66f56b48091a97beec96e9b78"
+  },
+  {
+    "path": "DOC/GUIDES/MAP.md",
+    "bytes": 398,
+    "sha256": "2a7fc0adfb38ab86ec30f073e1252cf2d6eadc554a2681a5bb01e2f7a7275042"
+  },
+  {
+    "path": "DOC/GUIDES/MEMORY/DYNAMIC_MEMORY_FIRST_STEPS.md",
+    "bytes": 10942,
+    "sha256": "eefe5b8cf4f3b04d7cf32adae3da07c7a36c79b876cd6d32a5cb0651519df242"
+  },
+  {
+    "path": "DOC/GUIDES/MEMORY/MEMORY_MAP.md",
+    "bytes": 23720,
+    "sha256": "7d012aeee972645d652c0a6024f019d638bf4bcbf6f60380920683f12587ed9c"
+  },
+  {
+    "path": "DOC/GUIDES/META/BIB.md",
+    "bytes": 7306,
+    "sha256": "51c360968fe9c9b98e74dc1c690edbbd868eda70851bdbb7c3e11eab1b20270b"
+  },
+  {
+    "path": "DOC/GUIDES/META/COMPAT/RTFM-R-YORS.md",
+    "bytes": 652,
+    "sha256": "1ad7dfee09929e59824072b776c2ee929cccc08640443a441245105ff4034ce3"
+  },
+  {
+    "path": "DOC/GUIDES/META/COMPAT/RTFM-himon.md",
+    "bytes": 520,
+    "sha256": "ae384afe3eaad6ac3e8ac266ae87b9b2504153b1bfe49b54afce8d2df3d28537"
+  },
+  {
+    "path": "DOC/GUIDES/META/COMPAT/RTFM-str8.md",
+    "bytes": 509,
+    "sha256": "ff04bb8d2486783d637fe549ac00f7392130fc6235126d9207d1da8168a7bb55"
+  },
+  {
+    "path": "DOC/GUIDES/META/PROVENANCE.md",
+    "bytes": 9974,
+    "sha256": "014042cd18ec7c3b512e15c8faff8a8e958dedecceef15f1a18bbfe80b959771"
+  },
+  {
+    "path": "DOC/GUIDES/META/XREF.md",
+    "bytes": 12993,
+    "sha256": "cfa87b765b675aaac7213e0e5001beaf6cfb8fe9e4ba4270d01b4947b0e1b4ce"
+  },
+  {
+    "path": "DOC/GUIDES/OPERATORS_GUIDE.md",
+    "bytes": 9791,
+    "sha256": "5c487329e61c07baef775160ed3df4132124e0c50045ad4c097c55f73dadc308"
+  },
+  {
+    "path": "DOC/GUIDES/PLANNING/AP_STORAGE_BANKS_0_2_PLAN.md",
+    "bytes": 29966,
+    "sha256": "1ccb7d1deeff2e103f99facce311c57df411104a9007155fb6221297d9011a3f"
+  },
+  {
+    "path": "DOC/GUIDES/PLANNING/ASM_FNV_MODULE_PROPOSAL.md",
+    "bytes": 8789,
+    "sha256": "13141ceaf03a962099fc71ebac6d8b38489d1c8633787a1b673a97830e276a5c"
+  },
+  {
+    "path": "DOC/GUIDES/PLANNING/DATA_STRUCTURE_OPPORTUNITIES.md",
+    "bytes": 7905,
+    "sha256": "40f20c7f150e5987b9f3054893fea92b44f3a0497eb165a12bdf46faecedf38f"
+  },
+  {
+    "path": "DOC/GUIDES/PLANNING/FOUR_MODULE_PLAN.md",
+    "bytes": 23357,
+    "sha256": "c028efaf16c8438e2b95298e39b0de27ce5eb4af31af361916645ad34307fdf6"
+  },
+  {
+    "path": "DOC/GUIDES/PLANNING/FUTURE.md",
+    "bytes": 40518,
+    "sha256": "6a3d3fa1a4c753527eaabc5d0b63a85b023977b0f318018842ce3744aa2127b2"
+  },
+  {
+    "path": "DOC/GUIDES/PLANNING/HIMON_SCOPED_FNV_BANK_SEARCH.md",
+    "bytes": 16956,
+    "sha256": "68f766be24ba1fe0b3e17c93efb715734276a01acc3e32dd182142a85d34ee92"
+  },
+  {
+    "path": "DOC/GUIDES/PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md",
+    "bytes": 7672,
+    "sha256": "bb7e1b25dd5cfa897025fcb4900ce8d423855b8dce66c2b00bd02d6c0185e8f6"
+  },
+  {
+    "path": "DOC/GUIDES/PLANNING/OIL_710_TEST_PLAN.md",
+    "bytes": 24584,
+    "sha256": "9cac86321aa1d3243edc0c511831a7e71da4add80711377430508c218095098d"
+  },
+  {
+    "path": "DOC/GUIDES/PLANNING/STR8_BANK_INSTALL_V1_PLAN.md",
+    "bytes": 64969,
+    "sha256": "13c08d2d2ead13058efc9955c5c8cafbc291e8b365f0499a0a82935f889691f7"
+  },
+  {
+    "path": "DOC/GUIDES/PLANNING/STR8_J012_OPAQUE_BANK_PLAN.md",
+    "bytes": 33394,
+    "sha256": "512f0df288b11847f3702bcf2a151b676399125d537d27021ab51d1d4b1ac015"
+  },
+  {
+    "path": "DOC/GUIDES/PLANNING/STR8_MULTIBOOT_BANK_VOLUMES.md",
+    "bytes": 43099,
+    "sha256": "fe09aec0b490c4c15d3e1fe73658408b198aba757ea8833cee692c2757cfe647"
+  },
+  {
+    "path": "DOC/GUIDES/PLANNING/TODO.md",
+    "bytes": 44493,
+    "sha256": "c27a27c9a941ca806a1bdb19e7d322aff9e9d69f888cc5feb433c0357d9bc28b"
+  },
+  {
+    "path": "DOC/GUIDES/QCC/ASM.md",
+    "bytes": 62535,
+    "sha256": "87cda404bfe9b4b3ee859b21045f73a540c76bd3740e0e3e719a9ab0cbc37549"
+  },
+  {
+    "path": "DOC/GUIDES/QCC/CATALOG_LINKING.md",
+    "bytes": 15457,
+    "sha256": "9e2f322c73208c560501bee86dc6d50dafbee47c55819e2daec4ffbbf536d020"
+  },
+  {
+    "path": "DOC/GUIDES/QCC/FLASH.md",
+    "bytes": 13267,
+    "sha256": "0dc7dc4ca0c7045308063a815b4ec9fb9592662eec4cc2189c661d5327fdaa97"
+  },
+  {
+    "path": "DOC/GUIDES/QCC/HARDWARE.md",
+    "bytes": 3315,
+    "sha256": "c82a3b60d6066e9fcbdd0f8d131d686bdac2597a17af64b9f3a8dd48658a7800"
+  },
+  {
+    "path": "DOC/GUIDES/QCC/HASH.md",
+    "bytes": 12571,
+    "sha256": "fd00e0a59dc6a4c5ac59ca72ae500608547150f14d999a956f8654e156c7f586"
+  },
+  {
+    "path": "DOC/GUIDES/QCC/INDEX.md",
+    "bytes": 3020,
+    "sha256": "93ae43fc2e2fd67eeb3a8ec1e830298c9c931b0328fa0d23f095499b615ccd20"
+  },
+  {
+    "path": "DOC/GUIDES/QCC/MEMORY.md",
+    "bytes": 3308,
+    "sha256": "37bccbf5ba0bbf51d653ddf3986eccb9a57214f07292a5d6bacedc7a3208a023"
+  },
+  {
+    "path": "DOC/GUIDES/QCC/STR8.md",
+    "bytes": 41085,
+    "sha256": "60a9a623eabcf5c8af1c1ae82e36f05611d039542109b9275ae341a5befd8636"
+  },
+  {
+    "path": "DOC/GUIDES/REF.md",
+    "bytes": 4665,
+    "sha256": "6293788dd02842e880285df6cfe240ea6fb3caf6fd453f24c28394896448ba8c"
+  },
+  {
+    "path": "DOC/GUIDES/RELEASES.md",
+    "bytes": 5502,
+    "sha256": "89770750d6d0a009d8625831e4d4216313d16ba3d84b61c8975c0a3aafcaab23"
+  },
+  {
+    "path": "DOC/GUIDES/RELEASE_APPLICATIONS.md",
+    "bytes": 7693,
+    "sha256": "0f4ba14c688dc482c054d9b2e51afabc4da7de3b819d0762d3d25c49f75102ad"
+  },
+  {
+    "path": "DOC/GUIDES/STORY/BOOK.md",
+    "bytes": 44698,
+    "sha256": "557cb68f3c703a5ea961d1d3e12b592ea3e0080990289ea733329cccffacdfdc"
+  },
+  {
+    "path": "DOC/GUIDES/STORY/HIMON_STR8_LIVE_UPDATE_LOG.md",
+    "bytes": 3858,
+    "sha256": "911e0adb0a781582526f1d13a79bfe73258595fc7ada1e204e99a005ef539ae6"
+  },
+  {
+    "path": "DOC/GUIDES/STORY/HISTORICAL_DOCUMENTS.md",
+    "bytes": 16936,
+    "sha256": "879d85db23a112af09be7fc0f39a3ee547e2aeac2ccbea5d822e63275ddddec3"
+  },
+  {
+    "path": "DOC/GUIDES/STORY/ID10Toms.txt",
+    "bytes": 3171,
+    "sha256": "f65303c0102c9d05464ec8d988880f8cdcbee7cf041cf760feaefbce5e7b7f06"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/BRINGUP.md",
+    "bytes": 10398,
+    "sha256": "4608c582376e5884c596c40e9534db6cd4b64e5211d7c9943e6cad60bbe55775"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/PRODUCT_BOUNDARIES.md",
+    "bytes": 3679,
+    "sha256": "51c4bb4551c3d9cba86dea398a46657a583ba2ad0112421b99280dd0b6c0468e"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8.md",
+    "bytes": 3094,
+    "sha256": "6145fb2e34636791ba9e94c1e06b68c874ca24c56d12812843c13dd68b1c345b"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_0805_BOARD_TEST.md",
+    "bytes": 13425,
+    "sha256": "444340744ff5928a03451eb5f87f3d69ae23bfbf00577e2e74a72a41d9a2ae8c"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_BANK_JUMP_RECORD_BOARD_TEST.md",
+    "bytes": 4880,
+    "sha256": "e1e6ce771f74182502d8518e3e906f24b564af557234db743e48c3c501a4521e"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_BOOT_SELECTOR_BOARD_TEST.md",
+    "bytes": 23594,
+    "sha256": "34126dc369877e8aaf7340de069ed1f3e71b4f769f2b090fbfe0983ad4865dd8"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_DECISION_REFERENCE.md",
+    "bytes": 20182,
+    "sha256": "75221eb1d0988b13865031404a5f91a1afdc2b93a234eefc19b3084fd232296f"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_FLASH_UPDATE_PROPOSAL.md",
+    "bytes": 16702,
+    "sha256": "68382135bc1a8cf72c2026e0f57c0dde42f8a32c9b3a22bf2f8e17e47a2ad85c"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_GUEST_IMAGE_QUALIFICATION.md",
+    "bytes": 11575,
+    "sha256": "b30e2dbdc192e523883504e43a6fe7c9d0c69068ae7a8d1d5c641457b447de22"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_J012_BOARD_TEST.md",
+    "bytes": 29399,
+    "sha256": "72e7063b7c8484145af72ef914d727191c1609cfc2837396a965686d738c8c41"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_LIVE_DOTS_BOARD_TEST.md",
+    "bytes": 6271,
+    "sha256": "bab0de44033692ce870ed0d8b927625af0505db8080ababfdce66fb9c9152f82"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_SIZE_PASS_BOARD_TEST.md",
+    "bytes": 28049,
+    "sha256": "27cf75efd7ec9c96db229b44ef434a9ff7375e7af06979679bf86ac9ef4fece1"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_V0_RESTORE_FAILURE_GATES.md",
+    "bytes": 12128,
+    "sha256": "9ab93f9df28d7e053a4fb3b02e4337bbc31c1cf5d5f74bacf2cda226b62dce24"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_V1_02_COMPACT_REFRESH_BOARD_TEST.md",
+    "bytes": 9130,
+    "sha256": "62bbc2f48ee6d9ea243dfffaa583f23ef42e17a76857d86dadf3ef0211d5f6b8"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_V1_02_HIMON_AP_RUN_BOARD_TEST.md",
+    "bytes": 5678,
+    "sha256": "b80f4e0da2849375833a5029c0a5726f2e9f90b45c3a0236eb96962c2d0e6e1f"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_V1_02_HIMON_AP_STAGE_BOARD_TEST.md",
+    "bytes": 10950,
+    "sha256": "d032f6e38fe1dcd48c531f0f9f57ebe22b9fb84ca0dff9ebdb89f476997f3c79"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_V1_02_PRESENTATION_BOARD_TEST.md",
+    "bytes": 3823,
+    "sha256": "4a367aeb8a212999f0604e59fd3ec3d0a19e5a6390cef098e8969a0b327a1f8f"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_V1_02_RANGE_BOARD_TEST.md",
+    "bytes": 10713,
+    "sha256": "14c24da918515a5bc3861085275e3684b52da349e7104f5d1497993f78b17d61"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_V1_02_RELEASE.md",
+    "bytes": 4426,
+    "sha256": "c69fd21f56edc8d32c31f7e59f2dbacc2689ac699767ca0d32d32b86d9ad2c53"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_V1_2_TOP_UPDATE_BOARD_TEST.md",
+    "bytes": 10992,
+    "sha256": "e1494aa80d145057630805a011b7d5cfdcd6982ac95750e02b722c0bcaf60b70"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_V1_INTERRUPTION_BOARD_TEST.md",
+    "bytes": 6003,
+    "sha256": "bd48a5c6399b87571483ff09578ee3b3d2ca9f3110bc94854cee90dcc3207c66"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_V1_MIGRATION_BOARD_TEST.md",
+    "bytes": 5636,
+    "sha256": "92a20eb37a9fc817acea77a728671453b0b947a40908eb509a23b1d2f8f2aa34"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_V1_REFRESH_BOARD_TEST.md",
+    "bytes": 5669,
+    "sha256": "75c87602790c40be2fc80a3d70b7231e3ffdfec4a0a91aba4f83aa3f80d41e3c"
+  },
+  {
+    "path": "DOC/GUIDES/STR8/STR8_WORK_PROCESS.md",
+    "bytes": 24937,
+    "sha256": "4deaeeb5a91b9757c73df5c94329179eb89ad2b2428201f95e4b0fc48b74620f"
+  },
+  {
+    "path": "DOC/GUIDES/TECHNICAL_GUIDE.md",
+    "bytes": 11269,
+    "sha256": "740e00959605d95c2d4c22ea3de67592119c3077697dac6c5955934b2a9c3740"
+  },
+  {
+    "path": "DOC/GUIDES/TOC.md",
+    "bytes": 236,
+    "sha256": "32997a77880d598d2804a2aaba4169622bbdd1e7cc02c4b5da731d3c2e56b938"
+  },
+  {
+    "path": "DOC/IDEAS.md",
+    "bytes": 18273,
+    "sha256": "c06788d89382791037cab054c7168f38d6c2dbd9b28ffc4d9fd8a170897c8223"
+  },
+  {
+    "path": "DOC/INDEX.md",
+    "bytes": 5167,
+    "sha256": "ae61847808ab5e8c48727e51ff53b607d1c3bbb57ed3010335ebb4a0e4624730"
+  },
+  {
+    "path": "DOC/branding/logo-r-yors.svg",
+    "bytes": 1641,
+    "sha256": "5aea56098b75b4cca200f0be143f55bbed63c44ec871aeabf7ec9f754a9a3e55"
+  },
+  {
+    "path": "LICENSE",
+    "bytes": 1095,
+    "sha256": "f36167e1783bfec310980f0000b92037655145833a26c6a325f6712dcebc73f2"
+  },
+  {
+    "path": "Makefile",
+    "bytes": 94,
+    "sha256": "6502231c580e779401b52cd90df2ed3d60ab861f0d205ca215b84f89968713a5"
+  },
+  {
+    "path": "README.md",
+    "bytes": 6322,
+    "sha256": "0101d68a7834738bf3735a5d2b81d533979dc289c8debe6d58f9b9e7977f8ac2"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/AP-STORE/ap-store-v1-chain-install-tool-package-4000.s19",
+    "bytes": 5762,
+    "sha256": "95e8283e8a44b85cac24fe0d293aca496b25ac41147a060b5b4fbb625945dba6"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/AP-STORE/ap-store-v1-slice6-catalog-tool-package-4000.s19",
+    "bytes": 6064,
+    "sha256": "2fbc2d38b019296a9a72cdd2c0d87e1f3f156c10ed8b459032c23eea24b1256e"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-chain-install-tool-7000.ap.bin",
+    "bytes": 2419,
+    "sha256": "20d4e2edfb519dd7800bc289f7a5ae8d1141e2605d5d3bcfa0f0bf86e518ced4"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-chain-install-tool-7000.s19",
+    "bytes": 6546,
+    "sha256": "2dc7c759c315dec50f0c3c7f2b4f40b4ffbbd9222d2e81ccb98b6fda3fdb85e6"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-chain-reader-tool-7000.ap.bin",
+    "bytes": 2200,
+    "sha256": "d827e9e9ade4fe7d5e4e4f511c1dc1c4ded40e3da7fc9677cb376e91c439f9f4"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-chain-reader-tool-7000.s19",
+    "bytes": 5940,
+    "sha256": "3a52a8138268b5d95d31622f737467f21eeb4fcebaf376542610350088481a35"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-chain-reader-tool-package-4000.s19",
+    "bytes": 5240,
+    "sha256": "ad790f07dc5dfdcd95275418aa0f140e546c2a885de3867ff126952c4193bafd"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-object-tool-7000.ap.bin",
+    "bytes": 2606,
+    "sha256": "a6b4fb7e12afaac092a124b45bc5f8367d304c16c95a54e64a5b57c525e2eba2"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-object-tool-7000.s19",
+    "bytes": 7052,
+    "sha256": "d85588fe2f51a986cc44f3814e6e9be7a1621954bc2bb20637225e8b5f3928a3"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-object-tool-package-3000.s19",
+    "bytes": 6208,
+    "sha256": "7576ab9efa965e965fe540204c9a3cf2fa8f784fb3a523a639320401196e1d60"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-sector-tool-7000.a",
+    "bytes": 10617,
+    "sha256": "5a4a0c333b1368a7c6f47b4cd619ed1334e954296f8538c6ac8237e1ecfdf6ca"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-sector-tool-7000.ap.bin",
+    "bytes": 1929,
+    "sha256": "3bdc0c1490aaade08a9ddd79f035c8128066874e333028276d7082dca035feb4"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-sector-tool-7000.s19",
+    "bytes": 5190,
+    "sha256": "a22e4e31054fa3c2cc426086e8c0261e6285810bccad70eaa13f7df4ba7ebefc"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-sector-tool.asm",
+    "bytes": 104613,
+    "sha256": "483762a1de1c32bf54ece811b1664050ec1b83338b00d553f9d9f7af9e022ff9"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-slice6-catalog-tool-7000.ap.bin",
+    "bytes": 2546,
+    "sha256": "5d2e3cc25f0a67353465cc63063aa1d4f0404cc5f02a3de0f0994ba41cd3fcd7"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-slice6-catalog-tool-7000.s19",
+    "bytes": 6896,
+    "sha256": "8005aaa2dc012803473463b25c632369bd3fd50e38ad8373e08328fab025526e"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-slice6-delete-tool-7000.ap.bin",
+    "bytes": 1917,
+    "sha256": "f5a5879019f64fc7849948974668c15fa4629a0b7f1b8144f19a53a9cf213253"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-slice6-delete-tool-7000.s19",
+    "bytes": 5158,
+    "sha256": "c287161e77992f15ab9b3266eddb0c3be20ab11523bcb53e32c35fd5600d703b"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-slice6-delete-tool-package-4000.s19",
+    "bytes": 4566,
+    "sha256": "dc15548d3a359daeed52273611a9bcd235fa201e9c896a54d142538623e8c364"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-slice6-plan-tool-7000.ap.bin",
+    "bytes": 2479,
+    "sha256": "b9e8ceec33281a0f9e6b0dea6ab0ba62f407f8127739b97e98c5d3f75086aab1"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-slice6-plan-tool-7000.s19",
+    "bytes": 6714,
+    "sha256": "5e7aefee31df86b1ee81fe1336f259cefac30a59f6613bf8cc90783ba7a2c56b"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/ap-store-v1-slice6-plan-tool-package-4000.s19",
+    "bytes": 5906,
+    "sha256": "d11cf33b71a6253d8481a9e5d96a79cbf42d51e294e722126f0f94dbdf4968c9"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/asm-v1-flash-8000.s19",
+    "bytes": 43374,
+    "sha256": "699fb0f81d59b65a67d9554c0847a817897ee935ac698738382b27f2d78d9590"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/himon-rom-c000.bin",
+    "bytes": 32768,
+    "sha256": "9e7a58a6fba66e80e97234be886f5e4c65dd82426e550cfffd855e604d413565"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/AP-STORE/life-2000-load.bin",
+    "bytes": 3451,
+    "sha256": "24b00fb710657bc38e77e32923001884ecd49caca887f22e36815bb3976d4041"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/fnv1a-hbstr-6000.s19",
+    "bytes": 2936,
+    "sha256": "898a2f9811536d0d359aee0db27ad8747ca099e8fd16b25d94e36466535c8a25"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/himon-apv2-bank3-c-e.s19",
+    "bytes": 29196,
+    "sha256": "62db40b67ffe382c7504f49600bb9301e040e6b2450a3e28bbba491e15e2702e"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/rom-append-calc-b804.s19",
+    "bytes": 2288,
+    "sha256": "21d3f8fe47163b225642bd098675348fb36b6ddb06270f922bf3d31ea7d5211e"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/ryors-v1.2-str8n-v1.23-himon-asm-bank0-2-8-f.s19",
+    "bytes": 77836,
+    "sha256": "6c5ca0182fc79b294f5f00939ec5d99ac8b2b4c47689310499b8cbe58a0e35e9"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/str8n-v1.23-bank-maint-2000.s19",
+    "bytes": 18114,
+    "sha256": "be6de54f2a21626641a269ad9544548b442d1d4279c745191729f5b8aee39584"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/str8n-v1.23-bank-maint-menu-2000.s19",
+    "bytes": 33804,
+    "sha256": "6f6e70415046619ba763bd6530996756f8905889568bb6c564ebb1f5e9461c57"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/str8n-v1.23-bank3-f000-ffff.bin",
+    "bytes": 4096,
+    "sha256": "0bb457d7bd17e3ac084b19c0f23dce546f0a49cdb8e44842f0fb3f832c660df1"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/str8n-v1.23-console-abi-test-2000.s19",
+    "bytes": 2448,
+    "sha256": "2865a1f09bc550e3f8f8cd7808a580140d74abfeb9b8c41437a899fde4f63986"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/str8n-v1.23-directory-refresh-2000.s19",
+    "bytes": 33804,
+    "sha256": "120fcb5082ecfbbab53fb68512367cd07d8961fa9dec4abb989153f693c97531"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/str8n-v1.23-f000.s19",
+    "bytes": 9406,
+    "sha256": "459b78c42729764320335989d256962b76f4de5ea23221ace0129a86ef72ea56"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/str8n-v1.23-top-update-2000.s19",
+    "bytes": 33804,
+    "sha256": "53f06bbcbf424d5482e8d23c5c3f7fc58f4e16a39fed17275c9721ab5184dba0"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/str8n-v1.23-worker-0200.s19",
+    "bytes": 1660,
+    "sha256": "04f46e258924f07510fb113edb00c788eba129eab98b25c284d6ab15c306e69c"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/COMPONENT-IMAGES/str8n-v1.32-console-abi-test-2000.s19",
+    "bytes": 2946,
+    "sha256": "57956a36e3ab83ba63a857071b202d13be683e3280147ac8fdfabf9b925daca5"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/SOURCES/apv1-reloc50-2000.a",
+    "bytes": 389,
+    "sha256": "710b0ef7c5526affc45fe6b7b0756c6812d68a48a74af42d192ada84ce747e80"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/SOURCES/apv2-export64-2000.a",
+    "bytes": 1350,
+    "sha256": "4cd6bf570c194e191afcde218efea4ef72c68d2e569e71374b3395be8bfaaf6d"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/SOURCES/apv2-import64-2000.a",
+    "bytes": 1355,
+    "sha256": "afe0bc5e9cd79ac2576a4036467014eb237f455882061bf17839222b8a3234f1"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/SOURCES/apv2-named-identity-2000.a",
+    "bytes": 231,
+    "sha256": "e24bf4213916a63c023f164793c8137937a841e2ba64985d975f2bddb493f5ae"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/SOURCES/apv2-reloc64-2000.a",
+    "bytes": 578,
+    "sha256": "f8c355a9f0c825385f0540feb8813e74c878505deeb3aaed4416d897c195f6d1"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/SOURCES/str8n-v1.23-bank-maint-2000.asm",
+    "bytes": 61552,
+    "sha256": "5fefa8b4adec90110fb9dfc7ac33340cd6fe4e51fc457261cd7139c6ac256268"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/SOURCES/str8n-v1.23-bank-maint-menu-2000.a",
+    "bytes": 68059,
+    "sha256": "b8956a1ec0a921cbcac42d4b949c0dd9b5d31a96ca9a74de7ec2a5f0a4b19bd2"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/SOURCES/str8n-v1.23-bank-maint-menu-2000.asm",
+    "bytes": 659,
+    "sha256": "899c1f0ae45653c21e274e9b9b3a39d93e88e173e8776a114d52049aa2d45fd0"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/SOURCES/str8n-v1.23-bank-maint-rename.inc",
+    "bytes": 7033,
+    "sha256": "8f5e431634ea7967a4ac0999d89c86b06c12eb51c0937426a4675c704281d2a1"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/ARCHIVE/SOURCES/str8n-v1.23-top-update-2000.asm",
+    "bytes": 30561,
+    "sha256": "87e20b8a660227416e1a1880723228ad0f8c4329cfaa6061de2d01c8afb41237"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/apman-7000.s19",
+    "bytes": 7816,
+    "sha256": "242a5d957f4705bca1fa9225f761a59f84dd327db88c34e355517d28633d40af"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/apman-v1-bank2-8000.bin",
+    "bytes": 4096,
+    "sha256": "1bf810e2234ed07cd98cb87320e211e9cdbd134e6dba884e2de5b2d53e315835"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/apman-v1-bank2-8000.s19",
+    "bytes": 9740,
+    "sha256": "15a782f03faee2dfcc537fc3ef7c0d8bdc5561944744d0fcde8fa4d10da36fb6"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/apman-v1.ap",
+    "bytes": 2880,
+    "sha256": "b335e233945348f77ba40d239cdb64b5b7c138e6023ae91ef85c01e2187e8d55"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/bank-audit-2000.s19",
+    "bytes": 1436,
+    "sha256": "530ab4775af5c6b3dae7bc0fd4c30bc91efb308880599f2019c9552b23d327ee"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/bank-dump-2000.s19",
+    "bytes": 6472,
+    "sha256": "be46b2a1c135550a737ff50e8f63fbc8657a5ce2d925eb7d40a0c2bcf6b6b3db"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/himon-c000.s19",
+    "bytes": 32720,
+    "sha256": "6ec2808daaf378c13054143099bc61e3ebabad93ccb484bffbd5bd26157680ca"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/himon-rom-c000-install-8000.s19",
+    "bytes": 77836,
+    "sha256": "2179dfbeb69e61a41447e475c9c960ab9552a81e7ea28fb387839e423d767ef1"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/himon-rom-c000.s19",
+    "bytes": 32720,
+    "sha256": "6ec2808daaf378c13054143099bc61e3ebabad93ccb484bffbd5bd26157680ca"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/life-2000.s19",
+    "bytes": 9506,
+    "sha256": "02c589806b108fac99a5bf52211829879f4193a5dcdfbc094f987183a3a94652"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/pia-led-show-2000.s19",
+    "bytes": 384,
+    "sha256": "d501084ed33a202283bb36726a3bf6a09f529f1af868ae68ca325bf9b5647e07"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-asm-bank3-8-b.s19",
+    "bytes": 38924,
+    "sha256": "3359fc245cd63ee59d6e0c6d65b3c28373b09e0082293b7869107a5007625164"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-himon-bank3-c-e.s19",
+    "bytes": 29196,
+    "sha256": "62db40b67ffe382c7504f49600bb9301e040e6b2450a3e28bbba491e15e2702e"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/str8n-manifest.json",
+    "bytes": 9814,
+    "sha256": "54d46b4907968b8bc321b88f7605bcb9fb34e4aa0b6403b5efdfd7efef758df5"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/str8n-v1.32-bank-maint-2000.s19",
+    "bytes": 18114,
+    "sha256": "26ec6e7a75275ec2036e29aa983fbc0eb7ff39939c359fa3c9e91ae5324221f4"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/str8n-v1.32-bank-maint-menu-2000.s19",
+    "bytes": 33804,
+    "sha256": "64db38e4c10d512abf1d7a070c84c16dd5f8f61762ed4a717ca2ff15ef333191"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/str8n-v1.32-bank3-f000-ffff.bin",
+    "bytes": 4096,
+    "sha256": "5447e9f197ed8fe7ab90feeebf25318fbbdca721612356050f600cde2268425e"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/str8n-v1.32-directory-refresh-2000.s19",
+    "bytes": 33804,
+    "sha256": "422b8ee56fb950fc72dd574877b3d67738ef21d57be8e27a4988d2d301df052e"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/str8n-v1.32-f000.s19",
+    "bytes": 9364,
+    "sha256": "8c8b30dbcd7ee7056a62eb0eb6c36a7f320b268934cd6588e3ef4935277193bb"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/COMPONENT-IMAGES/str8n-v1.32-worker-0200.s19",
+    "bytes": 1684,
+    "sha256": "cbd477ad62a0ff7fc14de22f3575c7b05834c973a5df622a6678def6c4577713"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/apman-7000.asm",
+    "bytes": 59650,
+    "sha256": "f83d59c8303f4ade17ffc8d193ccc4e438b4ef97f2f272aa4ee6586a8fa1f311"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/apman-v1.inc",
+    "bytes": 3066,
+    "sha256": "6c33183d274bf15b42f8da5466f0c3402bdff61ee40fd3c522872b47c5ebc286"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/asm-session-report-v1.2-ap-2000.a",
+    "bytes": 26654,
+    "sha256": "8144a54521def2053ee3972f2fa719d475de35913839eef9eb1b085dd99eabef"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/asm-v1-core.asm",
+    "bytes": 971255,
+    "sha256": "a09ddba1cd59833759e0c2ea801fa53b8d092d3e112e59bc004f276513cd537d"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/asm-v1-flash.asm",
+    "bytes": 48775,
+    "sha256": "d174c14e0424963c725173b71e18496790dc66a47454b1f04004e922ef0f42f2"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/bank-audit-2000.a",
+    "bytes": 5591,
+    "sha256": "02e20e8efac795543fcdaacf6a2398f5cf157fb0560639227a18fd898d3b2e0a"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/bank-audit-2000.asm",
+    "bytes": 12425,
+    "sha256": "c18e918292cbfd6444a5681c6dc83bd483dbf56bcae69eeb8bf480fe06c66bd8"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/bank-dump-2000.a",
+    "bytes": 11736,
+    "sha256": "0e541cb8d35e28bf86646361ab25af00ab08e9c9927e6f1b2064ccd1b1eaffc8"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/bank-dump-2000.asm",
+    "bytes": 48369,
+    "sha256": "bfff11dfc7b9ac4bfbdb9918da7d216ef16bb522d897af435f96acac439760e7"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/crc16-notable.asm",
+    "bytes": 3573,
+    "sha256": "1d88fff3194a28f11ded2ebf42be0bdb3386b0e88dad4fce2b47fbb222641b62"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/edu-rtc-read-7000.a",
+    "bytes": 7051,
+    "sha256": "bb49681bc29a04e47a237ccc836e37723c3b376c5163e552e785a85ce303f25a"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/expr-negative-rollback-2000.a",
+    "bytes": 346,
+    "sha256": "e262e1933eb58739aafc7773dcf339e920d71d711a45fdfeeb268523d6159817"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/expr-operators-ap-2000.a",
+    "bytes": 905,
+    "sha256": "a037723792cb39b72252befc8ba2c1f1ecec1cd623c1c29e73569bf8e798f688"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/fnv1a-fold.asm",
+    "bytes": 4015,
+    "sha256": "7fd845b09f889f328b926b29f104cf1d102507444f7fe7ba65a6d0b7c2072708"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/fnv1a-hbstr-6000.asm",
+    "bytes": 17538,
+    "sha256": "4e57435577c4fa02b92a463c1a133cc344fa2856a9ebeeb59a00bba8fe416b2a"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/himon.asm",
+    "bytes": 245522,
+    "sha256": "27762e2a7b80318eb12e9b8499ddb9922718579c0455d69891225fc78ada557d"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/led-io-activity-long-3000.a",
+    "bytes": 11359,
+    "sha256": "bd62b8790a96d0779c54ec74ab601cc19cea9fe1fea158a6f2afea69d528a248"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/life.asm",
+    "bytes": 47516,
+    "sha256": "7cd02526e07875ad7c04e936b7b2dfc71bd11d77f4761cd2e36508dd0acee730"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/opcode-reduction-runtime-2000.a",
+    "bytes": 2119,
+    "sha256": "ee316b30cf8e9c22c54af28ed83640dc49d0d82a083796e4b80a9492b4eb70e8"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/pia-led-show-2000.a",
+    "bytes": 1915,
+    "sha256": "b6836738abd76b1621a300e377ac1b620ebee805af30ad071eccb08746cc5455"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/pia-led-show-2000.asm",
+    "bytes": 3436,
+    "sha256": "f94ec243550b80d369d137726ee8c08dfad4f609d2f3c9e358412964fb218c2a"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/reloc64-direct-2000.a",
+    "bytes": 464,
+    "sha256": "d9d65de704877ed69184a8454816f5fb32fcbdbf62828f0cd7f79f2897fdab37"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/rom-append-calc.asm",
+    "bytes": 7199,
+    "sha256": "70f312b9d22a02c868c42f36cc7f4d0067201f0bc87154e6ecb8cc7a73a9cb12"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/seal-workflow-2000.a",
+    "bytes": 269,
+    "sha256": "bab38b37784077132da2313d1e11272689613a2b45f72be63604f301408bebfe"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/str8-worker.asm",
+    "bytes": 19873,
+    "sha256": "ff3b64aa868351562d52874a0d4b7a79e94d90c00ba9bc0be43c9cb5905550b1"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/str8.asm",
+    "bytes": 146470,
+    "sha256": "07e1b5a0d6d7d1647c4fd432a73723976553e2f43189b614bbafefb85321da39"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/str8n-v1.2-ap-link-smoke-2000.a",
+    "bytes": 789,
+    "sha256": "fd72169dc3a2c2f797ca33f8939247659f9e31d377729df771003f17797d50d1"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/str8n-v1.2-bank-crc-all-3000.a",
+    "bytes": 3842,
+    "sha256": "e3e34437e5326187e52242af328241e009deb89e1a9b87fcfc2d77dbfbf89748"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/str8n-v1.2-flash-bank-dump-ap-2000.a",
+    "bytes": 9208,
+    "sha256": "4d113a67603e67b0b4bacd6909a2e0feac665405f950bb8f1fdef3a1f2744f22"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/str8n-v1.2-flash-bank-read-ap-2000.a",
+    "bytes": 7195,
+    "sha256": "2c0d58bd9ca8ad79548275785b8fea5304fd3b8fdf0bceaed54ab8a5899d7abc"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/str8n-v1.2-low-user-canary-7000.a",
+    "bytes": 1596,
+    "sha256": "fe7684edff9f63715313e00de0d95df941e1ce5463b2b5f7a5cb6c2c830e9c1e"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/str8n-v1.32-bank-maint-menu-2000.a",
+    "bytes": 68059,
+    "sha256": "3f5fcb7f759aaaef23e858c07109d91f9232669b5f614df8f004d4651f7bef6d"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/symbol-name-pool-rollback.a",
+    "bytes": 2974,
+    "sha256": "6f0b39bb59205bb545a8b1103b06d112d995d95d9862ec1e7a388604abf0a104"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/symbol128-slot-rollback.a",
+    "bytes": 2051,
+    "sha256": "76bb90876f1b127729d4595fd8685588d1e7c585180dae58c52ea41a630fb5af"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/terminal-answerback-vt100-3000.a",
+    "bytes": 2925,
+    "sha256": "cd3aa9a1b08cd85961616c7ad0b22bf7a36931652fff14caca86179e07a3fd8a"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/unresolved-addends-2000.a",
+    "bytes": 319,
+    "sha256": "e93dc1d8a27499d4a90afddab7763d8d23ee731a0d85bf496e680a57c6eb0ec0"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/vt102-exerciser-7000.a",
+    "bytes": 9582,
+    "sha256": "d038a43e94fae858ff5f036f698186dff0c4bdd1569d6c8353c3bf086521e559"
+  },
+  {
+    "path": "RELEASE/ARTIFACTS/SOURCES/vt525-exerciser-7000.a",
+    "bytes": 10213,
+    "sha256": "64907065775f35c05b16a52255792a81cefc364851c68ef4ae3c60d86398e970"
+  },
+  {
+    "path": "RELEASE/QUALIFICATION.json",
+    "bytes": 1651,
+    "sha256": "7e28a633ca3e313a3fd2f894025cd8b6b74495047e3d357d8743b6e097a044e5"
+  },
+  {
+    "path": "RELEASE/README.md",
+    "bytes": 2639,
+    "sha256": "35c4b838153bd333871a8b77653350778881324fc5138e0cce7be93403831808"
+  },
+  {
+    "path": "RELEASE/SHA256SUMS.txt",
+    "bytes": 722,
+    "sha256": "0a3cc7332b652ed5c765fb765e82149193d8192e58732947d5a69a0453ff9fd2"
+  },
+  {
+    "path": "RELEASE/asm-f2-00.0915-2324.zip",
+    "bytes": 283059,
+    "sha256": "a9a4246be0dd84c065dc360aa4a438e3688e4d759931080f40e3ab000195c0e0"
+  },
+  {
+    "path": "RELEASE/component-release-manifest.json",
+    "bytes": 314,
+    "sha256": "7d31c79f9830a1732a5bec34e6386aaf420e5965941bad3676ede590b363c5e4"
+  },
+  {
+    "path": "RELEASE/himon-00.0915-2324.zip",
+    "bytes": 286543,
+    "sha256": "f9581a6d9ca661b31fdd45cb7e7f872771919d2a561146c2f9075f3ec57ff82d"
+  },
+  {
+    "path": "RELEASE/release-index.json",
+    "bytes": 880,
+    "sha256": "0879f6d57165fd56288e7482d7b3604779197143d81940cf0c408b196e929876"
+  },
+  {
+    "path": "RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19",
+    "bytes": 68108,
+    "sha256": "8d0d240c7cf908b6e626b8e24ac0b8e75040f2cb91fe4287c64755e64f420131"
+  },
+  {
+    "path": "RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin",
+    "bytes": 32768,
+    "sha256": "b2289a501170dfb28f4aa6a9dbb24ee7c5a0c333dfe7b2007efdb857be787fdf"
+  },
+  {
+    "path": "RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19",
+    "bytes": 77836,
+    "sha256": "914be0d49608e5d6ff54ff72d54fb75e55663e88d507ffc669610b8ca053de8e"
+  },
+  {
+    "path": "RELEASE/str8n-v1.32-top-update-2000.s19",
+    "bytes": 33804,
+    "sha256": "b961c3cac05511e4390f1a8a6887bdc840535297facd39197d57f2c9ba92a266"
+  },
+  {
+    "path": "RELEASE/str8n-v1.34-release.zip",
+    "bytes": 278366,
+    "sha256": "0fb433150984380eb8307be4feb8fafa89d669e5057b976eaa6674c521616aa4"
+  },
+  {
+    "path": "SRC/APPS/LIFE-NOTICE.txt",
+    "bytes": 1662,
+    "sha256": "eb8c1de0f09a5aacda89cf5c1e4c17694d3e4580889a9cb56b9a996f1d64a381"
+  },
+  {
+    "path": "SRC/APPS/MICROCHESS-LICENSE.txt",
+    "bytes": 1744,
+    "sha256": "c4f99891535eef46be95b59ac736bd982f84fb2300cce61afb26326dec574bd4"
+  },
+  {
+    "path": "SRC/APPS/apman-7000.asm",
+    "bytes": 65379,
+    "sha256": "fc93d688c7b9b1e9a3e44a760db0bd83a5f914ef173ec7fd0db7d78f7452aab1"
+  },
+  {
+    "path": "SRC/APPS/bank-audit-2000.asm",
+    "bytes": 12425,
+    "sha256": "c18e918292cbfd6444a5681c6dc83bd483dbf56bcae69eeb8bf480fe06c66bd8"
+  },
+  {
+    "path": "SRC/APPS/bank-dump-2000.asm",
+    "bytes": 48369,
+    "sha256": "bfff11dfc7b9ac4bfbdb9918da7d216ef16bb522d897af435f96acac439760e7"
+  },
+  {
+    "path": "SRC/APPS/life.asm",
+    "bytes": 47516,
+    "sha256": "7cd02526e07875ad7c04e936b7b2dfc71bd11d77f4761cd2e36508dd0acee730"
+  },
+  {
+    "path": "SRC/APPS/microchess-2000.asm",
+    "bytes": 22331,
+    "sha256": "e84c7bbe8bdd2b7e46814b2edfd5f883a958513caee04b7cbd0b605ced8e49ff"
+  },
+  {
+    "path": "SRC/APPS/pia-led-show-2000.asm",
+    "bytes": 3436,
+    "sha256": "f94ec243550b80d369d137726ee8c08dfad4f609d2f3c9e358412964fb218c2a"
+  },
+  {
+    "path": "SRC/APPS/rom-append-calc.asm",
+    "bytes": 7199,
+    "sha256": "70f312b9d22a02c868c42f36cc7f4d0067201f0bc87154e6ecb8cc7a73a9cb12"
+  },
+  {
+    "path": "SRC/APPS/rterm-advanced-7000.asm",
+    "bytes": 20437,
+    "sha256": "c63659a5c383d0dad78e0b546012c7d442c3c5f82303fddefb6dffb0b76f2605"
+  },
+  {
+    "path": "SRC/ARCHIVE/PROOFS/bank3-erase-8000-bfff-3000.asm",
+    "bytes": 4955,
+    "sha256": "17c1c74441523c4a47e56ba5e22414cea1068aa6c67c50fafa0f5d78c698c333"
+  },
+  {
+    "path": "SRC/ARCHIVE/README.md",
+    "bytes": 743,
+    "sha256": "fcfe9b36037758ffa3962548c71580cc289935c2d8b9263cb675d2d55599ed93"
+  },
+  {
+    "path": "SRC/ARCHIVE/himon/README.md",
+    "bytes": 787,
+    "sha256": "58f7e7ecb490c2b7fe31e1c0e0e4c4ca5ccb93e9e5f0dc4a30ae2cf5b0261b69"
+  },
+  {
+    "path": "SRC/ARCHIVE/himon/himon-parent.asm",
+    "bytes": 34059,
+    "sha256": "115de84e014819351141fa0cc22c6ad619906e971d634e9d3368401d78ce6eca"
+  },
+  {
+    "path": "SRC/ARCHIVE/himon/himonia-f.asm",
+    "bytes": 118159,
+    "sha256": "bc97f6b15df332983dc134a1cbb95c1e24adde6676bdeec49e8000d4cf9bb40f"
+  },
+  {
+    "path": "SRC/ARCHIVE/himon/himonia.asm",
+    "bytes": 73335,
+    "sha256": "20467bbe2c1b105f152421014efafd7332f60a4310ecf3749ac84eb76912d6d0"
+  },
+  {
+    "path": "SRC/ARCHIVE/himon/mon-cmd-core.inc",
+    "bytes": 6601,
+    "sha256": "23d12168b46b7cbbed5e4e77c6f609484c249d5229daa36601464f01e2fdec27"
+  },
+  {
+    "path": "SRC/ARCHIVE/himon/mon-cmd-debug.inc",
+    "bytes": 10381,
+    "sha256": "b91f6611f2edd3e75836f0a78ba6b124791bf2887a60aac13d2bff82b0168647"
+  },
+  {
+    "path": "SRC/ARCHIVE/himon/mon-cmd-load.inc",
+    "bytes": 44506,
+    "sha256": "84731f690f1ec08685ba833c672e3f1cb48d36f85dda2b43ea9422d9a02c4f1a"
+  },
+  {
+    "path": "SRC/ARCHIVE/himon/mon-cmd-memory.inc",
+    "bytes": 38469,
+    "sha256": "f91efdcdc612cfa768c7be6471a0c5d964b2456bc076721bd12b049618f1c354"
+  },
+  {
+    "path": "SRC/ARCHIVE/himon/mon.asm",
+    "bytes": 6842,
+    "sha256": "a7bee8e52932c6e41cb25b8305f5d3cab1a6f661d399b89a9017b80ac6f6fb66"
+  },
+  {
+    "path": "SRC/ARCHIVE/himon/tools/build_basic_himonia_f_rom_bin.ps1",
+    "bytes": 6682,
+    "sha256": "6d51c6fc2936b666ef490b9c9e987878e16e92414ff26bfe84286a10eace1935"
+  },
+  {
+    "path": "SRC/ARCHIVE/himon/tools/build_forth_basic_himonia_f_rom_bin.ps1",
+    "bytes": 8874,
+    "sha256": "2602d0fff01694f9a1bf470ac1c78dfa3b96aec0c2ed1c338f0f6abce7437732"
+  },
+  {
+    "path": "SRC/ARCHIVE/himon/tools/patch_msbasic_himonia_addrs.ps1",
+    "bytes": 2643,
+    "sha256": "c4912a1ac2fc9b8340efc6be53b02ce9d0d369b77fdebbb30857c59e36fd7bb0"
+  },
+  {
+    "path": "SRC/ARCHIVE/str8/str8-ap-import-link-service.asm",
+    "bytes": 1047,
+    "sha256": "a3919c930297f399acdce8410d78647c96df5fd20327af0dc78822ab35bd8949"
+  },
+  {
+    "path": "SRC/ARCHIVE/tools/check_str8_bank_copy_source.ps1",
+    "bytes": 2799,
+    "sha256": "d4c9be3ab50c5d4392215743e57b9f58ddd0e0a92b726962f3cc88b34d15cdb3"
+  },
+  {
+    "path": "SRC/ASM/ap-store-v1-chain-reader.inc",
+    "bytes": 24731,
+    "sha256": "3154a969d8d51748c88ca64ef3d03d67b83569640424919deff57d26c2136c7f"
+  },
+  {
+    "path": "SRC/ASM/ap-store-v1-chain-tool.inc",
+    "bytes": 69740,
+    "sha256": "7e655a68cd1020c0fa8ca9fc339f7cc0a20776001bda045b842bd7edc0474323"
+  },
+  {
+    "path": "SRC/ASM/ap-store-v1-slice6-delete.inc",
+    "bytes": 17044,
+    "sha256": "e68c146bcc1b7263c072d48cf21d7c0941693c7ab53f947bb42fe00a2250a2ca"
+  },
+  {
+    "path": "SRC/ASM/ap-store-v1-slice6-reader.inc",
+    "bytes": 26978,
+    "sha256": "cf976d5c0a9263cd00b7f4937ed2786dfbc33d721629802059f39861e8ffe01b"
+  },
+  {
+    "path": "SRC/ASM/ap-store-v1-worker.inc",
+    "bytes": 17760,
+    "sha256": "e2be9ad07153931501bb83f08d59baac1f6fc036da22f0e243cf8cbf11fc5b54"
+  },
+  {
+    "path": "SRC/ASM/ap-store-v1.inc",
+    "bytes": 2287,
+    "sha256": "bb6095997164a75c89e04133a962d04669d1319935090226d662493b11094f56"
+  },
+  {
+    "path": "SRC/ASM/apman-v1.inc",
+    "bytes": 3066,
+    "sha256": "6c33183d274bf15b42f8da5466f0c3402bdff61ee40fd3c522872b47c5ebc286"
+  },
+  {
+    "path": "SRC/ASM/asm-abi-v1.inc",
+    "bytes": 3611,
+    "sha256": "9e26d4dda78dd0a62e432182c12820bfde2720e1ec2f098a0037d6587fe436b2"
+  },
+  {
+    "path": "SRC/ASM/asm-v1-core.asm",
+    "bytes": 968424,
+    "sha256": "63c9b9b382833cfeb8b1c371ab386fa2bd515aea6008409e1f40ad163375c0c1"
+  },
+  {
+    "path": "SRC/ASM/asm-v1-flash.asm",
+    "bytes": 48921,
+    "sha256": "5d14450eee123a41e07c4bb280daebdc98e59532998e9db92e2626ae54b2b080"
+  },
+  {
+    "path": "SRC/HIMON/crc16-notable.asm",
+    "bytes": 3573,
+    "sha256": "1d88fff3194a28f11ded2ebf42be0bdb3386b0e88dad4fce2b47fbb222641b62"
+  },
+  {
+    "path": "SRC/HIMON/fnv1a-fold.asm",
+    "bytes": 4015,
+    "sha256": "7fd845b09f889f328b926b29f104cf1d102507444f7fe7ba65a6d0b7c2072708"
+  },
+  {
+    "path": "SRC/HIMON/fnv1a-hbstr-6000.asm",
+    "bytes": 17538,
+    "sha256": "4e57435577c4fa02b92a463c1a133cc344fa2856a9ebeeb59a00bba8fe416b2a"
+  },
+  {
+    "path": "SRC/HIMON/himon-bootlog.inc",
+    "bytes": 1519,
+    "sha256": "168c115885ba181738e21ff9923a845b2d6e95fe94b46e7ed289455167f29a71"
+  },
+  {
+    "path": "SRC/HIMON/himon-debug.inc",
+    "bytes": 27655,
+    "sha256": "8b70cd6eb36bcc0786b0f916f75cfd94df58c835b7c845b39b27f2544c96ac39"
+  },
+  {
+    "path": "SRC/HIMON/himon-disasm.inc",
+    "bytes": 1784,
+    "sha256": "f8b2c5f79f129754588cca730f22e704a8fd66f4f263c85caf8cd5db0915d83f"
+  },
+  {
+    "path": "SRC/HIMON/himon-image-eq.inc",
+    "bytes": 788,
+    "sha256": "6e168fe60da6bd679d383b55aae230212a6097b55ef5582d2f4fd36678d14cd1"
+  },
+  {
+    "path": "SRC/HIMON/himon-led-eq.inc",
+    "bytes": 699,
+    "sha256": "ad204cc1f2f7847f44358f5583e75e97b6573f8c34aed83ff0f93de41d490edf"
+  },
+  {
+    "path": "SRC/HIMON/himon-shared-eq.inc",
+    "bytes": 17747,
+    "sha256": "2892e12c1b6e97d1c40aaa0573257bca9932d4d5b18d6b749c32a7ac5781cfaf"
+  },
+  {
+    "path": "SRC/HIMON/himon.asm",
+    "bytes": 244553,
+    "sha256": "620b9340b3d9227b2bdc6eafe8d1853e103e68f7b0c278f7ae9fa344712e0f3f"
+  },
+  {
+    "path": "SRC/INTEGRATION/str8n.lock.json",
+    "bytes": 1568,
+    "sha256": "1c1322cacb9358c3a2d3d306c7debe41f60ac97e82993147ee4a597c6a5c42a9"
+  },
+  {
+    "path": "SRC/LIB/acia/acia-drv.asm",
+    "bytes": 10032,
+    "sha256": "6d3da875fc468aa57145b268df39d21576b60c02f2b07b177d512e413d834441"
+  },
+  {
+    "path": "SRC/LIB/dev/dev-adapter-core.asm",
+    "bytes": 15491,
+    "sha256": "3869f672cf64f5a54fdf995498480b74de00eacbdbcf9d33e65d9eb3e159e734"
+  },
+  {
+    "path": "SRC/LIB/dev/dev-adapter-debug.asm",
+    "bytes": 3594,
+    "sha256": "e414d7922c576bb210fa8fb2f37391e317d2d0cdae4ca001c8b2ded90a6d4c61"
+  },
+  {
+    "path": "SRC/LIB/dev/dev-adapter-readline.asm",
+    "bytes": 16236,
+    "sha256": "4f13db1abd1fbd0cb3e36568c68f45c18227aa945d9f6c06b10896bf314cad93"
+  },
+  {
+    "path": "SRC/LIB/dev/dev-adapter-vectors.asm",
+    "bytes": 12521,
+    "sha256": "7ddf162b3a0d124a4aee93cb0f0ec8f970585db0467b0ad25c288002289fed85"
+  },
+  {
+    "path": "SRC/LIB/dev/dev-adapter-write.asm",
+    "bytes": 11939,
+    "sha256": "65e74e59b7077707b1807dede1fc01663b39927b7711957b6f3343296aee3eab"
+  },
+  {
+    "path": "SRC/LIB/dev/dev-flash.asm",
+    "bytes": 15278,
+    "sha256": "ddabd481aafe334918caabb727784e887dd56011da88d11356b500d5e63e9c14"
+  },
+  {
+    "path": "SRC/LIB/dev/flsh-drv.asm",
+    "bytes": 3728,
+    "sha256": "6876e1349f54aa4180e1386f60efdafceec0d0c85e602e5a9531b705aa5d2a04"
+  },
+  {
+    "path": "SRC/LIB/dev/flsh-query.asm",
+    "bytes": 3605,
+    "sha256": "4f5e2d885f7468991b539b2fe22e250108fffeb6d83e8076cea46406a4e646b9"
+  },
+  {
+    "path": "SRC/LIB/ftdi/ftdi-backend-core.asm",
+    "bytes": 26323,
+    "sha256": "33c030b3d8549f611930e86c9f06fc88f2d5204e5de0c04c2afedd16b5d7d7be"
+  },
+  {
+    "path": "SRC/LIB/ftdi/ftdi-backend-editline.asm",
+    "bytes": 22863,
+    "sha256": "31858fa456ac0232a178ad35f8ff0d73cc4ca6003d39b2bc154f66cfbc286b39"
+  },
+  {
+    "path": "SRC/LIB/ftdi/ftdi-backend-readline.asm",
+    "bytes": 18372,
+    "sha256": "c033f5ba350c9b94d4b47b89da8d40bd6dac06a32192bf281925bb0b8e88cfde"
+  },
+  {
+    "path": "SRC/LIB/ftdi/ftdi-backend-write.asm",
+    "bytes": 9236,
+    "sha256": "424bfb8567ffa0c0c7064fc5fbcf2fa778fdf14a442987a5bf9c1f46d1186185"
+  },
+  {
+    "path": "SRC/LIB/ftdi/ftdi-drv.asm",
+    "bytes": 18250,
+    "sha256": "a21babda89ca68fc9f72093a1a367ad545f1e3debf121042617a791ace608c74"
+  },
+  {
+    "path": "SRC/LIB/ftdi/ftdi-drv.inc",
+    "bytes": 1093,
+    "sha256": "b429cfcbec01ab7d191f77decde13c4500be45244382ffa82606f2e0da566431"
+  },
+  {
+    "path": "SRC/LIB/ftdi/ftdi-hal.asm",
+    "bytes": 37752,
+    "sha256": "e506ddf3933a5fb326fe8cc4194db12051cdaa535b9773aa71b0311d1cb54964"
+  },
+  {
+    "path": "SRC/LIB/pia/pia-drv.asm",
+    "bytes": 11623,
+    "sha256": "83574107f1a6e91adfbba3bebe5d41f6c2f510a5233ca500708c8d63e6531f25"
+  },
+  {
+    "path": "SRC/LIB/pia/pia-hal.asm",
+    "bytes": 23298,
+    "sha256": "2f3f77346107a5725d111627892485f07f98d726e3919cd0c2461ad4223c3de7"
+  },
+  {
+    "path": "SRC/LIB/util/util-addr.asm",
+    "bytes": 6908,
+    "sha256": "ff668e1883e8a8849beef6a56b6cf541f8071b5db0d4e304641c5c94f06c8fe8"
+  },
+  {
+    "path": "SRC/LIB/util/util-char.asm",
+    "bytes": 11279,
+    "sha256": "e05b361c917c091f84e7f94401d7ff06c6c80d133dae31d63d036f3c973fbbae"
+  },
+  {
+    "path": "SRC/LIB/util/util-delay.asm",
+    "bytes": 4035,
+    "sha256": "b76af1353f305777c5f00c56bafed8246a0e551a3df3244f47c29108adde4c36"
+  },
+  {
+    "path": "SRC/LIB/util/util-hex.asm",
+    "bytes": 9541,
+    "sha256": "220ffe432b012bafcbf0778627826b969c8c12f137b4e17a5243a6439de2877e"
+  },
+  {
+    "path": "SRC/LIB/util/util-pack40.asm",
+    "bytes": 21228,
+    "sha256": "19bdad5161831e68728ecdad23b6e8fcd866406aa51a82c0f15d4294c919857f"
+  },
+  {
+    "path": "SRC/LIB/util/util-string.asm",
+    "bytes": 7283,
+    "sha256": "4fd2f50d2e49c36b66814da917eabb991f24100bb743b28943537aac3caae199"
+  },
+  {
+    "path": "SRC/LIB/util/util-test.asm",
+    "bytes": 5922,
+    "sha256": "43bbcfb4792c8ddf3a5b73d5107957628768b4c6a16d6ee526c7bdc0ac49fb58"
+  },
+  {
+    "path": "SRC/LIB/util/util-zp.asm",
+    "bytes": 3215,
+    "sha256": "8212e8a0dcaf0f06865f66c3b9d351e4d3178f86e0070737910b7c75f3c26429"
+  },
+  {
+    "path": "SRC/LIB/util/util-zp.inc",
+    "bytes": 3126,
+    "sha256": "3762e412a639aec10f6ca02bdcf65deb0454630b6e6dbb96a4eedbd704685037"
+  },
+  {
+    "path": "SRC/Makefile",
+    "bytes": 114069,
+    "sha256": "66735de8aa5ae493133da0e4308a402e8490ac3706249756008ae369c1f98ac8"
+  },
+  {
+    "path": "SRC/PROOFS/ap-store-v1-chain-marker-4000.asm",
+    "bytes": 669,
+    "sha256": "0518a8bfb5e29798cc858a8811cdeddcd8c0da3ecf60e370fff1882dec6491a6"
+  },
+  {
+    "path": "SRC/PROOFS/ap-store-v1-marker-3000.asm",
+    "bytes": 830,
+    "sha256": "d7d20f0b647c292035059ad8802971b6b87b9bd1431a8e8f9fd8647cc90a77db"
+  },
+  {
+    "path": "SRC/PROOFS/ap-store-v1-sector-tool.asm",
+    "bytes": 104613,
+    "sha256": "483762a1de1c32bf54ece811b1664050ec1b83338b00d553f9d9f7af9e022ff9"
+  },
+  {
+    "path": "SRC/PROOFS/asm-rjoin-proof-3000.asm",
+    "bytes": 87485,
+    "sha256": "207bcdc6d53f5e4034fe27648ec60caf910a7ef410c7102faf0bd634a56e3e1d"
+  },
+  {
+    "path": "SRC/PROOFS/asm-session-report.asm",
+    "bytes": 36338,
+    "sha256": "34acd1358af93095255f363a31eae99815d63aec451cc05c0caa76376eecce0c"
+  },
+  {
+    "path": "SRC/PROOFS/asm-v1-runtime-asmtest.asm",
+    "bytes": 10978,
+    "sha256": "9c3e6278dfe6ca8a609d299d2e5a917103b4b5f339259b1aef195e98a726af77"
+  },
+  {
+    "path": "SRC/PROOFS/asm-v1-runtime-paste.asm",
+    "bytes": 25379,
+    "sha256": "f4cd6eb96b4903923d37f3104296fd10ffe62907c10237d3ab481ce9bf70b99d"
+  },
+  {
+    "path": "SRC/PROOFS/asm-v1-runtime-smoke.asm",
+    "bytes": 15129,
+    "sha256": "19f7e8bfcd6e04493e75b68cc108776a3b859f1efbf8b76cb0fc174d4960fd6d"
+  },
+  {
+    "path": "SRC/PROOFS/calc-9a00-fnv-proof.asm",
+    "bytes": 5765,
+    "sha256": "a3a5c2eaa5ed584ec010811e6452920d70affdfa33c68b23028717f8df625450"
+  },
+  {
+    "path": "SRC/PROOFS/himon-debug-proof.asm",
+    "bytes": 3529,
+    "sha256": "a870b0abc06e08d4e85c4a81358577951b4146c294c08670215d27f581decc42"
+  },
+  {
+    "path": "SRC/PROOFS/himon-search-flash.asm",
+    "bytes": 34997,
+    "sha256": "8f0e355b1fc1b69bb73b6d37bd4ee31fdad12f17eadbc511020bad6517862616"
+  },
+  {
+    "path": "SRC/PROOFS/himon-search-for-himon.asm",
+    "bytes": 7987,
+    "sha256": "4d0a8e450f52257b77ba386ae3d98f03dc1d3def98b1d74d22a089e961f3c6c1"
+  },
+  {
+    "path": "SRC/PROOFS/himon-search-proof.asm",
+    "bytes": 41126,
+    "sha256": "c6b6f3125a0d6a58125aee422b1f911abb1d6b3b4a50f596fa7fb369ef117567"
+  },
+  {
+    "path": "SRC/PROOFS/himon-search-static-proof.asm",
+    "bytes": 30440,
+    "sha256": "e5bf2ebfdaa0bf26ed2c5abdfcd1d36b643d0b0ba555bc2734175030d19614d2"
+  },
+  {
+    "path": "SRC/PROOFS/hrec-join-proof.asm",
+    "bytes": 39821,
+    "sha256": "310bb568f222fccad943a4732fb519a6968dfa3fd78d71ad2ed496819ab172d6"
+  },
+  {
+    "path": "SRC/PROOFS/pack40-test.asm",
+    "bytes": 6522,
+    "sha256": "e9d92b094440286a6c3cdcfa0aa775c7fc028b3b110069109a149fb26f9d866c"
+  },
+  {
+    "path": "SRC/SESH/README.md",
+    "bytes": 190,
+    "sha256": "45ad7f516f4ed291f120fa79209d6e8643081048072afef53f268c3a58a43a7b"
+  },
+  {
+    "path": "SRC/STASH/README.md",
+    "bytes": 176,
+    "sha256": "9ccfc605ad00756b24d5c3dc939c3b0859c185b1e26a998df521ff4d48cf14c4"
+  },
+  {
+    "path": "SRC/TEMPLATES/header-template.asm",
+    "bytes": 1595,
+    "sha256": "45458d34fe0a6e4fd7171a1e9495d1c1b815a8701ac22640486ab6e7cff44b23"
+  },
+  {
+    "path": "SRC/TEST/README.md",
+    "bytes": 110,
+    "sha256": "d405c8b18f1d5961cfd51a9411aca5a44bd0012b6799999ca52676b26a3cfcf5"
+  },
+  {
+    "path": "SRC/TESTS/ftdi-backend-debug.asm",
+    "bytes": 11509,
+    "sha256": "1560c656ac66f6e4aaaadf317d7d1eeb3795e40c8cea371f46e54df9cdfa8311"
+  },
+  {
+    "path": "SRC/TESTS/support/ftdi-test-helpers.asm",
+    "bytes": 11171,
+    "sha256": "cafefefd3ba9a70947e8c19bb2caaa1e9a3e4c642b980e9240118eb042edbe64"
+  },
+  {
+    "path": "SRC/TESTS/test-flash-3000.asm",
+    "bytes": 42782,
+    "sha256": "4a8c931ebe27d2d5c2114c2e2f6e6c85c1e3089fda1ca4603481377eda2ae387"
+  },
+  {
+    "path": "SRC/TESTS/test-ftdi-drv-2000.asm",
+    "bytes": 8247,
+    "sha256": "bf56b573b0db90dc9e3158f6ba3a7a3717da35ae11f5df3d164e5d1e6250c149"
+  },
+  {
+    "path": "SRC/TESTS/test-ftdi-hal-2000.asm",
+    "bytes": 40823,
+    "sha256": "4cc8353fae6d17c786c1cb24220b83eb818bd14170c4e34023839810e1b8e97b"
+  },
+  {
+    "path": "SRC/TESTS/test-mon-eq.inc",
+    "bytes": 1895,
+    "sha256": "2720281195f880cbb632756d5aca9d415844632f1099679f93ef483e2ab31879"
+  },
+  {
+    "path": "SRC/TESTS/test-mon.asm",
+    "bytes": 12072,
+    "sha256": "e1922d242bf8b1c6c9ee39fb767bd912919bdfa20f9072a4682b68cfbcd6062b"
+  },
+  {
+    "path": "SRC/tools/bin_policy.ps1",
+    "bytes": 1785,
+    "sha256": "337a1d3950eff4097d7d1efc23b3c2ba1a9e7c3038907d37b56c5dad381202e5"
+  },
+  {
+    "path": "SRC/tools/build_ap_carrier_sector.ps1",
+    "bytes": 1624,
+    "sha256": "25745562a5ae78ac6cecf5389d191ac54c995626a39788407ddfad288a17fb28"
+  },
+  {
+    "path": "SRC/tools/build_ap_fixed_package.ps1",
+    "bytes": 12453,
+    "sha256": "46aae483c17c9be78910891c64887a38dfdacfd1fddf452c5eddef44699d040a"
+  },
+  {
+    "path": "SRC/tools/build_basic_forth_himon_rom_bin.ps1",
+    "bytes": 8268,
+    "sha256": "bb070b55e9595bbf66c378e071a790c4c9a6d8fe7efbe547f6e0a05ba3ac818d"
+  },
+  {
+    "path": "SRC/tools/build_basic_himon_rom_bin.ps1",
+    "bytes": 7127,
+    "sha256": "513c3a295ea168c405bf14a6d6880c60fe1e142df36807c501bf5a04c700b125"
+  },
+  {
+    "path": "SRC/tools/build_himon_rom_bin.ps1",
+    "bytes": 5526,
+    "sha256": "ab73d13b8192e2ec51c23b3aead8546995a2ddcb1f8d12ee071576f053e133d2"
+  },
+  {
+    "path": "SRC/tools/build_msbasic_osi_bin.ps1",
+    "bytes": 2901,
+    "sha256": "f3a6ed3bb846fe85b0155a6aee9bd7d1a47dc23cef1e914411798ebfca34a29e"
+  },
+  {
+    "path": "SRC/tools/build_rom_install_s19.ps1",
+    "bytes": 5557,
+    "sha256": "f23a8c9df56b2db803cd1cd600d9bb88f626d9a18b2131db4aef77c5746cea5b"
+  },
+  {
+    "path": "SRC/tools/build_rterm_demo.py",
+    "bytes": 3054,
+    "sha256": "b26cce1f0471bb0edb89aecb7aa50ca522611339aa5970226752d3df375b073c"
+  },
+  {
+    "path": "SRC/tools/build_ryors_28k_s19.ps1",
+    "bytes": 4289,
+    "sha256": "b59d8ac45107fbfc0aeb7ca79e8119e5ddf5795f61c06f3f8c103856622b009c"
+  },
+  {
+    "path": "SRC/tools/check_ap_store_chain_tools.ps1",
+    "bytes": 9006,
+    "sha256": "c8b0005edbb8ee322a22ef9e4023dd3de054d464e593db3c76fae9eae09c3a7f"
+  },
+  {
+    "path": "SRC/tools/check_ap_store_inventory.ps1",
+    "bytes": 23542,
+    "sha256": "867ef4ce7e597473e6502497a00adb128063b0f24e31575ae9e993b3ff471a00"
+  },
+  {
+    "path": "SRC/tools/check_ap_store_object_tool.ps1",
+    "bytes": 17629,
+    "sha256": "c75e0e339f6144855ecb9ec8f811cc79d920d60b4852a243e6bfeee7c36f757b"
+  },
+  {
+    "path": "SRC/tools/check_ap_store_sector_tool.ps1",
+    "bytes": 26703,
+    "sha256": "2848b55937dc15e32fec15e89d1728607567aa092b199c866f0dcddd71a596d0"
+  },
+  {
+    "path": "SRC/tools/check_ap_store_sector_tool_a.ps1",
+    "bytes": 2189,
+    "sha256": "c0b295c1e0cf073def0e0b561a490ec5557484492c19da1419d5b7d49fe7b275"
+  },
+  {
+    "path": "SRC/tools/check_ap_store_slice6_tools.ps1",
+    "bytes": 12166,
+    "sha256": "e657a3b05111a48d8b797983da79482ca4e3a9fbcdbb84bad56bb1b504247b4d"
+  },
+  {
+    "path": "SRC/tools/check_ap_store_v1.ps1",
+    "bytes": 32063,
+    "sha256": "f7e4323ca4931bac891dc848579675de1532eb2d741a820a96edf92374ae2fe3"
+  },
+  {
+    "path": "SRC/tools/check_ap_v2_package.ps1",
+    "bytes": 13013,
+    "sha256": "107826a0c83873395fae72b266dae088a6a5d89d801c82b7b64171d9cd58436a"
+  },
+  {
+    "path": "SRC/tools/check_apman_bootstrap.ps1",
+    "bytes": 3220,
+    "sha256": "5dc8aacd3176ca102ca738ed78d7c29626d78e16fc6b76e0b665fa305c7c2bba"
+  },
+  {
+    "path": "SRC/tools/check_apman_inspect.ps1",
+    "bytes": 6798,
+    "sha256": "2becf4234f673b6f48753e3b064ae330eee32f7e94380dd89b32991302ac0a3f"
+  },
+  {
+    "path": "SRC/tools/check_asm_abi_v1.ps1",
+    "bytes": 12647,
+    "sha256": "ec9937b6aed3c1a9ee296625587c7afbbe17bc8e7b9111a6def030baa2079e6c"
+  },
+  {
+    "path": "SRC/tools/check_asm_board_readback.py",
+    "bytes": 3485,
+    "sha256": "5c0340a041f574435cfc3536cd81909910847f60ad8ee5133aff5838629c24b9"
+  },
+  {
+    "path": "SRC/tools/check_asm_dc_contract.ps1",
+    "bytes": 9197,
+    "sha256": "a5a3d4c80c910a99cb2c08426d0cc466b4d6a2aabc7585c836a887fe867f440c"
+  },
+  {
+    "path": "SRC/tools/check_asm_errors.ps1",
+    "bytes": 1474,
+    "sha256": "39974b5a00526c860a04e8b8a2126e69b0a2c35ac43946dbe9cedb0fb53d26a4"
+  },
+  {
+    "path": "SRC/tools/check_asm_errors.py",
+    "bytes": 16041,
+    "sha256": "7c67c7b9a526974e88e1f9b9e1b656c31f94b9c10032c1cee48ca42da12e1685"
+  },
+  {
+    "path": "SRC/tools/check_asm_flash_map.ps1",
+    "bytes": 2769,
+    "sha256": "f2471fa44b4ebbf32cadb40389b76c8445a865bec542e5817fc4f782ed81caf0"
+  },
+  {
+    "path": "SRC/tools/check_asm_opcode_coverage.ps1",
+    "bytes": 16452,
+    "sha256": "821f51e39ae4119cbd1d9809be040f88135827ec312053cbb07857973c8420eb"
+  },
+  {
+    "path": "SRC/tools/check_asm_package_writers.py",
+    "bytes": 8735,
+    "sha256": "83eb7a706fc808ca42ffa2ddf8249be908486eead8cf9246d27c1f0404ea8f10"
+  },
+  {
+    "path": "SRC/tools/check_asm_size.py",
+    "bytes": 9742,
+    "sha256": "787ca7157d43afab43f94a5630dda13f8c78c62c228bed3ec49ed87c5c1dbdab"
+  },
+  {
+    "path": "SRC/tools/check_asmtest_3000.ps1",
+    "bytes": 24821,
+    "sha256": "e47d748e6f6287e7f7d975235df2b8b7e198b68859ae2347219186401382a912"
+  },
+  {
+    "path": "SRC/tools/check_bank_audit.ps1",
+    "bytes": 6257,
+    "sha256": "cbe86be941b965e35d225b53ca3c1450754abf86234e627096af437cfe61e59b"
+  },
+  {
+    "path": "SRC/tools/check_bank_dump.ps1",
+    "bytes": 7409,
+    "sha256": "a644241e743d884845cdbf7de83cc8e8082194cea6142c9ff5075874abb47027"
+  },
+  {
+    "path": "SRC/tools/check_bin_policy.ps1",
+    "bytes": 4553,
+    "sha256": "bbfc6cb91680e4cd8da61cbdeec91513f334a0ce3baf9dcadbe373d87431c1d1"
+  },
+  {
+    "path": "SRC/tools/check_board_s19_identity.ps1",
+    "bytes": 4563,
+    "sha256": "e678ac40d2128ab33e0532fb5b3912b4821e12dee4ae539d90a58e6889382669"
+  },
+  {
+    "path": "SRC/tools/check_component_releases.py",
+    "bytes": 4105,
+    "sha256": "12b54659414af6df59c080c246b0098a275e0a394b27d32dd758d85b1801d4e1"
+  },
+  {
+    "path": "SRC/tools/check_external_str8n.ps1",
+    "bytes": 5885,
+    "sha256": "37ebc13d079e2ca2fee88ecaa590354c9074d78aeaae0b6c55abeb5db8373467"
+  },
+  {
+    "path": "SRC/tools/check_himon_banked_ap.ps1",
+    "bytes": 25982,
+    "sha256": "43beeaccfc37fd0fa5e0efab9a7b944f06e88adb51f15df0e917ba719508e58a"
+  },
+  {
+    "path": "SRC/tools/check_himon_io_led.ps1",
+    "bytes": 7980,
+    "sha256": "4ef10c60a64b13fecc9248b763ba28b65bf69ebe408264b68322870f261b049f"
+  },
+  {
+    "path": "SRC/tools/check_himon_size.py",
+    "bytes": 9267,
+    "sha256": "abbec04aa5c935c718a49d80dd409f697386716b048409dd7e5d5c0560646fb3"
+  },
+  {
+    "path": "SRC/tools/check_himon_str8_record_client.ps1",
+    "bytes": 5155,
+    "sha256": "ebe6c551d89766ff99b53731a76d14eef0c71be659f2da254fc739304fb8854c"
+  },
+  {
+    "path": "SRC/tools/check_microchess_ap.ps1",
+    "bytes": 8196,
+    "sha256": "6f17f65a6f68023a1a237d979eb5804a1d46e42bc1e96e392fa5b67dc904897f"
+  },
+  {
+    "path": "SRC/tools/check_microchess_onboard.py",
+    "bytes": 2758,
+    "sha256": "768207aa50357e950b9f40f0d433f354a12a029d400e8ff49c34f4a3a37fc0c0"
+  },
+  {
+    "path": "SRC/tools/check_microchess_runtime.py",
+    "bytes": 5361,
+    "sha256": "89b347b5f4150bab014749450c50f0939a9816b097a1b01ea4bcb29de3dcbdbc"
+  },
+  {
+    "path": "SRC/tools/check_pia_led_show.ps1",
+    "bytes": 6454,
+    "sha256": "ced2d39594746838576b04596cf15568d855b5b15447cb7e8de26569c338780c"
+  },
+  {
+    "path": "SRC/tools/check_rterm_demo.py",
+    "bytes": 15688,
+    "sha256": "972dc8822d2b3a1fc8eccd569324aaaafcba0547ac4ca8b1ef5b843f2d3b62fc"
+  },
+  {
+    "path": "SRC/tools/check_str8_readonly_bank_tools.ps1",
+    "bytes": 6135,
+    "sha256": "a50b9f3b659b40ef0020547ce4093fa115f95eed1978ed164dce77dd061b2fe3"
+  },
+  {
+    "path": "SRC/tools/check_terminal_exercisers.ps1",
+    "bytes": 7386,
+    "sha256": "3313102267525b310fe0f842c1e82890c040259f9752ea984352274971d12ea7"
+  },
+  {
+    "path": "SRC/tools/emit_asm_session_report_inc.ps1",
+    "bytes": 51893,
+    "sha256": "f2663c6d0c9dcae7a48c6073afd71b01cf05c4108deffa300b7a022098703da8"
+  },
+  {
+    "path": "SRC/tools/emit_fig_forth_wdc.ps1",
+    "bytes": 13310,
+    "sha256": "4b17f6497e3a274e58af398cde1e00fba43c358928abaac9843b9704ca3e1388"
+  },
+  {
+    "path": "SRC/tools/emit_msbasic_osi_c000_from_generated.ps1",
+    "bytes": 2027,
+    "sha256": "1ad47cd78802eca8d69d72c59c6b31371c2982c0038c00f2832825ce001ed892"
+  },
+  {
+    "path": "SRC/tools/emit_msbasic_osi_wdc.py",
+    "bytes": 28861,
+    "sha256": "e3c4c53e5e95dd20ad02b7c5b255febeca24b947e5ce88f079bb77aae44a33f5"
+  },
+  {
+    "path": "SRC/tools/gen_docs.ps1",
+    "bytes": 84388,
+    "sha256": "39ca184638d442cd3f1dc0e66459276c72c196062180d34843c98a4da27dbe43"
+  },
+  {
+    "path": "SRC/tools/gen_edge_dump.ps1",
+    "bytes": 10577,
+    "sha256": "b04cdd3e527e98b19b5be8bd8de63450efbf5d144ad0f33a028db1b7bb1b8448"
+  },
+  {
+    "path": "SRC/tools/gen_html_docs.ps1",
+    "bytes": 28979,
+    "sha256": "8b62efa38d98e23eb3c827d9660ac12eb1fc14c67a17549d13f83fd29d4d1e23"
+  },
+  {
+    "path": "SRC/tools/gen_routine_hash_comments.ps1",
+    "bytes": 4707,
+    "sha256": "e7d79772a80ebec0648368649630003d76f5bf8489b399c9685390db32168e6d"
+  },
+  {
+    "path": "SRC/tools/package_component_releases.py",
+    "bytes": 21759,
+    "sha256": "eb2950982da988498afa712bc11e06b5c06766ae1af235a32143216401256d5f"
+  },
+  {
+    "path": "SRC/tools/patch_fig_forth_himon_addrs.ps1",
+    "bytes": 2835,
+    "sha256": "6c0affbc6efc5c8325b615cb79bb0466cb0fbcf6cfc7fa023b9d9dbc86cc5b28"
+  },
+  {
+    "path": "SRC/tools/patch_msbasic_himon_addrs.ps1",
+    "bytes": 3749,
+    "sha256": "271b34fded039ad81b156ab9df55b4c412085f3c4c843247fa499c3819cc92ad"
+  },
+  {
+    "path": "SRC/tools/port_microchess.ps1",
+    "bytes": 8942,
+    "sha256": "80cda5bb64090af906febcc474904fe85519274a7bff73d9b76c36a6be2a8f73"
+  },
+  {
+    "path": "SRC/tools/publish_release.ps1",
+    "bytes": 2417,
+    "sha256": "177218f27f84398493d64a51ace017c92daa7ee684c86fa9106aa99f0288daef"
+  },
+  {
+    "path": "SRC/tools/run_release_build.py",
+    "bytes": 1197,
+    "sha256": "0dd1397fd72cfeb0fbddf53526573b41a59d7d9d996ea0bc7bbc1b8f1e55d439"
+  },
+  {
+    "path": "SRC/tools/show_make_help.ps1",
+    "bytes": 14476,
+    "sha256": "b37f3b9b69bf3bd8d2470028f6a1bfb468e3e4d82c7627a81f8ce1d3aaf0b0f9"
+  },
+  {
+    "path": "SRC/tools/stamp_himon_version.ps1",
+    "bytes": 3483,
+    "sha256": "0afa76010589924639f35cae588805fec314804aaa8abe028bfd61be5c8268ef"
+  },
+  {
+    "path": "SRC/tools/stamp_rom_bin.ps1",
+    "bytes": 1073,
+    "sha256": "ac392dc8900fef0075365d4a4278969dd888fde8071851ca039898117dc5b817"
+  },
+  {
+    "path": "SRC/tools/verify_component_release.py",
+    "bytes": 5470,
+    "sha256": "d271379d02d3c6ecb4ac3d4a7dc3422198bf6c546ca0a8937456d6fabfd097e7"
+  },
+  {
+    "path": "SRC/tools/write_ap_store_sector_tool_a.ps1",
+    "bytes": 2779,
+    "sha256": "30079edd38b811727e883f8d27f4d245f421f5b6c56b8835bbc3870adf81608f"
+  },
+  {
+    "path": "SRC/tools/write_apman_worker_inc.ps1",
+    "bytes": 1367,
+    "sha256": "c678498c2d38c0e56f2a3885cd36983a3b9ac057318913391b8062c1d6d29eab"
+  },
+  {
+    "path": "SRC/tools/write_bank_dump_a.ps1",
+    "bytes": 5477,
+    "sha256": "f44e0a634d818bddecc7a5bd2ebf26d88a4ee4b7108784301a756131fcf819be"
+  },
+  {
+    "path": "SRC/tools/write_local_provenance.ps1",
+    "bytes": 2869,
+    "sha256": "9be92ed4e13443e69570810f60e610625ea574c6968244934629960732837ccb"
+  },
+  {
+    "path": "SRC/tools/write_microchess_a.ps1",
+    "bytes": 8807,
+    "sha256": "8c8e7d553ffe8dd09b3a13045323fa4de73be20145a991220d787d5e2d9b0c35"
+  },
+  {
+    "path": "SRC/tools/write_release_index.py",
+    "bytes": 4151,
+    "sha256": "50b964bd4d1e278476a6e15b6df68ba29a53416802ec6cb3708f6f37e19d304d"
+  }
+]

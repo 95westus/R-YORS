@@ -1,0 +1,181 @@
+{
+  "scope": "HIMON-owned AP typed-import provider; byte-identical host slice",
+  "board_access": false,
+  "artifacts": [
+    {
+      "path": "artifacts/bin/apman-v1-bank2-8000.bin",
+      "bytes": 4096,
+      "sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9"
+    },
+    {
+      "path": "artifacts/bin/apman-v1.ap",
+      "bytes": 3118,
+      "sha256": "4bf5ad6432f379acca19adc2d352fcacf207a1fcce5bd842beb219235aab67ef"
+    },
+    {
+      "path": "artifacts/bin/himon-rom-c000.bin",
+      "bytes": 32768,
+      "sha256": "1ac1946839e14a251a055939f9b35f5dd6b2432c1fd4ef12f5ef978cab3e102c"
+    },
+    {
+      "path": "artifacts/s19/apman-7000.map",
+      "bytes": 11948,
+      "sha256": "8378ca8e36ac0c89d3c7bb65c02b0392e6799f8f5c185cff4d5c49e1d51fe03a"
+    },
+    {
+      "path": "artifacts/s19/apman-7000.s19",
+      "bytes": 8460,
+      "sha256": "7c15c2ee91989d095f0e024dea2b1eef571718508433ca73b8d891d4f7e21e33"
+    },
+    {
+      "path": "artifacts/s19/apman-v1-bank2-8000.s19",
+      "bytes": 9740,
+      "sha256": "506c65862ed4193f946ca33ff0512e9b1637263338d0744dc857aab07d98608d"
+    },
+    {
+      "path": "artifacts/s19/asm-v1-flash-8000.map",
+      "bytes": 66253,
+      "sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e"
+    },
+    {
+      "path": "artifacts/s19/asm-v1-flash-8000.s19",
+      "bytes": 41918,
+      "sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5"
+    },
+    {
+      "path": "artifacts/s19/himon-c000.map",
+      "bytes": 47118,
+      "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49"
+    },
+    {
+      "path": "artifacts/s19/himon-c000.s19",
+      "bytes": 32652,
+      "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e"
+    },
+    {
+      "path": "artifacts/s19/himon-rom-c000.map",
+      "bytes": 47118,
+      "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49"
+    },
+    {
+      "path": "artifacts/s19/himon-rom-c000.s19",
+      "bytes": 32652,
+      "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e"
+    },
+    {
+      "path": "artifacts/s19/ryors-v1.2-asm-bank3-8-b.s19",
+      "bytes": 38924,
+      "sha256": "79af47c34c28ebdfcb582f15b9fbec2e21db4e158c3a91a0870203ef28a27414"
+    },
+    {
+      "path": "artifacts/s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
+      "bytes": 68108,
+      "sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9"
+    },
+    {
+      "path": "artifacts/s19/ryors-v1.2-himon-bank3-c-e.s19",
+      "bytes": 29196,
+      "sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648"
+    },
+    {
+      "path": "boundary-source.patch",
+      "bytes": 16251,
+      "sha256": "268249b811a5181c55e4cad4001af96d7e7ab5f876503df858cdadd26cab12cb"
+    },
+    {
+      "path": "build.py",
+      "bytes": 373,
+      "sha256": "822117121ba0e2e1f1d7cba136d600afde5a3b4453bcae7a45964bff3f5c22af"
+    },
+    {
+      "path": "check_source.ps1",
+      "bytes": 1720,
+      "sha256": "39fd19a34dab987c8623231a207c7df85de6589be5cb86994093f209edc3b8be"
+    },
+    {
+      "path": "finalize.py",
+      "bytes": 4929,
+      "sha256": "fc61ea3f2e90a784347206880c066820176bc5b471b24a18c5e156d5d1d344ef"
+    },
+    {
+      "path": "himon-ap-boundary.json",
+      "bytes": 8364,
+      "sha256": "c20447cdf62e35764ee19bcd838b78bb6ec1ece536223f0a58730989d1f4b232"
+    },
+    {
+      "path": "himon-ap-contracts.json",
+      "bytes": 116953,
+      "sha256": "b785c52711ad1489ffdbb03efc3f0eaf12791f3d94b4a2906e608ddb7c54015c"
+    },
+    {
+      "path": "identity.json",
+      "bytes": 2687,
+      "sha256": "5794795f8456400ec3ac8e10181a10a9944c7f3328f2cab1fe5c00ac07f29432"
+    },
+    {
+      "path": "ledger.json",
+      "bytes": 8884,
+      "sha256": "cd926cccbd4035a86e19a7488105d172154b01eb8384fe3d6b6471772dcb6e30"
+    },
+    {
+      "path": "qualified.json",
+      "bytes": 517,
+      "sha256": "bf6575d1a4560092aa14cda6e475fdf0f9ded642c022311abb4aaad1ab8ab188"
+    },
+    {
+      "path": "qualified.log",
+      "bytes": 32438,
+      "sha256": "54c881363f843a21867d35e48d8acb9bb83b0778809a7c42e7959b4bc329a56f"
+    },
+    {
+      "path": "source-check.json",
+      "bytes": 151,
+      "sha256": "89defbf746e58bd89733ff43b5b92391dd16b2982a19d8cbd1e4723d3be3cf80"
+    },
+    {
+      "path": "SRC/AP/ap-contract.inc",
+      "bytes": 3959,
+      "sha256": "b825650614ccad35a52fa1fab85b361175b72c9a687238c183b97f0029dda8c1"
+    },
+    {
+      "path": "SRC/AP/ap-link.inc",
+      "bytes": 9851,
+      "sha256": "8b1b095eb22c5f5241e9f3f16555000060563d5c3cf8bf43059b3527b852a5f4"
+    },
+    {
+      "path": "SRC/HIMON/himon-ap-resolver.inc",
+      "bytes": 2844,
+      "sha256": "49cea7005d31077c25c4f3d01b16fd73c8d374ace0c77bbc423f90cc1573c05f"
+    },
+    {
+      "path": "SRC/Makefile",
+      "bytes": 115041,
+      "sha256": "48856fe48491f2c6da7d9e99fe694d4e79cbacbca89318805e570ea6c5a54a42"
+    },
+    {
+      "path": "SRC/tools/check_himon_ap_boundary.py",
+      "bytes": 4447,
+      "sha256": "3e7dbd46b9acb192fdc97de08cc50847045458c22ab81b7e9794e5eacc1956a1"
+    },
+    {
+      "path": "SRC/tools/package_component_releases.py",
+      "bytes": 22489,
+      "sha256": "d7cda0f7d5133fce292485fa85bc1d9264ff6b95fd4d7239e2cf42a4ada6b159"
+    },
+    {
+      "path": "SRC/tools/read_himon_source.ps1",
+      "bytes": 1013,
+      "sha256": "89277c858b39cd9a460809767bdb3f3ee6d9a92d09b6aaf23c893ccbd3723e44"
+    },
+    {
+      "path": "SRC/tools/report_himon_ap_baseline.py",
+      "bytes": 13949,
+      "sha256": "648e9b3b74f8aba25b08754fec40d578344105bca1231e5efa7155a858a6323a"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 1923,
+      "sha256": "9cb1417335c535c081dd146d8e65256b29ad7f8087932bc650d83ecf1363830f"
+    }
+  ]
+}

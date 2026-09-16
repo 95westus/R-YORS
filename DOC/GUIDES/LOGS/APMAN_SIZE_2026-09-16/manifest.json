@@ -1,0 +1,442 @@
+{
+  "scope": "Measured APMAN reduction and COM4 qualification",
+  "board_port": "COM4",
+  "baud": 115200,
+  "artifacts": [
+    {
+      "path": "apman-size.json",
+      "bytes": 161015,
+      "sha256": "1980cf9d034b74cd9be184408465acd11d5d6360b52bcd22b05e140a0f6097c2"
+    },
+    {
+      "path": "aptest-2000.a",
+      "bytes": 69,
+      "sha256": "dae1b9b89e56094697e6a40fcfad6569d427a4f032298b7973cc696d26b9cc3f"
+    },
+    {
+      "path": "aptest-expected.ap",
+      "bytes": 52,
+      "sha256": "310a0dd1629149ebb1af41dc29ba2dbbaf0ed47994993b10835ef35f561bb3dd"
+    },
+    {
+      "path": "aptest-onboard.ap",
+      "bytes": 52,
+      "sha256": "310a0dd1629149ebb1af41dc29ba2dbbaf0ed47994993b10835ef35f561bb3dd"
+    },
+    {
+      "path": "artifacts/after/bin/apman-v1-bank2-8000.bin",
+      "bytes": 4096,
+      "sha256": "1fed29fe2236e8c2e8aaba574d5dc452f8885efac75060c33a4eb02c8edc779b"
+    },
+    {
+      "path": "artifacts/after/bin/apman-v1.ap",
+      "bytes": 3077,
+      "sha256": "c53f820a05b0b7cd5921518f97beebb12a3f2c247d2526dfa2ac0ca91be0555e"
+    },
+    {
+      "path": "artifacts/after/bin/himon-rom-c000.bin",
+      "bytes": 32768,
+      "sha256": "1ac1946839e14a251a055939f9b35f5dd6b2432c1fd4ef12f5ef978cab3e102c"
+    },
+    {
+      "path": "artifacts/after/s19/apman-7000.map",
+      "bytes": 11987,
+      "sha256": "61e40b9bece99f083637ff65a601207716adc00b217c27c24a63f2604e42ce3f"
+    },
+    {
+      "path": "artifacts/after/s19/apman-7000.s19",
+      "bytes": 8354,
+      "sha256": "85497d68a187c711343c7c73067cbe6ea254173305c93991b5903573a7cf54fc"
+    },
+    {
+      "path": "artifacts/after/s19/apman-v1-bank2-8000.s19",
+      "bytes": 9740,
+      "sha256": "8863906bb030e7b1ddeb493b0d92f93a026c19f0005583b572b14cc71da7fd2c"
+    },
+    {
+      "path": "artifacts/after/s19/asm-v1-flash-8000.map",
+      "bytes": 66253,
+      "sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e"
+    },
+    {
+      "path": "artifacts/after/s19/asm-v1-flash-8000.s19",
+      "bytes": 41918,
+      "sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5"
+    },
+    {
+      "path": "artifacts/after/s19/himon-c000.map",
+      "bytes": 47118,
+      "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49"
+    },
+    {
+      "path": "artifacts/after/s19/himon-c000.s19",
+      "bytes": 32652,
+      "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e"
+    },
+    {
+      "path": "artifacts/after/s19/himon-rom-c000.map",
+      "bytes": 47118,
+      "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49"
+    },
+    {
+      "path": "artifacts/after/s19/himon-rom-c000.s19",
+      "bytes": 32652,
+      "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e"
+    },
+    {
+      "path": "artifacts/after/s19/ryors-v1.2-asm-bank3-8-b.s19",
+      "bytes": 38924,
+      "sha256": "79af47c34c28ebdfcb582f15b9fbec2e21db4e158c3a91a0870203ef28a27414"
+    },
+    {
+      "path": "artifacts/after/s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
+      "bytes": 68108,
+      "sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9"
+    },
+    {
+      "path": "artifacts/after/s19/ryors-v1.2-himon-bank3-c-e.s19",
+      "bytes": 29196,
+      "sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648"
+    },
+    {
+      "path": "artifacts/before/bin/apman-v1-bank2-8000.bin",
+      "bytes": 4096,
+      "sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9"
+    },
+    {
+      "path": "artifacts/before/bin/apman-v1.ap",
+      "bytes": 3118,
+      "sha256": "4bf5ad6432f379acca19adc2d352fcacf207a1fcce5bd842beb219235aab67ef"
+    },
+    {
+      "path": "artifacts/before/bin/himon-rom-c000.bin",
+      "bytes": 32768,
+      "sha256": "1ac1946839e14a251a055939f9b35f5dd6b2432c1fd4ef12f5ef978cab3e102c"
+    },
+    {
+      "path": "artifacts/before/s19/apman-7000.map",
+      "bytes": 11948,
+      "sha256": "8378ca8e36ac0c89d3c7bb65c02b0392e6799f8f5c185cff4d5c49e1d51fe03a"
+    },
+    {
+      "path": "artifacts/before/s19/apman-7000.s19",
+      "bytes": 8460,
+      "sha256": "7c15c2ee91989d095f0e024dea2b1eef571718508433ca73b8d891d4f7e21e33"
+    },
+    {
+      "path": "artifacts/before/s19/apman-v1-bank2-8000.s19",
+      "bytes": 9740,
+      "sha256": "506c65862ed4193f946ca33ff0512e9b1637263338d0744dc857aab07d98608d"
+    },
+    {
+      "path": "artifacts/before/s19/asm-v1-flash-8000.map",
+      "bytes": 66253,
+      "sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e"
+    },
+    {
+      "path": "artifacts/before/s19/asm-v1-flash-8000.s19",
+      "bytes": 41918,
+      "sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5"
+    },
+    {
+      "path": "artifacts/before/s19/himon-c000.map",
+      "bytes": 47118,
+      "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49"
+    },
+    {
+      "path": "artifacts/before/s19/himon-c000.s19",
+      "bytes": 32652,
+      "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e"
+    },
+    {
+      "path": "artifacts/before/s19/himon-rom-c000.map",
+      "bytes": 47118,
+      "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49"
+    },
+    {
+      "path": "artifacts/before/s19/himon-rom-c000.s19",
+      "bytes": 32652,
+      "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e"
+    },
+    {
+      "path": "artifacts/before/s19/ryors-v1.2-asm-bank3-8-b.s19",
+      "bytes": 38924,
+      "sha256": "79af47c34c28ebdfcb582f15b9fbec2e21db4e158c3a91a0870203ef28a27414"
+    },
+    {
+      "path": "artifacts/before/s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
+      "bytes": 68108,
+      "sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9"
+    },
+    {
+      "path": "artifacts/before/s19/ryors-v1.2-himon-bank3-c-e.s19",
+      "bytes": 29196,
+      "sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648"
+    },
+    {
+      "path": "bank-maint-2000.s19",
+      "bytes": 18114,
+      "sha256": "95aee537e486e6a16e40dbd3ce7baa181d018f44ab13f6a29601779d77650c2f"
+    },
+    {
+      "path": "bank-stage-2000.asm",
+      "bytes": 4052,
+      "sha256": "45ff4998bc0f529051d06d0ceba91705f2bf38f5f21f4226dd538147e788b9a2"
+    },
+    {
+      "path": "bank-stage-2000.s19",
+      "bytes": 349,
+      "sha256": "f15a35a26b88bc2d4a5eab83ed27f13a14007ec4fe25ac456631cf544efb7952"
+    },
+    {
+      "path": "bank_archive.py",
+      "bytes": 7024,
+      "sha256": "fa1030dd91543519a6f694788f5105752def83ebbf00cf3c690d5c557e862a47"
+    },
+    {
+      "path": "before-b0.bin",
+      "bytes": 32768,
+      "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8"
+    },
+    {
+      "path": "before-b1.bin",
+      "bytes": 32768,
+      "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211"
+    },
+    {
+      "path": "before-b2.bin",
+      "bytes": 32768,
+      "sha256": "52011800db06a1c13b3c86688f1a55d35e079590e8b92073a11253e82c84fb44"
+    },
+    {
+      "path": "before-b3.bin",
+      "bytes": 32768,
+      "sha256": "3eead7cab55b85c887eb67ff1720584931d5fee934a099e3c88358029927c533"
+    },
+    {
+      "path": "before-readback.json",
+      "bytes": 886,
+      "sha256": "26c03ab2d1c3e00472e08180daf3b9c860a7dd362847b082e256a075e5073a06"
+    },
+    {
+      "path": "board-output-after.json",
+      "bytes": 2375,
+      "sha256": "e92d4ccf2ba996dc13bf05e14a4053008135d866d770d6d1de196f4948a13b36"
+    },
+    {
+      "path": "board-output-before.json",
+      "bytes": 2375,
+      "sha256": "099fc90bb61c5994f4b259307dc0891585d4bb26467b182184b3ea500c22cd23"
+    },
+    {
+      "path": "boundary-sentinel.s19",
+      "bytes": 56,
+      "sha256": "f3e57e757dc83edd821f58eec96dc8eeca2df974e6a5047fce46c21c48ab4c93"
+    },
+    {
+      "path": "build.py",
+      "bytes": 373,
+      "sha256": "822117121ba0e2e1f1d7cba136d600afde5a3b4453bcae7a45964bff3f5c22af"
+    },
+    {
+      "path": "child-return.s19",
+      "bytes": 334,
+      "sha256": "795e6c2432fa54b63909dabb318fa61e510bd2634ff947dd5097ef78111b1c1c"
+    },
+    {
+      "path": "console.py",
+      "bytes": 3015,
+      "sha256": "fed404826a5d41a89675f153dc07fa53a2f727e50334d4ed2db38cbcc953c815"
+    },
+    {
+      "path": "enrolled-b3.bin",
+      "bytes": 32768,
+      "sha256": "39718b56169da58f52443e537efff0f4c59a7c0822581c9138d1dd36109bd614"
+    },
+    {
+      "path": "final-b0.bin",
+      "bytes": 32768,
+      "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8"
+    },
+    {
+      "path": "final-b1.bin",
+      "bytes": 32768,
+      "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211"
+    },
+    {
+      "path": "final-b2.bin",
+      "bytes": 32768,
+      "sha256": "0b67c0fc66568f8903927d4014069a306a8ea8838fc557991813828bbe01a13c"
+    },
+    {
+      "path": "final-b3.bin",
+      "bytes": 32768,
+      "sha256": "39718b56169da58f52443e537efff0f4c59a7c0822581c9138d1dd36109bd614"
+    },
+    {
+      "path": "final-readback.json",
+      "bytes": 886,
+      "sha256": "4e1526428520219b9e24138c9672146e2f69848b287564a63742db6d2132fc6b"
+    },
+    {
+      "path": "finalize.py",
+      "bytes": 7703,
+      "sha256": "7b8e8c907e8beb36b8578cfedc83d1fe1f81756e7d497965dd69aca004358315"
+    },
+    {
+      "path": "fixture-erase-started.json",
+      "bytes": 102,
+      "sha256": "8cd9c2683e99bbb5c3f3fcacb393867a0d56fdf157fd25f69a09b81ffa93a9c9"
+    },
+    {
+      "path": "fixture-install-started.json",
+      "bytes": 95,
+      "sha256": "acbeca7e983b7b04989dca0545c28a171e8590ff0d7411920561ee6a46b54b80"
+    },
+    {
+      "path": "fixture-tests.json",
+      "bytes": 477,
+      "sha256": "bd6930ede5cfda356eca9202854a76f51ad3250184976658bc3b51d7fbf606f0"
+    },
+    {
+      "path": "himon-ap-boundary.json",
+      "bytes": 23291,
+      "sha256": "e376f9b138b19ca91c56057dba7a6c0485d54f4cbafd83c43afe70d3ae52b958"
+    },
+    {
+      "path": "himon-ap-contracts.json",
+      "bytes": 117065,
+      "sha256": "3f2ba3472fe1e5cdb7eaa2cd727ebaf99b45abd95f7e6bd61d82ef0d9d5a9183"
+    },
+    {
+      "path": "install-started.json",
+      "bytes": 118,
+      "sha256": "bb6d1319a238ef33d4bd56df70b5cf5e0621375eaf0f8ca0dc18ff7034238813"
+    },
+    {
+      "path": "install-tests.json",
+      "bytes": 278,
+      "sha256": "5ca5489a2eeadbf8006c86c16c783d18d7e2ab9d5e4e46fc1855a65100e4e14c"
+    },
+    {
+      "path": "isolation-tests.json",
+      "bytes": 77,
+      "sha256": "b3324e0bd5f79c848cf1f751060d26af418881b8fe7cd89b0bd2c1f47e226b70"
+    },
+    {
+      "path": "ledger.json",
+      "bytes": 8886,
+      "sha256": "7cb6d21ec5e9f2a695cd151514986ed5da2e575c3a3060901ba73db280e892fd"
+    },
+    {
+      "path": "manager-bankaudit.txt",
+      "bytes": 350,
+      "sha256": "dbc910f7c724949a3909cba10f0bcee94dbd568c52d3a5c8a7df366a7f6d7c2c"
+    },
+    {
+      "path": "manager-tests.json",
+      "bytes": 514,
+      "sha256": "fe5693087c90a28dd7835c3e95dd4050b6c8504b0ecf3b05dd3da16159332ea0"
+    },
+    {
+      "path": "measure.py",
+      "bytes": 3054,
+      "sha256": "56fb03059e1478554ad5679dc7180da9ae55ca48deb0b2df9e17251f718549f8"
+    },
+    {
+      "path": "measurement.json",
+      "bytes": 5706,
+      "sha256": "09732804f25dac4c172729c81c0ff6a09e35fd4f334fa27075518b56052a819d"
+    },
+    {
+      "path": "persistent-inventory.txt",
+      "bytes": 492,
+      "sha256": "9c5a041a0396b173b00830e143f5bba09ccb5fb15c7e18ecf01525f90b5f5635"
+    },
+    {
+      "path": "physical-reset.txt",
+      "bytes": 74,
+      "sha256": "2e9d27f9d77a7472cc354e85bcc2443df317f47fadbcddb8b825d8bfda52a7e3"
+    },
+    {
+      "path": "physical-tests.json",
+      "bytes": 296,
+      "sha256": "aeefa460246dab714157484f0525f5ecc731438d381ba8cfd1a980f02341f829"
+    },
+    {
+      "path": "prepared.json",
+      "bytes": 183,
+      "sha256": "d945bdeb801af0415bc014cc95dce75ad74b9995e137d8704c75814b2559182c"
+    },
+    {
+      "path": "provision.py",
+      "bytes": 6681,
+      "sha256": "5741a73e9e0e77d61bd1c133789896ec34f6d6289d76fc99d37aa4b823350362"
+    },
+    {
+      "path": "qualified.json",
+      "bytes": 517,
+      "sha256": "d01caa54922496456f50bf5f316e21b8ef6353e70e4ba40694ed86759ca29809"
+    },
+    {
+      "path": "qualified.log",
+      "bytes": 31462,
+      "sha256": "97d1f2c36ff988b00d5a4a727247c8091b7cf7b92a3290722fdfd739197fabb2"
+    },
+    {
+      "path": "qualify.py",
+      "bytes": 8958,
+      "sha256": "b6c1c590adb039345de7bcb81735e211b9a3673298bfadb1217cad5563603f01"
+    },
+    {
+      "path": "reset_check.py",
+      "bytes": 2195,
+      "sha256": "d801fc32d6c416f4ecc92d3fb4f667dc29c86278204d639c503136d1571f1861"
+    },
+    {
+      "path": "serial-com4.jsonl",
+      "bytes": 5815418,
+      "sha256": "424ff98ab0bb00083d617baa5638d86b7727fd66500c3685a4b07d330cce54c5"
+    },
+    {
+      "path": "size-source.patch",
+      "bytes": 18082,
+      "sha256": "2057909cf23651ab6f91228ab601adcdaac546988eacef20de5a8ce1109cd47f"
+    },
+    {
+      "path": "SRC/APPS/apman-7000.asm",
+      "bytes": 66204,
+      "sha256": "bfdb599f8191ab921e8284b7437e2844668c4b8b23db9379bd478d735abae63d"
+    },
+    {
+      "path": "SRC/BUILD/inc/apman-str8-worker.inc",
+      "bytes": 3282,
+      "sha256": "7a614aa35ae4007b5b4f54bdd741805e27315b5f1d8bb4ddf5cba1ca3730b076"
+    },
+    {
+      "path": "SRC/tools/audit_himon_ap_contracts.py",
+      "bytes": 13673,
+      "sha256": "ea0ac6a2cf23d2d92aec09e161dbb017dd16092e96c19ff60ff898deed742e46"
+    },
+    {
+      "path": "SRC/tools/build_ap_fixed_package.ps1",
+      "bytes": 12453,
+      "sha256": "46aae483c17c9be78910891c64887a38dfdacfd1fddf452c5eddef44699d040a"
+    },
+    {
+      "path": "SRC/tools/check_apman_size.py",
+      "bytes": 12050,
+      "sha256": "081fa0d722b72946e253016d75c2c6abb187f2b2c627bd86adaa3c07ca1c42b5"
+    },
+    {
+      "path": "SRC/tools/report_himon_ap_baseline.py",
+      "bytes": 13949,
+      "sha256": "648e9b3b74f8aba25b08754fec40d578344105bca1231e5efa7155a858a6323a"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 9096,
+      "sha256": "816675152e9046cd2322b5cd017d2f365a99a1c3c8815021dfe638208d5bc939"
+    }
+  ]
+}

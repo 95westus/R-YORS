@@ -1,6 +1,6 @@
 param(
     [string]$S19Dir = "BUILD/s19",
-    [string]$Str8FullBankPath = "../../STR8-N/BUILD/v1.33/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
+    [string]$Str8FullBankPath = "../../STR8-N/BUILD/v1.34/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -61,7 +61,7 @@ function Assert-Canonical([object]$Canonical, [object]$Target, [string]$Role) {
 $asm = Read-S19 (Join-Path $S19Dir 'asm-v1-flash-8000.s19')
 $himon = Read-S19 (Join-Path $S19Dir 'himon-rom-c000.s19')
 if ($asm.Memory.Count -ne 0x3B83) { Fail ('canonical ASM byte count is ${0:X4}, expected $3B83' -f $asm.Memory.Count) }
-if ($himon.Memory.Count -ne 0x2DEA) { Fail ('canonical HIMON byte count is ${0:X4}, expected $2DEA' -f $himon.Memory.Count) }
+if ($himon.Memory.Count -ne 0x2E5C) { Fail ('canonical HIMON byte count is ${0:X4}, expected $2E5C' -f $himon.Memory.Count) }
 
 $himonTargets = @(
     'himon-c000.s19',

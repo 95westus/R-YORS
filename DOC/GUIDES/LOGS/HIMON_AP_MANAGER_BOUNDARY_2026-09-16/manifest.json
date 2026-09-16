@@ -1,0 +1,191 @@
+{
+  "scope": "HIMON command-shadow/diagnostic ownership; byte-identical host slice",
+  "board_access": false,
+  "artifacts": [
+    {
+      "path": "artifacts/bin/apman-v1-bank2-8000.bin",
+      "bytes": 4096,
+      "sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9"
+    },
+    {
+      "path": "artifacts/bin/apman-v1.ap",
+      "bytes": 3118,
+      "sha256": "4bf5ad6432f379acca19adc2d352fcacf207a1fcce5bd842beb219235aab67ef"
+    },
+    {
+      "path": "artifacts/bin/himon-rom-c000.bin",
+      "bytes": 32768,
+      "sha256": "1ac1946839e14a251a055939f9b35f5dd6b2432c1fd4ef12f5ef978cab3e102c"
+    },
+    {
+      "path": "artifacts/s19/apman-7000.map",
+      "bytes": 11948,
+      "sha256": "8378ca8e36ac0c89d3c7bb65c02b0392e6799f8f5c185cff4d5c49e1d51fe03a"
+    },
+    {
+      "path": "artifacts/s19/apman-7000.s19",
+      "bytes": 8460,
+      "sha256": "7c15c2ee91989d095f0e024dea2b1eef571718508433ca73b8d891d4f7e21e33"
+    },
+    {
+      "path": "artifacts/s19/apman-v1-bank2-8000.s19",
+      "bytes": 9740,
+      "sha256": "506c65862ed4193f946ca33ff0512e9b1637263338d0744dc857aab07d98608d"
+    },
+    {
+      "path": "artifacts/s19/asm-v1-flash-8000.map",
+      "bytes": 66253,
+      "sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e"
+    },
+    {
+      "path": "artifacts/s19/asm-v1-flash-8000.s19",
+      "bytes": 41918,
+      "sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5"
+    },
+    {
+      "path": "artifacts/s19/himon-c000.map",
+      "bytes": 47118,
+      "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49"
+    },
+    {
+      "path": "artifacts/s19/himon-c000.s19",
+      "bytes": 32652,
+      "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e"
+    },
+    {
+      "path": "artifacts/s19/himon-rom-c000.map",
+      "bytes": 47118,
+      "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49"
+    },
+    {
+      "path": "artifacts/s19/himon-rom-c000.s19",
+      "bytes": 32652,
+      "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e"
+    },
+    {
+      "path": "artifacts/s19/ryors-v1.2-asm-bank3-8-b.s19",
+      "bytes": 38924,
+      "sha256": "79af47c34c28ebdfcb582f15b9fbec2e21db4e158c3a91a0870203ef28a27414"
+    },
+    {
+      "path": "artifacts/s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
+      "bytes": 68108,
+      "sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9"
+    },
+    {
+      "path": "artifacts/s19/ryors-v1.2-himon-bank3-c-e.s19",
+      "bytes": 29196,
+      "sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648"
+    },
+    {
+      "path": "build.py",
+      "bytes": 373,
+      "sha256": "822117121ba0e2e1f1d7cba136d600afde5a3b4453bcae7a45964bff3f5c22af"
+    },
+    {
+      "path": "check_source.ps1",
+      "bytes": 1762,
+      "sha256": "cb81337ed055c5f3a407a0432fed155ca5be2a6caee9306196162a005d7e23bd"
+    },
+    {
+      "path": "finalize.py",
+      "bytes": 5502,
+      "sha256": "21421b596dbe32b9c349346c8c06da627c211f3c17b5ebec87699c94503abe95"
+    },
+    {
+      "path": "himon-ap-boundary.json",
+      "bytes": 23291,
+      "sha256": "884a3470fd17f3f8afed30813fa230b2296ee5815bf0f66eb8d65b10db6ba955"
+    },
+    {
+      "path": "himon-ap-contracts.json",
+      "bytes": 116953,
+      "sha256": "b785c52711ad1489ffdbb03efc3f0eaf12791f3d94b4a2906e608ddb7c54015c"
+    },
+    {
+      "path": "identity.json",
+      "bytes": 2687,
+      "sha256": "5794795f8456400ec3ac8e10181a10a9944c7f3328f2cab1fe5c00ac07f29432"
+    },
+    {
+      "path": "inline-spans.json",
+      "bytes": 437,
+      "sha256": "feb4c9201ecd7bf375893878329263578da7bb69da031d84c045060c81ae66e4"
+    },
+    {
+      "path": "ledger.json",
+      "bytes": 8884,
+      "sha256": "cd926cccbd4035a86e19a7488105d172154b01eb8384fe3d6b6471772dcb6e30"
+    },
+    {
+      "path": "manager-boundary-source.patch",
+      "bytes": 14821,
+      "sha256": "092b0b4589699565f9a01555a07b30d3525d1efdd2d18256e660e89f49187fc2"
+    },
+    {
+      "path": "qualified.json",
+      "bytes": 517,
+      "sha256": "7b9f97168adf3a8e2657b24300ff290bbbd469eec6a3a4fd422a66979167cc6c"
+    },
+    {
+      "path": "qualified.log",
+      "bytes": 32443,
+      "sha256": "feb917d550315a69c72c3fc887adfe56234ec97f673872cbd24e8777a19e5842"
+    },
+    {
+      "path": "source-check.json",
+      "bytes": 150,
+      "sha256": "caae192218c40a2c4282abca54f815dd0356574f06fe8a64fef30c2b0a927123"
+    },
+    {
+      "path": "SRC/AP/ap-manager.inc",
+      "bytes": 9602,
+      "sha256": "45bcdd75737bb6e232db7540da1bfeaa3098f09c5422aa1188dc2091c98584c8"
+    },
+    {
+      "path": "SRC/HIMON/himon-ap-manager-missing.inc",
+      "bytes": 470,
+      "sha256": "9407ac8bfb90cfc727de6163957d7af5f08e4bc3d92b7c01727e79c227c10ec2"
+    },
+    {
+      "path": "SRC/HIMON/himon-ap-manager-shadow.inc",
+      "bytes": 462,
+      "sha256": "0eb79b83aa0ad8aa42e4f78eaf727779115a3276088bb9ebfd6fc25746bda6c7"
+    },
+    {
+      "path": "SRC/HIMON/himon-ap-manager-source-error.inc",
+      "bytes": 575,
+      "sha256": "758147b7689966e4bb5e3945a3b34a2c9e5b5c30d4a1e2e9695cbc8c9d8526b4"
+    },
+    {
+      "path": "SRC/Makefile",
+      "bytes": 115062,
+      "sha256": "cf39c464ef424c66715f890064497d6ba6428fb8333f504c6de1a88bc0b1dd5c"
+    },
+    {
+      "path": "SRC/tools/check_himon_ap_boundary.py",
+      "bytes": 8045,
+      "sha256": "c566b31a25ba18d7c4db938c9c2698be1931f3822f11829e4c6c11d79b695a38"
+    },
+    {
+      "path": "SRC/tools/gen_docs.ps1",
+      "bytes": 85791,
+      "sha256": "e349eb6e547518d7f8aa169d281d06f476063f897fefebcfe3fb70f25fe71bee"
+    },
+    {
+      "path": "SRC/tools/package_component_releases.py",
+      "bytes": 22655,
+      "sha256": "e5edfbd7786ab5d1058323c5e3922e45275956a4296b53b9766ad48e2ca8bf2b"
+    },
+    {
+      "path": "SRC/tools/read_himon_source.ps1",
+      "bytes": 1053,
+      "sha256": "3d5cc1065f157e7dd1e6941c0b34b7e1cd444ab5d3e6282b9df3fc3d2ee2da7d"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 1564,
+      "sha256": "c383497d351688677c3b02658ee2019f1a8d042d794f0f0132a1c674c4cdb11b"
+    }
+  ]
+}

@@ -1,0 +1,290 @@
+--- before/SRC/AP/ap-contract.inc
++++ after/SRC/AP/ap-contract.inc
+@@ -45,7 +45,7 @@
+ 
+ ; AP import-link scratch. The zero-page cells are shared service scratch; the
+ ; persistent cells live in the reserved RJOIN/link-debug area because FNV and
+-; THE_JOIN_EXEC_XY may overwrite transient service state while resolving a row.
++; the HIMON import resolver may overwrite shared scratch while resolving a row.
+ HIM_AP_LINK_ADDR_LO     EQU             $CF
+ HIM_AP_LINK_ADDR_HI     EQU             $D0
+ HIM_AP_LINK_TMP_LO      EQU             $D1
+--- before/SRC/AP/ap-link.inc
++++ after/SRC/AP/ap-link.inc
+@@ -99,49 +99,8 @@
+                         CLC
+                         RTS
+ 
+-HIM_AP_LINK_RESOLVE_SLOT_X:
+-                        JSR             HIM_AP_LINK_IMPORT_ROW_PTR_X
+-                        BCC             HIM_AP_LINK_RESOLVE_SLOT_FAIL
+-                        LDY             #$00
+-                        LDA             (HIM_AP_LINK_IMP_PTR_LO),Y
+-                        AND             #HIM_AP_KIND_MASK
+-                        STA             HIM_AP_LINK_TMP_HI
+-                        INY
+-                        LDA             (HIM_AP_LINK_IMP_PTR_LO),Y
+-                        STA             FNV_HASH0
+-                        INY
+-                        LDA             (HIM_AP_LINK_IMP_PTR_LO),Y
+-                        STA             FNV_HASH1
+-                        INY
+-                        LDA             (HIM_AP_LINK_IMP_PTR_LO),Y
+-                        STA             FNV_HASH2
+-                        INY
+-                        LDA             (HIM_AP_LINK_IMP_PTR_LO),Y
+-                        STA             FNV_HASH3
+-                        JSR             THE_JOIN_FIND
+-                        BCC             HIM_AP_LINK_RESOLVE_SLOT_FAIL
+-                        PHA
+-                        LDA             HIM_AP_LINK_TMP_HI
+-                        CMP             #HIM_AP_KIND_EXEC
+-                        BEQ             HIM_AP_LINK_REQUIRE_EXEC
+-                        PLA
+-                        AND             #CMD_HASH_KIND_EXEC
+-                        BNE             HIM_AP_LINK_RESOLVE_SLOT_FAIL
+-                        BRA             HIM_AP_LINK_RESOLVE_SLOT_FOUND
+-HIM_AP_LINK_REQUIRE_EXEC:
+-                        PLA
+-                        AND             #CMD_HASH_KIND_EXEC
+-                        BEQ             HIM_AP_LINK_RESOLVE_SLOT_FAIL
+-HIM_AP_LINK_RESOLVE_SLOT_FOUND:
+-                        LDA             CMDP_ADDR_LO
+-                        STA             HIM_AP_LINK_RES_LO
+-                        LDA             CMDP_ADDR_HI
+-                        STA             HIM_AP_LINK_RES_HI
+-                        SEC
+-                        RTS
+-HIM_AP_LINK_RESOLVE_SLOT_FAIL:
+-                        CLC
+-                        RTS
++; HIMON owns catalog lookup and resident-kind translation for this AP slot.
++                        INCLUDE         "HIMON/himon-ap-resolver.inc"
+ 
+ HIM_AP_LINK_IMPORT_ROW_PTR_X:
+                         LDA             HIM_AP_IMPORT_LO
+--- before/SRC/Makefile
++++ after/SRC/Makefile
+@@ -80,7 +80,8 @@
+ 
+ HIM_SUBDIR := $(HIMON_DIR)
+ HIMON_SRC := $(HIM_SUBDIR)/himon.asm
+-# Resident AP remains linked in-place into both monitor variants.
++# Resident AP and its HIMON adapters remain linked in-place into both variants.
++# HIMON_INC's wildcard also tracks the nested HIMON/himon-ap-resolver.inc.
+ HIMON_AP_INC := AP/ap-contract.inc AP/ap-manager.inc AP/ap-core.inc AP/ap-link.inc AP/ap-space.inc
+ HIMON_INC := $(wildcard $(HIM_SUBDIR)/*.inc) $(HIMON_AP_INC)
+ HIMON_IMAGE_EQ := $(HIM_SUBDIR)/himon-image-eq.inc
+@@ -728,8 +729,11 @@
+ asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show microchess asm-ap-v2-check asm-error-check asm-size-check himon-size-check himon-ap-contract-check
+ 	@echo "ASM v1 smoke checks passed."
+ 
+-.PHONY: himon-ap-contract-check
+-himon-ap-contract-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
++.PHONY: himon-ap-contract-check himon-ap-boundary-check
++himon-ap-boundary-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19)
++	$(PYTHON) -B tools/check_himon_ap_boundary.py --output "$(BUILD_DIR)/tmp/himon-ap-boundary.json"
++
++himon-ap-contract-check: himon-ap-boundary-check $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
+ 	$(PYTHON) -B tools/check_himon_ap_contracts.py --output "$(BUILD_DIR)/tmp/himon-ap-contracts.json"
+ 
+ asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(ASM_V1_FLASH_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
+--- before/SRC/tools/package_component_releases.py
++++ after/SRC/tools/package_component_releases.py
+@@ -194,7 +194,8 @@
+                 for filename in ['himon.asm', 'himon-disasm.inc', 'himon-shared-eq.inc']:
+                     put(ROOT / 'SRC/HIMON' / filename, 'SOURCE/' + filename)
+                 # Retain the extracted implementation in future source-reference bundles.
+-                put(ROOT / 'SRC/HIMON/himon-ap-adapter.inc', 'SOURCE/HIMON/himon-ap-adapter.inc')
++                for filename in ['himon-ap-adapter.inc', 'himon-ap-resolver.inc']:
++                    put(ROOT / 'SRC/HIMON' / filename, 'SOURCE/HIMON/' + filename)
+                 for path in sorted((ROOT / 'SRC/AP').glob('*.inc')):
+                     put(path, 'SOURCE/AP/' + path.name)
+                 for filename in ['HIMON_MAP.md', 'HIMON_DEBUG_TESTING.md']:
+--- before/SRC/tools/read_himon_source.ps1
++++ after/SRC/tools/read_himon_source.ps1
+@@ -11,7 +11,7 @@
+     if (-not $SourceRoot) { $SourceRoot = Split-Path -Parent (Split-Path -Parent $full) }
+     if ($Parents -contains $full) { throw "Cyclic HIMON/AP include: $full" }
+     $text = [IO.File]::ReadAllText($full)
+-    $pattern = '(?m)^[ \t]*INCLUDE[ \t]+"(AP/[^"\r\n]+\.inc|HIMON/himon-ap-adapter\.inc)"[ \t]*\r?$'
++    $pattern = '(?m)^[ \t]*INCLUDE[ \t]+"(AP/[^"\r\n]+\.inc|HIMON/himon-ap-(?:adapter|resolver)\.inc)"[ \t]*\r?$'
+     return [regex]::Replace($text, $pattern, {
+         param($match)
+         Read-HimonSource -Path (Join-Path $SourceRoot $match.Groups[1].Value) `
+--- before/SRC/tools/report_himon_ap_baseline.py
++++ after/SRC/tools/report_himon_ap_baseline.py
+@@ -23,7 +23,9 @@
+     ('ap', 'Service dispatch and load orchestration', 'HIM_AP_SERVICE', 'HIM_AP_PARSE_MIN'),
+     ('ap', 'Package parsing, validation and source bounds', 'HIM_AP_PARSE_MIN', 'HIM_AP_LOAD_RANGE_OK'),
+     ('ap', 'Destination bounds, copy and internal relocation', 'HIM_AP_LOAD_RANGE_OK', 'HIM_AP_IMPORT_LINK'),
+-    ('ap', 'Typed import linker', 'HIM_AP_IMPORT_LINK', 'HIM_AP_FIND_HOLE'),
++    ('ap', 'Typed import orchestration and signed addend', 'HIM_AP_IMPORT_LINK', 'HIM_AP_LINK_RESOLVE_SLOT_X'),
++    ('ap', 'HIMON-owned typed-import provider (AP functional subtotal)', 'HIM_AP_LINK_RESOLVE_SLOT_X', 'HIM_AP_LINK_IMPORT_ROW_PTR_X'),
++    ('ap', 'Import row walking and relocation patching', 'HIM_AP_LINK_IMPORT_ROW_PTR_X', 'HIM_AP_FIND_HOLE'),
+     ('ap', 'Hole suggestion and shared AP error exits', 'HIM_AP_FIND_HOLE', 'L_NOTE_S1_ADDR'),
+     ('ap', 'AP usage and manager-not-found strings', 'MSG_USAGE_AP', 'MSG_USAGE_L'),
+     ('ap', 'AP error prefix', 'MSG_AP_ERR', 'MSG_L_READY'),
+@@ -175,6 +177,8 @@
+         lines.append(f"| {row['name']} | `${row['start']:04X}-${row['end_exclusive']-1:04X}` | {row['emitted_bytes']:,} | {row['headroom']:,} |")
+     lines += ['', '## HIMON physical byte ownership', '',
+               'Shared groups are counted once and remain physically linked with HIMON.',
++              'The AP subtotal includes its monitor adapters; source ownership is shown',
++              'explicitly for the typed-import provider without changing that subtotal.',
+               'These counts do not predict bytes saved or routines safe to remove. The',
+               'catalog group includes its UI helpers; linked library code includes flash',
+               'and debugger support. Other HIMON includes initialization, MicroChess alias,',
+--- before/SRC/HIMON/himon-ap-resolver.inc
++++ after/SRC/HIMON/himon-ap-resolver.inc
+@@ -0,0 +1,54 @@
++; ROUTINE: HIM_AP_LINK_RESOLVE_SLOT_X
++; PURPOSE: Convert a validated AP import slot through HIMON's resident catalog.
++; Kept at its original assembly position by AP/ap-link.inc; no wrapper bytes.
++; IN: X = validated import slot; HIM_AP_IMPORT_LO/HI = parsed imports section.
++; OUT: C=1 and HIM_AP_LINK_RES_LO/HI = address; C=0 on missing/wrong kind, result pair unchanged.
++; Uses AP's row walker, then translates its EXEC/DATA kind through HIMON's
++; private catalog. A/X/Y/flags and shared resolver/FNV scratch are volatile.
++; Caller owns import-count/slot bounds and signed-addend application.
++; This static interface is not a new public vector or an external AP ABI.
++
++HIM_AP_LINK_RESOLVE_SLOT_X:
++                        JSR             HIM_AP_LINK_IMPORT_ROW_PTR_X
++                        BCC             HIM_AP_LINK_RESOLVE_SLOT_FAIL
++                        LDY             #$00
++                        LDA             (HIM_AP_LINK_IMP_PTR_LO),Y
++                        AND             #HIM_AP_KIND_MASK
++                        STA             HIM_AP_LINK_TMP_HI
++                        INY
++                        LDA             (HIM_AP_LINK_IMP_PTR_LO),Y
++                        STA             FNV_HASH0
++                        INY
++                        LDA             (HIM_AP_LINK_IMP_PTR_LO),Y
++                        STA             FNV_HASH1
++                        INY
++                        LDA             (HIM_AP_LINK_IMP_PTR_LO),Y
++                        STA             FNV_HASH2
++                        INY
++                        LDA             (HIM_AP_LINK_IMP_PTR_LO),Y
++                        STA             FNV_HASH3
++                        JSR             THE_JOIN_FIND
++                        BCC             HIM_AP_LINK_RESOLVE_SLOT_FAIL
++                        PHA
++                        LDA             HIM_AP_LINK_TMP_HI
++                        CMP             #HIM_AP_KIND_EXEC
++                        BEQ             HIM_AP_LINK_REQUIRE_EXEC
++                        PLA
++                        AND             #CMD_HASH_KIND_EXEC
++                        BNE             HIM_AP_LINK_RESOLVE_SLOT_FAIL
++                        BRA             HIM_AP_LINK_RESOLVE_SLOT_FOUND
++HIM_AP_LINK_REQUIRE_EXEC:
++                        PLA
++                        AND             #CMD_HASH_KIND_EXEC
++                        BEQ             HIM_AP_LINK_RESOLVE_SLOT_FAIL
++HIM_AP_LINK_RESOLVE_SLOT_FOUND:
++                        LDA             CMDP_ADDR_LO
++                        STA             HIM_AP_LINK_RES_LO
++                        LDA             CMDP_ADDR_HI
++                        STA             HIM_AP_LINK_RES_HI
++                        SEC
++                        RTS
++HIM_AP_LINK_RESOLVE_SLOT_FAIL:
++                        CLC
++                        RTS
++
+--- before/SRC/tools/check_himon_ap_boundary.py
++++ after/SRC/tools/check_himon_ap_boundary.py
+@@ -0,0 +1,94 @@
++"""Check AP's catalog boundary and execute the HIMON provider from linked bytes."""
++import argparse
++import json
++from pathlib import Path
++import re
++
++from audit_himon_ap_contracts import ROOT, Machine, fnv, import_record, word
++from report_himon_ap_baseline import sha
++
++ENTRY = 'HIM_AP_LINK_RESOLVE_SLOT_X'
++OWNER = 'HIMON/himon-ap-resolver.inc'
++
++
++def check_source(src):
++    """Catalog representation belongs to the HIMON adapter, not AP's files."""
++    active = {}
++    for name, text in src.items():
++        code = '\n'.join(line.split(';', 1)[0] for line in text.splitlines())
++        active[name] = code
++        if name.startswith('AP/'):
++            if re.search(r'\b(?:THE_JOIN_\w+|CMD_HASH_\w+)\b', code):
++                raise ValueError(f'{name}: AP bypasses the HIMON catalog adapter')
++            if re.search(rf'(?m)^{ENTRY}:', code):
++                raise ValueError(f'{name}: HIMON resolver implementation moved into AP')
++    link = active['AP/ap-link.inc']
++    if len(re.findall(rf'(?m)^\s*INCLUDE\s+"{re.escape(OWNER)}"\s*$', link)) != 1:
++        raise ValueError('AP link must include exactly one HIMON resolver owner')
++    owner = active[OWNER]
++    if len(re.findall(rf'(?m)^{ENTRY}:', owner)) != 1:
++        raise ValueError('HIMON adapter must provide the existing slot interface')
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--build-dir', type=Path, default=ROOT/'SRC/BUILD')
++    parser.add_argument('--output', type=Path, required=True)
++    args = parser.parse_args()
++    source = {p.relative_to(ROOT/'SRC').as_posix(): p.read_text()
++              for p in (ROOT/'SRC/AP').glob('*.inc')}
++    source[OWNER] = (ROOT/'SRC'/OWNER).read_text()
++    check_source(source)
++    # Prove the architectural gate detects an accidental direct lookup/kind read.
++    negatives = []
++    for bad in ('JSR THE_JOIN_FIND', 'AND #CMD_HASH_KIND_EXEC'):
++        altered = dict(source)
++        altered['AP/ap-link.inc'] += '\n                        '+bad+'\n'
++        try:
++            check_source(altered)
++        except ValueError:
++            negatives.append(bad)
++        else:
++            raise AssertionError('Boundary gate accepted '+bad)
++
++    top = (ROOT.parent/'STR8-N/BUILD/v1.34/bin/str8n-v1.34-bank3-f000-ffff.bin').read_bytes()
++    lock = json.loads((ROOT/'SRC/INTEGRATION/str8n.lock.json').read_text())
++    assert sha(top).upper() == lock['artifacts']['topSectorSha256']
++    cases = []
++    for kind, name, slot, success in [
++        (1,b'FNV1A_INIT',0,True), (2,b'BOUNDARY_DATA',0,True),
++        (2,b'FNV1A_INIT',0,False), (1,b'BOUNDARY_DATA',0,False),
++        (1,b'BOUNDARY_ABSENT',0,False), (1,b'FNV1A_INIT',1,True),
++    ]:
++        m = Machine(args.build_dir,top)
++        record = b'FN\xD6'+fnv(b'BOUNDARY_DATA').to_bytes(4,'little')+b'\0\xA5'
++        m.m.banks[3][0x6F00:0x6F00+len(record)] = record
++        rows = import_record(kind,name)
++        if slot:
++            # Exercise a variable-length preceding PACK40 name, without resolving it.
++            rows = bytes([2])+import_record(1,b'PRECEDING_LONG_NAME')[1:]+rows[1:]
++        m.m.ram[0x3000:0x3000+len(rows)] = rows
++        m.setword('HIM_AP_IMPORT_LO',0x3000)
++        m.setword('HIM_AP_LINK_RES_LO',0xCAFE)
++        before = bytes(m.m.ram[0x2000:0x5000])
++        result = m.run(ENTRY,x=slot)
++        assert result['carry'] == success
++        expected = (0xEF08 if name==b'BOUNDARY_DATA' else m.s['FNV1A_INIT']) if success else 0xCAFE
++        address = m.s['HIM_AP_LINK_RES_LO']
++        assert m.m.ram[address:address+2] == word(expected)
++        assert bytes(m.m.ram[0x2000:0x5000]) == before
++        assert not result['bank_visits']
++        result.update(kind=kind,name=name.decode(),slot=slot,resolved=f'{expected:04X}')
++        cases.append(result)
++    args.output.parent.mkdir(parents=True,exist_ok=True)
++    inputs = {name:sha((args.build_dir/name).read_bytes()) for name in
++              ('s19/himon-rom-c000.s19','s19/himon-rom-c000.map',
++               's19/asm-v1-flash-8000.s19','s19/asm-v1-flash-8000.map')}
++    args.output.write_text(json.dumps(dict(result='PASS',inputs=inputs,str8_sha256=sha(top),
++        source_sha256={n:sha((ROOT/'SRC'/n).read_bytes()) for n in source},
++        tool_sha256=sha(Path(__file__).read_bytes()),negative_boundary_cases=negatives,cases=cases),indent=2)+'\n')
++    print('PASS AP catalog boundary; 2 bypass negatives; 6 linked resolver cases')
++
++
++if __name__ == '__main__':
++    main()

@@ -1,0 +1,932 @@
+[
+  {
+    "path": "s19/ap-store-v1-chain-install-tool-7000.map",
+    "bytes": 21589,
+    "sha256": "5e6e35b9ad76060a8d008f959a1b668a71cf91943c671ed6da0ea1350953d26f"
+  },
+  {
+    "path": "s19/ap-store-v1-chain-install-tool-7000.s19",
+    "bytes": 6546,
+    "sha256": "2dc7c759c315dec50f0c3c7f2b4f40b4ffbbd9222d2e81ccb98b6fda3fdb85e6"
+  },
+  {
+    "path": "s19/ap-store-v1-chain-install-tool-7000.sym",
+    "bytes": 33560,
+    "sha256": "24ac5aa4f55ec797eda9bf964cdd2788279313cc9b91e5c96a8b3783944af68b"
+  },
+  {
+    "path": "s19/ap-store-v1-chain-install-tool-package-4000.s19",
+    "bytes": 5762,
+    "sha256": "95e8283e8a44b85cac24fe0d293aca496b25ac41147a060b5b4fbb625945dba6"
+  },
+  {
+    "path": "s19/ap-store-v1-chain-marker-4000.map",
+    "bytes": 162,
+    "sha256": "29a52d9a833e23d1e75821fe3a21d2cc7fa4e47c927dc7e4e197f98d77136d97"
+  },
+  {
+    "path": "s19/ap-store-v1-chain-marker-4000.s19",
+    "bytes": 11160,
+    "sha256": "9fa709e857349b23524fd354fdf68690755d14900cf9982dfaf2eac86f3be940"
+  },
+  {
+    "path": "s19/ap-store-v1-chain-marker-4000.sym",
+    "bytes": 452,
+    "sha256": "8a0aaab4dcb71653d7bd0f6050708710a74f31f6c398e6258c9e0202a3cb7be0"
+  },
+  {
+    "path": "s19/ap-store-v1-chain-marker-package-3000.s19",
+    "bytes": 9740,
+    "sha256": "ecf98913cef9b3675db51d55702ba81d58326d98d044ba2a006835555b229394"
+  },
+  {
+    "path": "s19/ap-store-v1-chain-reader-tool-7000.map",
+    "bytes": 21076,
+    "sha256": "8570df008852040caefdb9730c2e96c27454516537c837eff1e850b5d15b3492"
+  },
+  {
+    "path": "s19/ap-store-v1-chain-reader-tool-7000.s19",
+    "bytes": 5940,
+    "sha256": "3a52a8138268b5d95d31622f737467f21eeb4fcebaf376542610350088481a35"
+  },
+  {
+    "path": "s19/ap-store-v1-chain-reader-tool-7000.sym",
+    "bytes": 32056,
+    "sha256": "fb108ce1d666a78e3e21ebe77e347355d455c9e2b6a6d4def95bc1bbc6f87724"
+  },
+  {
+    "path": "s19/ap-store-v1-chain-reader-tool-package-4000.s19",
+    "bytes": 5240,
+    "sha256": "ad790f07dc5dfdcd95275418aa0f140e546c2a885de3867ff126952c4193bafd"
+  },
+  {
+    "path": "s19/ap-store-v1-object-tool-7000.map",
+    "bytes": 19736,
+    "sha256": "d3987bca7f12e872d0d3eafe732df177fc2acf518dff1fc4a223da30b42db8ef"
+  },
+  {
+    "path": "s19/ap-store-v1-object-tool-7000.s19",
+    "bytes": 7052,
+    "sha256": "d85588fe2f51a986cc44f3814e6e9be7a1621954bc2bb20637225e8b5f3928a3"
+  },
+  {
+    "path": "s19/ap-store-v1-object-tool-7000.sym",
+    "bytes": 32146,
+    "sha256": "585597e6ceef3e27819e67169379891174bce7ec74036ee878611d13d4d2b0c1"
+  },
+  {
+    "path": "s19/ap-store-v1-object-tool-package-3000.s19",
+    "bytes": 6208,
+    "sha256": "7576ab9efa965e965fe540204c9a3cf2fa8f784fb3a523a639320401196e1d60"
+  },
+  {
+    "path": "s19/ap-store-v1-sector-tool-7000.map",
+    "bytes": 19287,
+    "sha256": "e44ff08bebbd39e3694e7cddc81fbdb69b83c49a26c60f1f06a56e1e5fd4bb54"
+  },
+  {
+    "path": "s19/ap-store-v1-sector-tool-7000.s19",
+    "bytes": 5190,
+    "sha256": "a22e4e31054fa3c2cc426086e8c0261e6285810bccad70eaa13f7df4ba7ebefc"
+  },
+  {
+    "path": "s19/ap-store-v1-sector-tool-7000.sym",
+    "bytes": 28592,
+    "sha256": "4349a96892ded3450895699a180890448a4f8a3312f040ae6a601897bd3d2ed7"
+  },
+  {
+    "path": "s19/ap-store-v1-slice6-catalog-tool-7000.map",
+    "bytes": 21912,
+    "sha256": "42391b5976d34dee4fbca0c1f4aab2925e1a96195011b7a623ebcab441465bbd"
+  },
+  {
+    "path": "s19/ap-store-v1-slice6-catalog-tool-7000.s19",
+    "bytes": 6896,
+    "sha256": "8005aaa2dc012803473463b25c632369bd3fd50e38ad8373e08328fab025526e"
+  },
+  {
+    "path": "s19/ap-store-v1-slice6-catalog-tool-7000.sym",
+    "bytes": 34406,
+    "sha256": "ae568b919d3f4c29abbfd0cae3697cd540ed5b0a49e5a7fb6b33f30e7c70c0cf"
+  },
+  {
+    "path": "s19/ap-store-v1-slice6-catalog-tool-package-4000.s19",
+    "bytes": 6064,
+    "sha256": "2fbc2d38b019296a9a72cdd2c0d87e1f3f156c10ed8b459032c23eea24b1256e"
+  },
+  {
+    "path": "s19/ap-store-v1-slice6-delete-tool-7000.map",
+    "bytes": 20666,
+    "sha256": "8d6cc8adeb3370a0b6044689a133137f852e6431fbdc118a9f3d887113df472c"
+  },
+  {
+    "path": "s19/ap-store-v1-slice6-delete-tool-7000.s19",
+    "bytes": 5158,
+    "sha256": "c287161e77992f15ab9b3266eddb0c3be20ab11523bcb53e32c35fd5600d703b"
+  },
+  {
+    "path": "s19/ap-store-v1-slice6-delete-tool-7000.sym",
+    "bytes": 30500,
+    "sha256": "301dae652df0389cb8a43e0d79abc63735def05e95e1f71a61396756e7d2658c"
+  },
+  {
+    "path": "s19/ap-store-v1-slice6-delete-tool-package-4000.s19",
+    "bytes": 4566,
+    "sha256": "dc15548d3a359daeed52273611a9bcd235fa201e9c896a54d142538623e8c364"
+  },
+  {
+    "path": "s19/ap-store-v1-slice6-plan-tool-7000.map",
+    "bytes": 21726,
+    "sha256": "97923479f412e8445a34e6281f2d25cae8ea423409c70daea53b9bb475e9b64a"
+  },
+  {
+    "path": "s19/ap-store-v1-slice6-plan-tool-7000.s19",
+    "bytes": 6714,
+    "sha256": "5e7aefee31df86b1ee81fe1336f259cefac30a59f6613bf8cc90783ba7a2c56b"
+  },
+  {
+    "path": "s19/ap-store-v1-slice6-plan-tool-7000.sym",
+    "bytes": 34102,
+    "sha256": "5a29a819e85c965d30adcfe9dd5190b60b29153197f5f3e5d08e21da02f2485b"
+  },
+  {
+    "path": "s19/ap-store-v1-slice6-plan-tool-package-4000.s19",
+    "bytes": 5906,
+    "sha256": "d11cf33b71a6253d8481a9e5d96a79cbf42d51e294e722126f0f94dbdf4968c9"
+  },
+  {
+    "path": "s19/apman-7000.map",
+    "bytes": 11948,
+    "sha256": "8378ca8e36ac0c89d3c7bb65c02b0392e6799f8f5c185cff4d5c49e1d51fe03a"
+  },
+  {
+    "path": "s19/apman-7000.s19",
+    "bytes": 8460,
+    "sha256": "7c15c2ee91989d095f0e024dea2b1eef571718508433ca73b8d891d4f7e21e33"
+  },
+  {
+    "path": "s19/apman-7000.sym",
+    "bytes": 24746,
+    "sha256": "d09140d2d89433f34a2a09b2ca7149f68a8218db0cb2d04dc952f8e0ac354531"
+  },
+  {
+    "path": "s19/apman-v1-bank2-8000.s19",
+    "bytes": 9740,
+    "sha256": "506c65862ed4193f946ca33ff0512e9b1637263338d0744dc857aab07d98608d"
+  },
+  {
+    "path": "s19/asm-session-report-v1.2-7000.map",
+    "bytes": 6579,
+    "sha256": "246608b10b179a00f77184ef136a831fe9acfa4bee044c02b7656ca3b5e1ea28"
+  },
+  {
+    "path": "s19/asm-session-report-v1.2-7000.s19",
+    "bytes": 5018,
+    "sha256": "6dc527b72572d8f79ba58cb6ee08281e980c6ca6af3409373fc8d8ae91f9fa09"
+  },
+  {
+    "path": "s19/asm-session-report-v1.2-7000.sym",
+    "bytes": 13020,
+    "sha256": "9944459a19e6a5f21aaa0686b3e54649716c79acb16c4f2a6eafec8eeea2a94d"
+  },
+  {
+    "path": "s19/asm-v1-core-2000.map",
+    "bytes": 115011,
+    "sha256": "9c1ba59a19abdf6de6d37fba38629940d2eb3610e8c762cdd98769d09f6d09e8"
+  },
+  {
+    "path": "s19/asm-v1-core-2000.s19",
+    "bytes": 142880,
+    "sha256": "1cd313362b2710a0f0f99e5182cc174a200cefda0e5becbd66303dfa8df432a4"
+  },
+  {
+    "path": "s19/asm-v1-core-2000.sym",
+    "bytes": 265572,
+    "sha256": "6fb0359ee96d62ae3ca0311194abb14fae85b61569877efba7cac4a62ee5d14b"
+  },
+  {
+    "path": "s19/asm-v1-flash-8000.map",
+    "bytes": 66253,
+    "sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e"
+  },
+  {
+    "path": "s19/asm-v1-flash-8000.s19",
+    "bytes": 41918,
+    "sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5"
+  },
+  {
+    "path": "s19/asm-v1-flash-8000.sym",
+    "bytes": 136670,
+    "sha256": "f4856a8ee3ecbcb5f079979eb5d7a2cfed895be7e351cc0acf9b447241bc905e"
+  },
+  {
+    "path": "s19/asm-v1-runtime-2000.map",
+    "bytes": 55118,
+    "sha256": "603424233c0d60d572e619e550e75f875fdc5d0ac4d1fd300d96258c09080b64"
+  },
+  {
+    "path": "s19/asm-v1-runtime-2000.s19",
+    "bytes": 36654,
+    "sha256": "05d155cdf013bdd37e73083663449a1daa30d715545417f5b22b9d6e055696a7"
+  },
+  {
+    "path": "s19/asm-v1-runtime-2000.sym",
+    "bytes": 118986,
+    "sha256": "6c9ca59c75fd5b4be8dc485b38118ebe169d9fc504f87298d02d79cc9cce0d2b"
+  },
+  {
+    "path": "s19/asm-v1-runtime-asmtest-2000.map",
+    "bytes": 57716,
+    "sha256": "aa0336216e5e40fea41c62721f50292dc112e526b191fa417685785a47d5eb47"
+  },
+  {
+    "path": "s19/asm-v1-runtime-asmtest-2000.s19",
+    "bytes": 39322,
+    "sha256": "8626558815b0a24957144643ba826c1f4c1f856dfa25600ad4401e7cebbdeb75"
+  },
+  {
+    "path": "s19/asm-v1-runtime-asmtest-2000.sym",
+    "bytes": 125258,
+    "sha256": "d6f38ea6a422fa930c0bc2465813f553dbfbf0d251702ffc6b916b15b0541bd1"
+  },
+  {
+    "path": "s19/asm-v1-runtime-paste-2000.map",
+    "bytes": 61254,
+    "sha256": "c33c95cba4ecd25df3f491f6855d9c69b4a4e5ed578e29d55f33c1d743e7f777"
+  },
+  {
+    "path": "s19/asm-v1-runtime-paste-2000.s19",
+    "bytes": 42728,
+    "sha256": "1b703052c6cf28ab0c5a4f5f14d29c6d3d880813225369e5bc70d039b3edefa0"
+  },
+  {
+    "path": "s19/asm-v1-runtime-paste-2000.sym",
+    "bytes": 136028,
+    "sha256": "28d9437259c72fc6b71dcd5b64a93a5447e8a7597ea680820f4380adfff7cf6f"
+  },
+  {
+    "path": "s19/asm-v1-runtime-smoke-2000.map",
+    "bytes": 57703,
+    "sha256": "c5f7215ce3ed3e35f83891d69af619ffe42b9e7e3b21696251700bc3cadfe8fa"
+  },
+  {
+    "path": "s19/asm-v1-runtime-smoke-2000.s19",
+    "bytes": 39524,
+    "sha256": "5504b4086dc1296c6dd089f1727282661214b6558b9cb7d884d0477b7d3046b2"
+  },
+  {
+    "path": "s19/asm-v1-runtime-smoke-2000.sym",
+    "bytes": 125890,
+    "sha256": "48146e2072d9af4895009a2aa4af2bd06b5036c3e606467410be2804c4154da1"
+  },
+  {
+    "path": "s19/asmtest-6800-wdc.map",
+    "bytes": 171,
+    "sha256": "12c5fd28daa07e737948139afbed6fbf9af9e43a07442dfd4f804d0482904b89"
+  },
+  {
+    "path": "s19/asmtest-6800-wdc.s19",
+    "bytes": 126,
+    "sha256": "506f42555146627bf2004c695584896f6f60f3af731e562056c1e0c9e2848591"
+  },
+  {
+    "path": "s19/asmtest-6800-wdc.sym",
+    "bytes": 578,
+    "sha256": "0be238909b183949e937d72564f26ccae765c2c87a98189c79e1a5e35912a4e7"
+  },
+  {
+    "path": "s19/bank-audit-2000.map",
+    "bytes": 1190,
+    "sha256": "8def9202a7d9393fb99ce1f278c800524b0b2a8e9a85e7551c2d4f82114707f8"
+  },
+  {
+    "path": "s19/bank-audit-2000.s19",
+    "bytes": 1436,
+    "sha256": "530ab4775af5c6b3dae7bc0fd4c30bc91efb308880599f2019c9552b23d327ee"
+  },
+  {
+    "path": "s19/bank-audit-2000.sym",
+    "bytes": 3736,
+    "sha256": "d7090991047c4105d07b888414b1ea76aadeeef181b2d0f02ab104dec94286ea"
+  },
+  {
+    "path": "s19/bank-dump-2000.map",
+    "bytes": 4484,
+    "sha256": "72809320c285c98a37c421851365b28406f844448fb570134b3bd7ae76a06219"
+  },
+  {
+    "path": "s19/bank-dump-2000.s19",
+    "bytes": 6472,
+    "sha256": "be46b2a1c135550a737ff50e8f63fbc8657a5ce2d925eb7d40a0c2bcf6b6b3db"
+  },
+  {
+    "path": "s19/bank-dump-2000.sym",
+    "bytes": 14136,
+    "sha256": "356a69c0cc22aa640fcbe6cad74817aa60a9e09eac08959f15e8be53ed95edc1"
+  },
+  {
+    "path": "s19/fnv1a-hbstr-6000.map",
+    "bytes": 3738,
+    "sha256": "6358d349973ed399aebfa6fd16871d02f12f0ca264bf517bc3541dac7cf80658"
+  },
+  {
+    "path": "s19/fnv1a-hbstr-6000.s19",
+    "bytes": 2936,
+    "sha256": "898a2f9811536d0d359aee0db27ad8747ca099e8fd16b25d94e36466535c8a25"
+  },
+  {
+    "path": "s19/fnv1a-hbstr-6000.sym",
+    "bytes": 9604,
+    "sha256": "3b30fdaf951d9c095af6e3075b2d164ce8b835dda6de437ef7ea745b341e3e6e"
+  },
+  {
+    "path": "s19/himon-apv2-bank3-c-e.s19",
+    "bytes": 29196,
+    "sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648"
+  },
+  {
+    "path": "s19/himon-c000.map",
+    "bytes": 47118,
+    "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49"
+  },
+  {
+    "path": "s19/himon-c000.s19",
+    "bytes": 32652,
+    "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e"
+  },
+  {
+    "path": "s19/himon-c000.sym",
+    "bytes": 100752,
+    "sha256": "2940ddfecf6aadeba91d7fe923919402fb488413b8bd6cc680e83f6b5131240c"
+  },
+  {
+    "path": "s19/himon-rom-c000-install-8000.s19",
+    "bytes": 77836,
+    "sha256": "b61b05c11eedd506342d1820d6595aead15a469bc7c9d0bbdff79a2d7c831690"
+  },
+  {
+    "path": "s19/himon-rom-c000.map",
+    "bytes": 47118,
+    "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49"
+  },
+  {
+    "path": "s19/himon-rom-c000.s19",
+    "bytes": 32652,
+    "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e"
+  },
+  {
+    "path": "s19/himon-rom-c000.sym",
+    "bytes": 100752,
+    "sha256": "2940ddfecf6aadeba91d7fe923919402fb488413b8bd6cc680e83f6b5131240c"
+  },
+  {
+    "path": "s19/life-2000.map",
+    "bytes": 7254,
+    "sha256": "a8d8d3feb92c76e6a7416feb4b81d07791d5f543e52025fed88a6f15e254fdee"
+  },
+  {
+    "path": "s19/life-2000.s19",
+    "bytes": 9580,
+    "sha256": "6aa6df35aac5f9965ea4bed13310a0f80aef5fb41263e979ac93c8769f5aed72"
+  },
+  {
+    "path": "s19/life-2000.sym",
+    "bytes": 24198,
+    "sha256": "83b4042aa6ff2337e048e3ac38358a12df3a574aee483cb364b6efe54e5cc50b"
+  },
+  {
+    "path": "s19/microchess-2000.map",
+    "bytes": 3022,
+    "sha256": "8307dce5dba04762e2f0ccafcb68193f65778831ad14fc23b036418ff8bb586a"
+  },
+  {
+    "path": "s19/microchess-2000.s19",
+    "bytes": 4346,
+    "sha256": "94c8b69750aad73970cb4cb4b677ca90ea0924c552b2b51895c587637fe82c9b"
+  },
+  {
+    "path": "s19/microchess-2000.sym",
+    "bytes": 9604,
+    "sha256": "80cec506c901e27bf4d683566b30460dc130fa142af9f1b025e146f34254656a"
+  },
+  {
+    "path": "s19/microchess-ap-3000.s19",
+    "bytes": 4064,
+    "sha256": "4a2a7fc258b1dd729ecc46320b9203a349c35fc7d6dd642b80c0a7c5a0bf5730"
+  },
+  {
+    "path": "s19/pia-led-show-2000.map",
+    "bytes": 275,
+    "sha256": "82ee669e0f9845139a7508c6b8d01a88b103f7fba5af5b8bd788d01a9f46b64e"
+  },
+  {
+    "path": "s19/pia-led-show-2000.s19",
+    "bytes": 384,
+    "sha256": "d501084ed33a202283bb36726a3bf6a09f529f1af868ae68ca325bf9b5647e07"
+  },
+  {
+    "path": "s19/pia-led-show-2000.sym",
+    "bytes": 1072,
+    "sha256": "3c4570616711b9c463cd15e0fb83e2b520f8436355df7469b98044bd767e7015"
+  },
+  {
+    "path": "s19/rom-append-calc-b804.map",
+    "bytes": 2966,
+    "sha256": "a8718c90f6136a4a1fac9649694ff5a3ec535aa2d29d4ae593f7d715fa39c1aa"
+  },
+  {
+    "path": "s19/rom-append-calc-b804.s19",
+    "bytes": 2288,
+    "sha256": "21d3f8fe47163b225642bd098675348fb36b6ddb06270f922bf3d31ea7d5211e"
+  },
+  {
+    "path": "s19/rom-append-calc-b804.sym",
+    "bytes": 7520,
+    "sha256": "563c771e33e681d011abe1e6ecfe55eb6f1d3fbbfd72edcd007a813880dd801c"
+  },
+  {
+    "path": "s19/ryors-v1.2-asm-bank3-8-b.s19",
+    "bytes": 38924,
+    "sha256": "79af47c34c28ebdfcb582f15b9fbec2e21db4e158c3a91a0870203ef28a27414"
+  },
+  {
+    "path": "s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
+    "bytes": 68108,
+    "sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9"
+  },
+  {
+    "path": "s19/ryors-v1.2-himon-bank3-c-e.s19",
+    "bytes": 29196,
+    "sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648"
+  },
+  {
+    "path": "map/ap-store-v1-chain-install-tool-7000.map",
+    "bytes": 21589,
+    "sha256": "5e6e35b9ad76060a8d008f959a1b668a71cf91943c671ed6da0ea1350953d26f"
+  },
+  {
+    "path": "map/ap-store-v1-chain-marker-4000.map",
+    "bytes": 162,
+    "sha256": "29a52d9a833e23d1e75821fe3a21d2cc7fa4e47c927dc7e4e197f98d77136d97"
+  },
+  {
+    "path": "map/ap-store-v1-chain-reader-tool-7000.map",
+    "bytes": 21076,
+    "sha256": "8570df008852040caefdb9730c2e96c27454516537c837eff1e850b5d15b3492"
+  },
+  {
+    "path": "map/ap-store-v1-object-tool-7000.map",
+    "bytes": 19736,
+    "sha256": "d3987bca7f12e872d0d3eafe732df177fc2acf518dff1fc4a223da30b42db8ef"
+  },
+  {
+    "path": "map/ap-store-v1-sector-tool-7000.map",
+    "bytes": 19287,
+    "sha256": "e44ff08bebbd39e3694e7cddc81fbdb69b83c49a26c60f1f06a56e1e5fd4bb54"
+  },
+  {
+    "path": "map/ap-store-v1-slice6-catalog-tool-7000.map",
+    "bytes": 21912,
+    "sha256": "42391b5976d34dee4fbca0c1f4aab2925e1a96195011b7a623ebcab441465bbd"
+  },
+  {
+    "path": "map/ap-store-v1-slice6-delete-tool-7000.map",
+    "bytes": 20666,
+    "sha256": "8d6cc8adeb3370a0b6044689a133137f852e6431fbdc118a9f3d887113df472c"
+  },
+  {
+    "path": "map/ap-store-v1-slice6-plan-tool-7000.map",
+    "bytes": 21726,
+    "sha256": "97923479f412e8445a34e6281f2d25cae8ea423409c70daea53b9bb475e9b64a"
+  },
+  {
+    "path": "map/apman-7000.map",
+    "bytes": 11948,
+    "sha256": "8378ca8e36ac0c89d3c7bb65c02b0392e6799f8f5c185cff4d5c49e1d51fe03a"
+  },
+  {
+    "path": "map/asm-session-report-v1.2-7000.map",
+    "bytes": 6579,
+    "sha256": "246608b10b179a00f77184ef136a831fe9acfa4bee044c02b7656ca3b5e1ea28"
+  },
+  {
+    "path": "map/asm-v1-core-2000.map",
+    "bytes": 115011,
+    "sha256": "9c1ba59a19abdf6de6d37fba38629940d2eb3610e8c762cdd98769d09f6d09e8"
+  },
+  {
+    "path": "map/asm-v1-flash-8000.map",
+    "bytes": 66253,
+    "sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e"
+  },
+  {
+    "path": "map/asm-v1-runtime-2000.map",
+    "bytes": 55118,
+    "sha256": "603424233c0d60d572e619e550e75f875fdc5d0ac4d1fd300d96258c09080b64"
+  },
+  {
+    "path": "map/asm-v1-runtime-asmtest-2000.map",
+    "bytes": 57716,
+    "sha256": "aa0336216e5e40fea41c62721f50292dc112e526b191fa417685785a47d5eb47"
+  },
+  {
+    "path": "map/asm-v1-runtime-paste-2000.map",
+    "bytes": 61254,
+    "sha256": "c33c95cba4ecd25df3f491f6855d9c69b4a4e5ed578e29d55f33c1d743e7f777"
+  },
+  {
+    "path": "map/asm-v1-runtime-smoke-2000.map",
+    "bytes": 57703,
+    "sha256": "c5f7215ce3ed3e35f83891d69af619ffe42b9e7e3b21696251700bc3cadfe8fa"
+  },
+  {
+    "path": "map/asmtest-6800-wdc.map",
+    "bytes": 171,
+    "sha256": "12c5fd28daa07e737948139afbed6fbf9af9e43a07442dfd4f804d0482904b89"
+  },
+  {
+    "path": "map/bank-audit-2000.map",
+    "bytes": 1190,
+    "sha256": "8def9202a7d9393fb99ce1f278c800524b0b2a8e9a85e7551c2d4f82114707f8"
+  },
+  {
+    "path": "map/bank-dump-2000.map",
+    "bytes": 4484,
+    "sha256": "72809320c285c98a37c421851365b28406f844448fb570134b3bd7ae76a06219"
+  },
+  {
+    "path": "map/fnv1a-hbstr-6000.map",
+    "bytes": 3738,
+    "sha256": "6358d349973ed399aebfa6fd16871d02f12f0ca264bf517bc3541dac7cf80658"
+  },
+  {
+    "path": "map/himon-c000.map",
+    "bytes": 46759,
+    "sha256": "7a69f6e6a0ef6c5205edcf757a2a59735d13abdb8eec2024f9d77ffe634be1a2"
+  },
+  {
+    "path": "map/himon-rom-c000.map",
+    "bytes": 47118,
+    "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49"
+  },
+  {
+    "path": "map/life-2000.map",
+    "bytes": 7254,
+    "sha256": "a8d8d3feb92c76e6a7416feb4b81d07791d5f543e52025fed88a6f15e254fdee"
+  },
+  {
+    "path": "map/microchess-2000.map",
+    "bytes": 3022,
+    "sha256": "8307dce5dba04762e2f0ccafcb68193f65778831ad14fc23b036418ff8bb586a"
+  },
+  {
+    "path": "map/pia-led-show-2000.map",
+    "bytes": 275,
+    "sha256": "82ee669e0f9845139a7508c6b8d01a88b103f7fba5af5b8bd788d01a9f46b64e"
+  },
+  {
+    "path": "map/rom-append-calc-b804.map",
+    "bytes": 2966,
+    "sha256": "a8718c90f6136a4a1fac9649694ff5a3ec535aa2d29d4ae593f7d715fa39c1aa"
+  },
+  {
+    "path": "lst/acia-drv.lst",
+    "bytes": 17995,
+    "sha256": "d007cb41171eaa425ace2d19b976f204326a470c90baa68faadbb39e5417acfa"
+  },
+  {
+    "path": "lst/ap-store-v1-chain-marker-4000.lst",
+    "bytes": 1970,
+    "sha256": "145fc7e9334b5cdef4a96d2cecb269edaad92940c3b04deaa7f506cc7ecec27f"
+  },
+  {
+    "path": "lst/ap-store-v1-object-tool.lst",
+    "bytes": 177760,
+    "sha256": "393b3a19a2f2acfbf27ecf45ba743fbd4984b52258ae46887ec6f2571f2d43ad"
+  },
+  {
+    "path": "lst/ap-store-v1-sector-tool.lst",
+    "bytes": 178794,
+    "sha256": "a667155faf9f84008265acb8078abbd6840fd03fa8943e867b479f2cf413aa63"
+  },
+  {
+    "path": "lst/apman-7000.lst",
+    "bytes": 111464,
+    "sha256": "9daf9db65ae168e75c7c755d72049b42dcd14970f8a98d1ea14c18d4807f2dc1"
+  },
+  {
+    "path": "lst/asm-session-report.lst",
+    "bytes": 63563,
+    "sha256": "c9523654e7c3ee346ee81eacf82ecfad19efc466cdf21da82f6bef9aee82abfb"
+  },
+  {
+    "path": "lst/asm-v1-core.lst",
+    "bytes": 1579801,
+    "sha256": "1d0e46533ff705da748acca7551a196c27303b127182078d89b47a3bfb2f5831"
+  },
+  {
+    "path": "lst/asm-v1-flash.lst",
+    "bytes": 83736,
+    "sha256": "593cf5012e76313dccd22311c828453581ae9463fe8c5e5218e4094bd8412e85"
+  },
+  {
+    "path": "lst/asm-v1-runtime-asmtest.lst",
+    "bytes": 21944,
+    "sha256": "8e345052ea4da186858b72d511410225f9a805fb5bd28c497c7422ca96e25dc3"
+  },
+  {
+    "path": "lst/asm-v1-runtime-paste.lst",
+    "bytes": 45327,
+    "sha256": "d15ba5006c8ea5a6f1e0473ea4ff931e999e11dffca255ff184ab54df0e4c96f"
+  },
+  {
+    "path": "lst/asm-v1-runtime-smoke.lst",
+    "bytes": 28380,
+    "sha256": "95d5335f975c65b6c49b20010218e912451b77c90bfb74882e676473ea36c683"
+  },
+  {
+    "path": "lst/asmtest-6800-wdc.lst",
+    "bytes": 1878,
+    "sha256": "74e71d8345d61e3a409a19c85f532d8b97da13bf1988bc9a58945098de834246"
+  },
+  {
+    "path": "lst/bank-audit-2000.lst",
+    "bytes": 23205,
+    "sha256": "60cbb18814ce917dce8bfff38622558d78a697c18368d5e7d5e482d63e426b97"
+  },
+  {
+    "path": "lst/bank-dump-2000.lst",
+    "bytes": 85906,
+    "sha256": "7a9535841073c5d7c84245bd160757c60c9de8c684bf93e2810e14728d810b4a"
+  },
+  {
+    "path": "lst/dev-adapter-core.lst",
+    "bytes": 27649,
+    "sha256": "e6d8ac941f57412264ed04abba480f81784233fe6ba0a8856a6b4b0e850b15aa"
+  },
+  {
+    "path": "lst/dev-adapter-debug.lst",
+    "bytes": 6574,
+    "sha256": "c4648156f1482d3872377481c10666170407f6436dfde2d788dc7efa8c714a41"
+  },
+  {
+    "path": "lst/dev-adapter-readline.lst",
+    "bytes": 28455,
+    "sha256": "4fb3cb97767a32d1088936e04092fb7421583b1fa28d77bffb5d91051b000937"
+  },
+  {
+    "path": "lst/dev-adapter-vectors.lst",
+    "bytes": 22139,
+    "sha256": "9071fbae810242c05625539ece9a508ddc335f888abf2501197c413813953295"
+  },
+  {
+    "path": "lst/dev-adapter-write.lst",
+    "bytes": 21223,
+    "sha256": "b3ace37ba5a827fcc6eca90d1aa172996663c19ed56dacfb12e3dee07b4fa227"
+  },
+  {
+    "path": "lst/dev-flash.lst",
+    "bytes": 25888,
+    "sha256": "8c613db3dd15aa43aca84a40fe7799c39fa4f48f0df977b799236cad16973a1a"
+  },
+  {
+    "path": "lst/flsh-drv.lst",
+    "bytes": 7136,
+    "sha256": "3b01adb959505cc22befbeabd094cedc3f5cb4842a99780dfeb898e97cc243d4"
+  },
+  {
+    "path": "lst/flsh-query.lst",
+    "bytes": 6729,
+    "sha256": "a1ef9c45cbfc18ded4d017765bff504941981bab4f284df081862af1427c7929"
+  },
+  {
+    "path": "lst/fnv1a-hbstr-6000.lst",
+    "bytes": 30589,
+    "sha256": "ce2cc2e17eeed8c54a144f8bd6e135924b7640d79768e11907e8064389655bba"
+  },
+  {
+    "path": "lst/ftdi-backend-core.lst",
+    "bytes": 46788,
+    "sha256": "3f83425cfe8817264370a1a366874574d03d725443191ffece716112d5eecf0d"
+  },
+  {
+    "path": "lst/ftdi-backend-debug.lst",
+    "bytes": 20574,
+    "sha256": "dde32844905682b2c548c24d3f6e0ee2fccb7ec1727fc9725556327dac20c4cf"
+  },
+  {
+    "path": "lst/ftdi-backend-editline.lst",
+    "bytes": 39429,
+    "sha256": "a952b08dee0ca0af2970c134dabfe294ee775c9f02e9bcfcd89d7746c7001f45"
+  },
+  {
+    "path": "lst/ftdi-backend-readline.lst",
+    "bytes": 31265,
+    "sha256": "adda8dfb4c2029c56a723c8ca9609065a4e43b93cd8ddc266b1b807f9369b077"
+  },
+  {
+    "path": "lst/ftdi-backend-write.lst",
+    "bytes": 16616,
+    "sha256": "480d6e491a974fca5b16f508637d876f6a2f6e7a7fdff0b5e73e7ab248b7a4bb"
+  },
+  {
+    "path": "lst/ftdi-drv.lst",
+    "bytes": 31110,
+    "sha256": "bd9e639c2dd8abcf8a6639c0f0b7c34200e235606788d3140d8cdb5618a85a76"
+  },
+  {
+    "path": "lst/ftdi-hal.lst",
+    "bytes": 65518,
+    "sha256": "e0a559632f4c54a0c463cdb144d9e752094412c310dee84256087e796e5179cc"
+  },
+  {
+    "path": "lst/himon-c000.lst",
+    "bytes": 419263,
+    "sha256": "272c01ce06821ff590939fc187fabad15129f53da495e040143b7046675691e5"
+  },
+  {
+    "path": "lst/himon-rom-c000.lst",
+    "bytes": 419263,
+    "sha256": "ff75a6a3c8fadd314a83222ed30e69ce624b6e885ccf797db06bdd8602e6114e"
+  },
+  {
+    "path": "lst/himon.lst",
+    "bytes": 419263,
+    "sha256": "e34845a0977ce63d0fde3bb823127debe12b37067ad674dc5430aea9ac958439"
+  },
+  {
+    "path": "lst/life.lst",
+    "bytes": 84819,
+    "sha256": "3db246037aa2d8d423220ccef70b5f50260f3a68865e4ad56745574ad644680d"
+  },
+  {
+    "path": "lst/microchess-2000.lst",
+    "bytes": 54691,
+    "sha256": "e24627d20459ef0058d5caedabf8dd1b72a00b6cdf4aeb3e6ce9db0e90677872"
+  },
+  {
+    "path": "lst/pia-drv.lst",
+    "bytes": 20658,
+    "sha256": "8d2fff7d12f79d9bb31ba7b2e184d7e567b8babefb17b143b0e86ca408488284"
+  },
+  {
+    "path": "lst/pia-hal.lst",
+    "bytes": 40823,
+    "sha256": "cd60398a8a4193f1d6c8d095b56c6225b49b12eabf07b42a9a49422235f82340"
+  },
+  {
+    "path": "lst/pia-led-show-2000.lst",
+    "bytes": 6960,
+    "sha256": "0414128ec33b54dea73fd4592c2e7b51ee88b5a5e8db65ef65d8ead98c0161c6"
+  },
+  {
+    "path": "lst/rom-append-calc.lst",
+    "bytes": 13860,
+    "sha256": "da085ec2b2df254649e49f2e4d59b667b0c9ab4bad28466370699021dd399c1c"
+  },
+  {
+    "path": "lst/util-addr.lst",
+    "bytes": 12894,
+    "sha256": "966093fb4b0ce2f32c549ee35c99df4f8abad928b71e21cf420f8a0c469bfd47"
+  },
+  {
+    "path": "lst/util-char.lst",
+    "bytes": 20509,
+    "sha256": "12f502dee7aab338aa13ae745115472e3a1d465da50278ec52a146f52c708f53"
+  },
+  {
+    "path": "lst/util-delay.lst",
+    "bytes": 7650,
+    "sha256": "b75824ed635d7a21f557b3f8c420fd6ea56c3f9f6006b0e070e9ed4542a976a2"
+  },
+  {
+    "path": "lst/util-hex.lst",
+    "bytes": 17030,
+    "sha256": "902517fa08b98c1e1db7c4a0a7e0c51714b6b2a2eba8570322d6ad99128d52e9"
+  },
+  {
+    "path": "lst/util-pack40.lst",
+    "bytes": 38521,
+    "sha256": "7e490b60400f8951c1854a11153bd9461b44ea044990d8ef28bbe1803f163297"
+  },
+  {
+    "path": "lst/util-string.lst",
+    "bytes": 13795,
+    "sha256": "f8041ad6bcbf2ce97b28386d42716199d086ebf17e82e26cfd1143bbc80c7bd8"
+  },
+  {
+    "path": "lst/util-test.lst",
+    "bytes": 10914,
+    "sha256": "6fe160f7ece7e7a19159be4d01419264cd09703402ef4b2ad499a27bf879078e"
+  },
+  {
+    "path": "lst/util-zp.lst",
+    "bytes": 5928,
+    "sha256": "f0dadf0ab0035d0f545b7c98186159bd2ecc5da42fa07500f203e4294c2956d2"
+  },
+  {
+    "path": "bin/ap-store-v1-chain-install-tool-7000.ap.bin",
+    "bytes": 2419,
+    "sha256": "20d4e2edfb519dd7800bc289f7a5ae8d1141e2605d5d3bcfa0f0bf86e518ced4"
+  },
+  {
+    "path": "bin/ap-store-v1-chain-marker-4000.ap.bin",
+    "bytes": 4096,
+    "sha256": "81c7f444e5a54e2bd7dc5899e4e6efcad95d72f8082b7dbee93688fe1f2e679e"
+  },
+  {
+    "path": "bin/ap-store-v1-chain-reader-tool-7000.ap.bin",
+    "bytes": 2200,
+    "sha256": "d827e9e9ade4fe7d5e4e4f511c1dc1c4ded40e3da7fc9677cb376e91c439f9f4"
+  },
+  {
+    "path": "bin/ap-store-v1-object-tool-7000.ap.bin",
+    "bytes": 2606,
+    "sha256": "a6b4fb7e12afaac092a124b45bc5f8367d304c16c95a54e64a5b57c525e2eba2"
+  },
+  {
+    "path": "bin/ap-store-v1-sector-tool-7000.ap.bin",
+    "bytes": 1929,
+    "sha256": "3bdc0c1490aaade08a9ddd79f035c8128066874e333028276d7082dca035feb4"
+  },
+  {
+    "path": "bin/ap-store-v1-slice6-catalog-tool-7000.ap.bin",
+    "bytes": 2546,
+    "sha256": "5d2e3cc25f0a67353465cc63063aa1d4f0404cc5f02a3de0f0994ba41cd3fcd7"
+  },
+  {
+    "path": "bin/ap-store-v1-slice6-delete-tool-7000.ap.bin",
+    "bytes": 1917,
+    "sha256": "f5a5879019f64fc7849948974668c15fa4629a0b7f1b8144f19a53a9cf213253"
+  },
+  {
+    "path": "bin/ap-store-v1-slice6-plan-tool-7000.ap.bin",
+    "bytes": 2479,
+    "sha256": "b9e8ceec33281a0f9e6b0dea6ab0ba62f407f8127739b97e98c5d3f75086aab1"
+  },
+  {
+    "path": "bin/apman-v1-bank2-8000.bin",
+    "bytes": 4096,
+    "sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9"
+  },
+  {
+    "path": "bin/apman-v1.ap",
+    "bytes": 3118,
+    "sha256": "4bf5ad6432f379acca19adc2d352fcacf207a1fcce5bd842beb219235aab67ef"
+  },
+  {
+    "path": "bin/asm-session-report-v1.2-7000.ap.bin",
+    "bytes": 1867,
+    "sha256": "69c13ba05c7a6ed747b0e11a42c2c8c69d46e90206403cdab610387a9f4e8736"
+  },
+  {
+    "path": "bin/himon-rom-c000.bin",
+    "bytes": 32768,
+    "sha256": "1ac1946839e14a251a055939f9b35f5dd6b2432c1fd4ef12f5ef978cab3e102c"
+  },
+  {
+    "path": "bin/life-2000-load.bin",
+    "bytes": 3476,
+    "sha256": "c872fb34160a8938c37552ef0d80444038d2268d5adeb40d8144928b2667daac"
+  },
+  {
+    "path": "bin/microchess.ap",
+    "bytes": 1702,
+    "sha256": "bc55363da391ae84dd389c763e7746ac2935e031d71353f4816b7ed1c77fa86d"
+  },
+  {
+    "path": "inc/apman-str8-worker.inc",
+    "bytes": 3282,
+    "sha256": "7a614aa35ae4007b5b4f54bdd741805e27315b5f1d8bb4ddf5cba1ca3730b076"
+  },
+  {
+    "path": "inc/asm-session-report.inc",
+    "bytes": 5228,
+    "sha256": "6dbcb3027d0906b71c6ef69e3baa9f759d735dc9d23078d9bd1fa84822a8178d"
+  },
+  {
+    "path": "inc/asm-version.inc",
+    "bytes": 73,
+    "sha256": "9afd1f1dbb492ac7f5d5e317eaee72f18dbd22bcaf08a69c3132f843fb794256"
+  },
+  {
+    "path": "inc/himon-version.inc",
+    "bytes": 180,
+    "sha256": "4ac7995bcefd7f99e6ca0738d6bea83759569304f81ac4987e5fb3002ca1e6e0"
+  },
+  {
+    "path": "inc/str8n-public.inc",
+    "bytes": 5657,
+    "sha256": "947f8d096ebe42ce07c072e179b618115341e390d0975131b6204d863c95e4dd"
+  },
+  {
+    "path": "lib/rom.lib",
+    "bytes": 60039,
+    "sha256": "888087a7a1ba1a6f9eaaacad21a2c588cab53e4aef77625229f3ad17ac2224ee"
+  },
+  {
+    "path": "integration/str8n-receipt.json",
+    "bytes": 364,
+    "sha256": "52cc4507ac33835b245ffea7bf65e9654010383841529c09f6ab26b7ad9b850b"
+  }
+]

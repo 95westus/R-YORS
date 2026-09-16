@@ -1,0 +1,110 @@
+diff --git a/DOC/GUIDES/ASM/SAMPLES/README.md b/DOC/GUIDES/ASM/SAMPLES/README.md
+index e6f62a9..6ccf259 100644
+--- a/DOC/GUIDES/ASM/SAMPLES/README.md
++++ b/DOC/GUIDES/ASM/SAMPLES/README.md
+@@ -85,8 +85,14 @@ sources and an explanation of their former roles are under `OLD`.
+ - `vt525-exerciser-7000.a` - fixed-load VT525/VT500 C1, color, character-set,
+   margin, rectangle, status-line, macro, report, and keyboard exerciser; no AP.
+   Its measured direct-run image is `$7000-$79B2`.
+-
+-Both terminal exercisers deliberately use the same transient tray and run one
++- `rterm-advanced-7000.a` - RTERM-specific interactive RMP/1 demo: VT525
++  display, a locally edited 5265 form, operator messages, and a 16-byte binary
++  PUT to `LOG/rterm-demo.bin`. Generated from
++  `SRC/APPS/rterm-advanced-7000.asm`; code `$7000-$79DA`, data `$1D00-$1FCD`.
++  Follow the [RTERM demo guide](../RTERM_ADVANCED_DEMO.md) for the explicit
++  raw-console/RMP handoff. Host-tested against actual RTERM; board proof pending.
++
++These terminal exercisers share the high transient tray and run one
+ at a time. Do not move them back to `$3000/$4000`: those ranges overlap the
+ live `$2000`-based ASM-F2 image and can crash after `END` before `SEAL>` exits.
+ For a STR8 top-sector update, use the STR8-N v1.34 release's checked RAM
+diff --git a/DOC/GUIDES/ASM/TEST_PLAN.md b/DOC/GUIDES/ASM/TEST_PLAN.md
+index 5cacae5..5650b09 100644
+--- a/DOC/GUIDES/ASM/TEST_PLAN.md
++++ b/DOC/GUIDES/ASM/TEST_PLAN.md
+@@ -64,8 +64,34 @@ make -C SRC himon-io-led-check
+ make -C SRC himon-size-check
+ make -C SRC microchess
+ make -C SRC str8-readonly-bank-tools-check
++make -C SRC rterm-demo-check
+ ```
+ 
++### RTERM advanced demo candidate
++
++`SAMPLES/rterm-advanced-7000.a` is a generated transient application, not a
++resident ASM feature. Its [operator guide](RTERM_ADVANCED_DEMO.md) records
++the source, memory layout, explicit RMP/1 handoff, and test commands.
++The focused `rterm-demo-check` gate builds it, checks byte-exact assembly
++with real ASM-F2 under py65, and exercises its protocol/application paths.
++It is a separate focused gate; it is not added to `asm-test`.
++
++Host evidence on 2026-09-16: 3,241 emitted bytes (2,523 high code/data and
++718 low data); CRC/escaping, session negotiation, acknowledgements,
++duplicate/damaged/oversize/stale frames, invalid AID/value rejection,
++fixed binary PUT, bounded receive timeout, GOODBYE, stack/zero-page restore,
++and writes confined to the declared RAM pass. The actual RTERM executable
++also passes a PTY run with field editing, local error/reset, F5 AID,
++CONTROL/TERMINAL/SCREEN/FILE/MESSAGE traffic, exact binary file completion,
++existing-file rejection, and exit.
++
++Physical-board acceptance is **pending**. Assemble and run on the current
++firmware, observe display/OIA and field behavior, verify the exact received
++file, repeat with an existing destination and no write root, exercise normal
++exit and disconnect/reconnect, then physically reset and verify ordinary raw
++monitor/ASM recovery. Append the resulting transcript under `LOGS`; host PTYs
++do not establish timing, physical flow control, or board recovery proof.
++
+ ### HIMON/ASM ABI single-source gate
+ 
+ `asm-abi-check` treats `SRC/ASM/asm-abi-v1.inc` as the sole literal-address
+diff --git a/DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md b/DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md
+index 5b134d9..7974512 100644
+--- a/DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md
++++ b/DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md
+@@ -26545,3 +26545,26 @@ See the [qualification record](ASMF2_SIZE_2026-09-15.md) for image hashes,
+ sector CRCs, recovery details, test scope, and corrected harness assumptions.
+ The [raw serial transcript](ASMF2_SIZE_2026-09-15.jsonl) is 2,031,006 bytes,
+ SHA-256 `313AB768D70F8653A2B00017A64B01B8D15F7CB096D8779F561A26E9088D61F3`.
++
++## 2026-09-16 BSO2 Installation In Bank 2
++
++At the user's request, the newest preserved BSO2 source was copied unchanged
++from `C:\SRC\bso2 backups\GitHub\bso2`, built with its original WDC commands,
++and combined with the exact required WDC service ROM at `$F800-$FFFF`.
++The complete 32 KB image was installed through STR8-N 1.34 on COM4 using
++`I / 2 / 8-F`, TYPE `FF`, description `BSO-2`. COMMIT returned `OK`.
++
++Complete flash archives were retained before and after installation.
++Independent readback matched all 32 KB of Bank 2, preserved Banks 0 and 1,
++and proved Bank 3 changed only in D2 enrollment. HIMON, ASM-F2, STR8-N, other
++directory rows, configuration, and vectors remain byte-exact.
++
++`J2` booted `basic system operations/2`, version `b s o / 2 v0 . 9`.
++Short/full help, ROM identity, RAM deposit/readback, disassembly, and hardware
++vector inspection passed. The board was left at the BSO2 `-` prompt; serial
++was closed. Physical RESET/power-cycle persistence was not separately tested.
++
++See the [installation record](BSO2_B2_INSTALL_2026-09-16.md) for source
++provenance, image hashes, backup locations, and checks. The append-only
++[raw transcript](BSO2_B2_INSTALL_2026-09-16.jsonl) is 3,918,156 bytes, SHA-256
++`d07b2bae0afbf862532a01295610f0e654f17d4496b7a1b05bcde3de47f00a5e`.
+diff --git a/SRC/Makefile b/SRC/Makefile
+index c8c7d67..257cd92 100644
+--- a/SRC/Makefile
++++ b/SRC/Makefile
+@@ -732,6 +732,14 @@ asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(ASM_V1_FLASH
+ asm-terminal-check: $(ASM_TERMINAL_CHECK) ../DOC/GUIDES/ASM/SAMPLES/terminal-answerback-vt100-3000.a ../DOC/GUIDES/ASM/SAMPLES/vt102-exerciser-7000.a ../DOC/GUIDES/ASM/SAMPLES/vt525-exerciser-7000.a
+ 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_TERMINAL_CHECK)
+ 
++rterm-demo:
++	$(PYTHON) -B tools/build_rterm_demo.py
++
++rterm-demo-check: rterm-demo $(ASM_V1_FLASH_S19) $(HIMON_ROM_S19)
++	$(PYTHON) -B tools/check_rterm_demo.py
++
++.PHONY: rterm-demo rterm-demo-check
++
+ asm-error-check: $(ASM_ERROR_CHECK) tools/check_asm_errors.py $(ASM_V1_FLASH_S19) $(HIMON_ROM_S19)
+ 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_ERROR_CHECK) -Python "$(PYTHON)"
+ 

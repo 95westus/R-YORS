@@ -44,7 +44,7 @@ HIM_AP_BODY_LEN_LO      EQU             $7E39
 HIM_AP_BODY_LEN_HI      EQU             $7E3A
 
 HIM_AP_OP_PARSE         EQU             $00
-HIM_AP_OP_LOAD          EQU             $01
+HIM_AP_OP_LOAD          EQU             ASM_ABI_AP_OP_TAKEOVER
 
 FNV_HASH0               EQU             $B0
 FNV_HASH1               EQU             $B1
@@ -95,7 +95,8 @@ FLAG_DUMP               EQU             $04
 APMAN:                  BRA             APMAN_DISPATCH
                         DB              'A','M','0','1'
 
-APMAN_DISPATCH:         STZ             APMAN_STATUS
+APMAN_DISPATCH:         STZ             ASM_ABI_SESSION_RESUME
+                        STZ             APMAN_STATUS
                         STZ             APMAN_FAIL_PHASE
                         LDA             APMAN_MODE
                         CMP             #APMAN_MODE_AP
@@ -183,7 +184,7 @@ APMAN_AP_ADDRESS_ENTRY:
 
 APMAN_AP_FIND_NAME:     JSR             APMAN_FIND_NAMED
                         BCS             APMAN_AP_HAVE
-                        JMP             APMAN_NOT_FOUND
+                        RTS
 APMAN_AP_HAVE:          JSR             APMAN_SET_PACKAGE_FACTS
                         LDA             FLAGS
                         AND             #FLAG_DUMP
@@ -351,7 +352,7 @@ APMAN_APS_ADDRESS_VALID:
                         JMP             APMAN_BAD_PACKAGE
 APMAN_APS_DETAIL_NAME: JSR             APMAN_FIND_NAMED
                         BCS             APMAN_APS_DETAIL
-                        JMP             APMAN_NOT_FOUND
+                        RTS
 APMAN_APS_DETAIL:      JSR             APMAN_SET_PACKAGE_FACTS
                         JSR             APMAN_PRINT_CARRIER_DETAIL
                         JMP             APMAN_RETURN_OK
@@ -403,6 +404,10 @@ APMAN_INSTALL_BANK_OK:
                         LDA             APMAN_INSTALL_SRC_LO
                         STA             HIM_AP_SRC_LO
                         LDA             APMAN_INSTALL_SRC_HI
+                        CMP             #$20
+                        BCS             APMAN_INSTALL_SOURCE_STABLE
+                        JMP             APMAN_BAD_RANGE
+APMAN_INSTALL_SOURCE_STABLE:
                         STA             HIM_AP_SRC_HI
                         LDA             #HIM_AP_OP_PARSE
                         STA             HIM_AP_OP
@@ -413,11 +418,11 @@ APMAN_INSTALL_PACKAGE_OK:
                         LDA             HIM_AP_PKG_LEN_HI
                         CMP             #$10
                         BCC             APMAN_INSTALL_SIZE_OK
-                        BEQ             APMAN_INSTALL_SIZE_1000
-                        JMP             APMAN_BAD_RANGE
+                        BNE             APMAN_INSTALL_SIZE_BAD
 APMAN_INSTALL_SIZE_1000:
                         LDA             HIM_AP_PKG_LEN_LO
                         BEQ             APMAN_INSTALL_SIZE_OK
+APMAN_INSTALL_SIZE_BAD:
                         JMP             APMAN_BAD_RANGE
 APMAN_INSTALL_SIZE_OK: LDA             #$80
                         STA             SECTOR
@@ -433,14 +438,7 @@ APMAN_INSTALL_NEXT:    JSR             APMAN_NEXT_SECTOR
                         BCC             APMAN_INSTALL_SCAN
                         LDA             #APMAN_STATUS_NO_SPACE
                         JMP             APMAN_FAIL_A
-APMAN_INSTALL_FOUND:   LDA             BANK
-                        STA             APMAN_FOUND_BANK
-                        LDA             SECTOR
-                        STA             APMAN_FOUND_SECTOR_HI
-                        LDA             HIM_AP_PKG_LEN_LO
-                        STA             APMAN_FOUND_PKG_LEN_LO
-                        LDA             HIM_AP_PKG_LEN_HI
-                        STA             APMAN_FOUND_PKG_LEN_HI
+APMAN_INSTALL_FOUND:   JSR             APMAN_SET_PACKAGE_FACTS
                         JSR             APMAN_FILL_STAGE_FF
                         JSR             APMAN_COPY_INSTALL_PACKAGE
                         JSR             APMAN_COPY_WORKER
@@ -515,8 +513,7 @@ APMAN_FIND_NAME_UNIQUE:
                         BCC             APMAN_FIND_NAME_FAIL
                         JSR             APMAN_FIND_ENTRY_ROW
                         RTS
-APMAN_FIND_NAME_FAIL:  CLC
-                        RTS
+APMAN_FIND_NAME_FAIL:  JMP             APMAN_NOT_FOUND
 
 APMAN_STAGE_VALIDATE:  JSR             APMAN_STAGE_RAW
                         BCC             APMAN_STAGE_VALID_FAIL
@@ -855,17 +852,7 @@ APMAN_STATUS_NOT_ERASED:
                         BCC             APMAN_STATUS_APS_HEADER
                         JSR             APMAN_FIND_ENTRY_ROW
                         BCC             APMAN_STATUS_UNMANAGED
-                        LDX             #<MSG_APC
-                        LDY             #>MSG_APC
-                        JSR             APMAN_PUTS
-                        JSR             APMAN_PRINT_ENTRY_NAME
-                        LDX             #<MSG_LEN
-                        LDY             #>MSG_LEN
-                        JSR             APMAN_PUTS
-                        LDA             HIM_AP_PKG_LEN_HI
-                        JSR             APMAN_HEX
-                        LDA             HIM_AP_PKG_LEN_LO
-                        JSR             APMAN_HEX
+                        JSR             APMAN_PRINT_CARRIER_SUMMARY
                         JMP             APMAN_CRLF
 APMAN_STATUS_APS_HEADER:
                         JSR             APMAN_VALIDATE_APS_HEADER
@@ -951,6 +938,18 @@ APMAN_PRINT_CARRIER_DETAIL_BODY:
                         JSR             APMAN_PRINT_LOCATION
                         LDA             #' '
                         JSR             APMAN_PUTC
+                        JSR             APMAN_PRINT_CARRIER_SUMMARY
+                        LDX             #<MSG_AT
+                        LDY             #>MSG_AT
+                        JSR             APMAN_PUTS
+                        LDA             STAGE_BASE+$0A
+                        JSR             APMAN_HEX
+                        LDA             STAGE_BASE+$09
+                        JSR             APMAN_HEX
+                        JMP             APMAN_CRLF
+
+; Shared APS/AP D heading. ROW identifies the validated entry export.
+APMAN_PRINT_CARRIER_SUMMARY:
                         LDX             #<MSG_APC
                         LDY             #>MSG_APC
                         JSR             APMAN_PUTS
@@ -962,14 +961,7 @@ APMAN_PRINT_CARRIER_DETAIL_BODY:
                         JSR             APMAN_HEX
                         LDA             HIM_AP_PKG_LEN_LO
                         JSR             APMAN_HEX
-                        LDX             #<MSG_AT
-                        LDY             #>MSG_AT
-                        JSR             APMAN_PUTS
-                        LDA             STAGE_BASE+$0A
-                        JSR             APMAN_HEX
-                        LDA             STAGE_BASE+$09
-                        JSR             APMAN_HEX
-                        JMP             APMAN_CRLF
+                        RTS
 
 ; Print the five validated AP-v2 section boundaries as staged RAM addresses,
 ; then dump only the first $40 envelope bytes. The staged sector is immutable

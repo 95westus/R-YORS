@@ -5,6 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'read_himon_source.ps1')
 
 function Fail([string]$Message) {
     throw "ASM compact DC contract: $Message"
@@ -189,7 +190,7 @@ if ($upperReaderInit.Value -match 'LDA\s+ASM_RJ_READ_UPPER_HI|BNE\s+ASM_RJOIN_IN
 if (-not (Test-Path -LiteralPath $HimonSourcePath)) {
     Fail "HIMON source not found: $HimonSourcePath"
 }
-$himon = [System.IO.File]::ReadAllText((Resolve-Path -LiteralPath $HimonSourcePath))
+$himon = (Read-HimonSource -Path $HimonSourcePath)
 foreach ($required in @(
     'HIM_READ_LINE_ECHO:',
     'LDA             #$81',

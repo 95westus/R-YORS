@@ -1,0 +1,6 @@
+[
+  "onboard source/package exactly matches independent expected AP bytes",
+  "ASM INSTALL writes B2:9 through carried worker and returns AC",
+  "INSTALL returns fresh ASM at 2000 with zero symbol/fixup counts",
+  "INSTALL preserves source package and all Bank 3 bytes"
+]

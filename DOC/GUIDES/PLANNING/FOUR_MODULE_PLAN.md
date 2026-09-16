@@ -1,7 +1,27 @@
 # STR8-N / AP / HIMON / ASM Modularization Plan
 
-Status: proposed implementation sequence, 2026-09-06. No implementation or new
-board acceptance is claimed by this plan.
+Status: sequencing plan, refreshed 2026-09-16. Baseline, contract correction,
+source extraction, explicit HIMON/AP boundaries, and the first measured APMAN
+reduction have dated evidence below. Further optimizations and optional
+placement variants remain proposed.
+
+The [2026-09-16 baseline](../LOGS/HIMON_AP_BASELINE_2026-09-16.md) supplies
+current build/size evidence and a read-only Bank-3 identity check. The
+[Step-2 audit](../AP/HIMON_AP_INTERFACE_RAM_AUDIT_2026-09-16.md) now records
+interfaces and RAM lifetimes. The subsequent [functional correction and
+Step-3 extraction](../AP/HIMON_AP_CONTRACT_CHANGE_2026-09-16.md) resolve the identified
+manager contracts, add explicit takeover, and extract AP at unchanged physical
+addresses. The subsequent [Bank-2 board cycle](../LOGS/HIMON_AP_BANK2_2026-09-16.md)
+provisions the persistent manager and proves the real ASM install/run path.
+The first [Phase-2 boundary slice](../AP/HIMON_AP_BOUNDARY_2026-09-16.md) gives
+HIMON ownership of the typed-import catalog conversion at its existing entry
+and assembly position. Other monitor coupling remains explicitly documented.
+The following [manager presentation slice](../AP/HIMON_AP_MANAGER_BOUNDARY_2026-09-16.md)
+gives HIMON ownership of command shadowing and diagnostic formatting while
+AP retains validation, status, discovery/loading, and staging decisions.
+The first [Phase-3 size slice](../AP/APMAN_SIZE_REDUCTION_2026-09-16.md)
+shares APMAN package-card updates and carrier formatting, recovering 41
+overlay bytes with unchanged commands and resident images.
 
 The goal is four clear owners, a small resident system, and measured flash
 costs. Start by separating source and interfaces while preserving the current
@@ -27,16 +47,17 @@ ASM continues to own relocation of its live assembly session. AP owns relocation
 of a serialized package during loading. Similar arithmetic does not establish
 that those routines can safely share an implementation.
 
-The first milestone provides source ownership and documented calls with no
-required ROM/RAM growth. The next milestone seeks net byte savings. Neither
+The extraction milestone provides source ownership with no ROM/RAM growth
+beyond the separate functional correction. The next milestone seeks net byte savings. Neither
 milestone promises a particular reduction before the code audit.
 
 ## 2. Evidence and starting budget
 
-Reference points examined for this plan:
+Reference points for the refreshed baseline:
 
-- [Current capabilities](../CAPABILITIES.md): accepted STR8-N 1.32,
-  HIMON `00.0906(1935)`, ASM-F2 `00.0905(2321)`.
+- STR8-N 1.34; frozen host HIMON and ASM-F2 `00.0915(2324)`.
+  The current workbench pair is installed on COM4 with the same frozen stamp;
+  dated hashes distinguish it from previously published release packages.
 - [Product boundary](../STR8/PRODUCT_BOUNDARIES.md) and
   [exact STR8-N lock](../../../SRC/INTEGRATION/str8n.lock.json).
 - Existing linked maps in `SRC/BUILD/s19/himon-rom-c000.map` and
@@ -45,23 +66,30 @@ Reference points examined for this plan:
   [APMAN dissection](../ASM/APMAN_APC_DISSECTION.md), and
   [memory map](../MEMORY/MEMORY_MAP.md).
 
-These are starting observations, not a fresh build or flash readback. Phase 0
-must associate measurements with exact source and artifact hashes. The memory
-map's combined-image section still contains ASM/STR8-N figures from an older
-image; do not use those figures as the current size baseline. The APMAN
-dissection likewise identifies the older board image behind its measurements.
+The dated baseline associates these measurements with exact source and
+artifact hashes. The [generated ownership ledger](../../GENERATED/HIMON_AP_BASELINE.md)
+reconciles every emitted byte and counts shared routines once. The memory map
+already reflects the September 15 reductions. The APMAN dissection remains
+historical evidence for its identified image, not the current size baseline.
 
 | Region/component | Observed extent or size | Available space / meaning |
 | --- | --- | --- |
-| ASM-F2, `$8000-$BFFF` | `_END_DATA=$BD95` exclusive; occupied span 15,765 bytes | 619 bytes to `$C000` |
-| ASM build reserve | Makefile requires at least `$0200` bytes to `$C000` | Only 107 bytes of additional growth before the existing guard fails |
-| HIMON including resident AP, `$C000-$EFFF` | `_END_DATA=$EE72` exclusive; occupied span 11,890 bytes | 398 bytes to `$F000` |
-| STR8-N, `$F000-$FFFF` | Lock pins resident end `$FD27` and 40-byte margin | Whole 4K sector remains recovery-owned; not an AP expansion area |
-| Existing APMAN package | `$0B40` = 2,880 bytes; BODY `$0B12` = 2,834 bytes | One full 4K carrier sector; RAM BODY `$7000-$7B11` in the accepted dissection |
+| ASM-F2, `$8000-$BFFF` | `_END_DATA=$BB83` exclusive; occupied span 15,235 bytes | 1,149 bytes to `$C000` |
+| ASM build reserve | Makefile requires at least `$0200` bytes to `$C000` | 637 bytes of additional growth before the existing guard fails |
+| HIMON including resident AP, `$C000-$EFFF` | `_END_DATA=$EE5C` exclusive; occupied span 11,868 bytes | 420 bytes to `$F000` |
+| STR8-N, `$F000-$FFFF` | Lock pins resident end `$FCF1` inclusive and 134-byte margin | Whole 4K sector remains recovery-owned; not an AP expansion area |
+| Current APMAN package | `$0C05` = 3,077 bytes; BODY `$0BD7` = 3,031 bytes | One full 4K carrier sector; RAM BODY `$7000-$7BD6`, 41 bytes of overlay headroom |
 | R-YORS distribution payload | Dense `$8000-$EFFF`, 28K | Padding means this file span need not shrink when code shrinks |
 
-ASM and HIMON have 1,017 bytes of combined headroom, but it is split across
+ASM and HIMON have 1,569 bytes of combined headroom, but it is split across
 their link regions. Do not treat it as one freely allocatable area.
+
+Bank 2 is available for AP tooling: the operator identifies its BSO2 install
+as temporary STR8-N multi-image validation and permits erasure/reuse. Step 1
+does not erase it or install carriers; exact placement is verified during the
+later board setup. That setup now places APMAN at B2:$8000 and the retained
+APTEST smoke fixture at B2:$9000; sectors A-F are erased. D2 is `A2 APC02`,
+and Bank 2 is storage rather than a bootable guest image.
 
 Two important savings opportunities are already partly realized:
 
@@ -98,7 +126,7 @@ Preserve these contracts in the first release:
   behavior, command syntax, AP-v2 serialized bytes, and APMAN `AM01` identity.
 - HIMON entry `$C000`, warm identity marker, resident FNV records, public
   service-vector initialization, and current cold/warm return behavior.
-- Exact STR8-N 1.32 lock and generated public contract. `$F006` is the current
+- Exact STR8-N 1.34 lock and generated public contract. `$F006` is the current
   version/capability query; old source comments about an AP-link doorway are
   historical, not authority for a new call.
 
@@ -130,11 +158,12 @@ any code. At minimum cover:
 | `$0300` staging routine | Resident AP copies its bank-read code here; establish lifetime relative to other workers |
 | `$0A00-$19FF` | Banked sector staging, overlapping other session workspaces |
 | `$1A00-$1AFF` | APMAN command shadow |
-| `$2000-$6FFF` | Managed application destination envelope; direct AP uses narrower rules |
-| `$7000-$7B11` | Accepted APMAN overlay, overwriting HIMON's `$7A00` command buffer |
+| `$2000-$6FFF` | Explicit takeover destination; ordinary LOAD remains `$2000-$4FFF` |
+| `$7000-$7BFF` | Current APMAN overlay, overwriting HIMON's `$7A00` command buffer |
 | `$7C60-$7C73` | APMAN request/result card |
 | `$7DC0-$7DC7` | Locked HIMON AP-link workspace |
 | `$7E2D-$7E40` | Published AP service pointer and card |
+| `$7E6A` | Durable ASM SEAL-resume flag, cleared on reset/manager/takeover |
 
 This table is a hazard checklist, not permission to use gaps. Check all other
 allocations in the authoritative map. Preserve the command shadow before
@@ -280,7 +309,7 @@ requirement. Evaluate one option at a time:
 
 Omitting ASM preserves runtime capability but changes the product feature set.
 Moving it into a package is a separate and substantially harder project: the
-current roughly 15.4 KiB resident span exceeds the simple 4K carrier limit,
+current roughly 14.9 KiB resident span exceeds the simple 4K carrier limit,
 and its RAM placement would collide with existing source/session/overlay
 allocations unless redesigned. Do not promise drop-in banked ASM.
 

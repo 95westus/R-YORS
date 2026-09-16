@@ -1,0 +1,11 @@
+[
+  "persistent manager bootstrap and complete inventory",
+  "exact installed manager identity/length/load address",
+  "AP D B2 APMAN validates and inspects stored manager",
+  "AP D B2 8000 validates and inspects stored manager",
+  "AP B2 APMAN 2000 self-execution guard",
+  "AP L B2 APMAN 5000 self-execution guard",
+  "persistent manager loads linked child at 5000 without running",
+  "persistent manager links/runs BANKAUDIT at 5000 and returns",
+  "missing child returns one D1 diagnostic/status"
+]

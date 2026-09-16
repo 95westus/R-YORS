@@ -1,0 +1,95 @@
+{
+  "utc": "2026-09-16T15:16:42.862925+00:00",
+  "revision": "2fb6a9fe1f0ac81491dfa7e448e7671755fd63b3",
+  "status": "M DOC/GUIDES/AP/AP_OIL_GUIDE.md\n M DOC/GUIDES/ASM/ASM_ABI_V1.md\n M DOC/GUIDES/ASM/SAMPLES/README.md\n M DOC/GUIDES/ASM/TEST_PLAN.md\n M DOC/GUIDES/LOGS/HARDWARE_TEST_LOG.md\n M DOC/GUIDES/MEMORY/MEMORY_MAP.md\n M DOC/GUIDES/PLANNING/FOUR_MODULE_PLAN.md\n M DOC/GUIDES/PLANNING/TODO.md\n M SRC/Makefile\n?? DOC/GENERATED/HIMON_AP_BASELINE.md\n?? DOC/GUIDES/AP/HIMON_AP_INTERFACE_RAM_AUDIT_2026-09-16.md\n?? DOC/GUIDES/ASM/RTERM_ADVANCED_DEMO.md\n?? DOC/GUIDES/ASM/SAMPLES/rterm-advanced-7000.a\n?? DOC/GUIDES/LOGS/BSO2_B2_INSTALL_2026-09-15.jsonl\n?? DOC/GUIDES/LOGS/BSO2_B2_INSTALL_2026-09-16.jsonl\n?? DOC/GUIDES/LOGS/BSO2_B2_INSTALL_2026-09-16.md\n?? DOC/GUIDES/LOGS/HIMON_AP_AUDIT_2026-09-16.json\n?? DOC/GUIDES/LOGS/HIMON_AP_BASELINE_2026-09-16.md\n?? DOC/GUIDES/LOGS/HIMON_AP_BASELINE_2026-09-16/\n?? SRC/APPS/rterm-advanced-7000.asm\n?? SRC/tools/audit_himon_ap_contracts.py\n?? SRC/tools/build_rterm_demo.py\n?? SRC/tools/check_rterm_demo.py\n?? SRC/tools/report_himon_ap_baseline.py",
+  "str8_status": "",
+  "str8_revision": "846032d48e4345e389dfd6b0b5d40c1e70e10129",
+  "python": "3.13.14 (tags/v3.13.14:fd17997, Jun 10 2026, 13:03:48) [MSC v.1944 64 bit (AMD64)]",
+  "python_executable": "C:\\Users\\Walter\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
+  "platform": "win32",
+  "stamp": "0915(2324)",
+  "tools": {
+    "make": {
+      "path": "C:\\Program Files (x86)\\GnuWin32\\bin\\make.EXE",
+      "sha256": "19e41b7f9b99773b5c6f2b93426cc525f6b63c461cc034a17f6b6263d8d54557"
+    },
+    "wdc02as": {
+      "path": "C:\\Program Files\\WDC\\Tools\\BIN\\wdc02as.EXE",
+      "sha256": "e56dc6b3143a5d1afe289219bf6fdb2df4ad358aa3e3821c9b252eae81a724a2"
+    },
+    "wdcln": {
+      "path": "C:\\Program Files\\WDC\\Tools\\BIN\\wdcln.EXE",
+      "sha256": "4c293614ba8d0657f83d0240a921068b2edcf1a2e3abc1f54032256b5369ff41"
+    },
+    "wdclib": {
+      "path": "C:\\Program Files\\WDC\\Tools\\BIN\\wdclib.EXE",
+      "sha256": "7b52e1a051c934e4063bb9887e716c504b146f15e921808942e2ed0279c848f3"
+    },
+    "powershell": {
+      "path": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.EXE",
+      "sha256": "8bb6fa8c283b4d92120b1ef249a9b311b0f804d4cabbe9981159976c8be76a5e"
+    },
+    "git": {
+      "path": "C:\\Program Files\\Git\\cmd\\git.EXE",
+      "sha256": "da240fe9bc24895b3e04150a4990b8a6ff329ecabcd8f19684c2cc310da5ef3f"
+    }
+  },
+  "packages": {
+    "pyserial": "3.5",
+    "py65": "not in default site-packages"
+  },
+  "make_version": "GNU Make 3.81\r\nCopyright (C) 2006  Free Software Foundation, Inc.\r\nThis is free software; see the source for copying conditions.\r\nThere is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A\r\nPARTICULAR PURPOSE.\r\n\r\nThis program built for i386-pc-mingw32",
+  "lock": {
+    "schema": 1,
+    "project": "STR8-N",
+    "version": "1.34",
+    "repository": "https://github.com/95westus/STR8-N.git",
+    "manifestSchema": 3,
+    "artifacts": {
+      "topSectorSha256": "9538D97854BA9D5D76143CBA0FEDB3B2E7CE18F977CE89557406E63404026CB7",
+      "publicContractSha256": "947F8D096EBE42CE07C072E179B618115341E390D0975131B6204D863C95E4DD"
+    },
+    "layout": {
+      "residentStart": "F000",
+      "residentEnd": "FCF1",
+      "unusedMargin": 134,
+      "directoryStart": "FFB0",
+      "directoryEnd": "FFEF",
+      "configurationStart": "FFF0",
+      "configurationEnd": "FFF9",
+      "workSectorAddress": "FFF0",
+      "workSector": "B1:E",
+      "workSectorPacked": "1E",
+      "topBackupSectorAddress": "FFF1",
+      "topBackupSector": "B1:F",
+      "topBackupSectorPacked": "1F",
+      "reservedConfigurationStart": "FFF2",
+      "reservedConfigurationEnd": "FFF9",
+      "vectorsStart": "FFFA",
+      "vectorsEnd": "FFFF"
+    },
+    "abi": {
+      "ramVersion": 18,
+      "himonApLinkStart": "7DC0",
+      "himonApLinkEnd": "7DC7",
+      "str8StateStart": "7DE7",
+      "str8StateEnd": "7DFF",
+      "softResetRecordStart": "7DE7",
+      "softResetRecordEnd": "7DE8",
+      "bankJumpSig0": "7DFD",
+      "bankJumpSig1": "7DFE",
+      "bankLastJump": "7DFF",
+      "bankJumpSignature": "BJ",
+      "bankCount": 4,
+      "bankNone": 255,
+      "bankSelectService": "F010",
+      "selectorEntry": "0203",
+      "selectorEnd": "0226",
+      "recordService": "F009",
+      "recordVersion": 2,
+      "recordCapabilities": 3,
+      "residentVersion": 1,
+      "residentCapabilities": 63
+    }
+  }
+}

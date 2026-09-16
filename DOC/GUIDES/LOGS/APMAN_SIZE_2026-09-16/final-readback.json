@@ -1,0 +1,27 @@
+{
+  "serial_log": "C:\\SRC\\R-YORS\\LOCAL\\apman-size-20260916\\serial-com4.jsonl",
+  "helper_sha256": "f15a35a26b88bc2d4a5eab83ed27f13a14007ec4fe25ac456631cf544efb7952",
+  "banks": {
+    "0": {
+      "bytes": 32768,
+      "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8",
+      "reset": "F818"
+    },
+    "1": {
+      "bytes": 32768,
+      "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211",
+      "reset": "F000"
+    },
+    "2": {
+      "bytes": 32768,
+      "sha256": "0b67c0fc66568f8903927d4014069a306a8ea8838fc557991813828bbe01a13c",
+      "reset": "FFFF"
+    },
+    "3": {
+      "bytes": 32768,
+      "sha256": "39718b56169da58f52443e537efff0f4c59a7c0822581c9138d1dd36109bd614",
+      "reset": "F000"
+    }
+  },
+  "flash_sha256": "81bc7400407662a66b65deac09ead6c7c768fdbda48e17d21f130e43517e7642"
+}

@@ -1,0 +1,9 @@
+{
+  "passive": "",
+  "query": "?",
+  "response": "?\r\n#? D M R X G AP APS L B N STR8\r\n>",
+  "port": "COM4",
+  "baud": 115200,
+  "identity": "HIMON command prompt",
+  "dump": "bank3-dump.txt"
+}

@@ -1,0 +1,10 @@
+[
+  "APTEST exact BODY at 2000; entry +2; return to HIMON",
+  "APTEST exact BODY at 5000; entry +2; return to HIMON",
+  "APTEST exact BODY at 6FFA; entry +2; return to HIMON",
+  "resident MANAGER + persistent child RTS returns A=5A/C=1 to RAM caller",
+  "BODY crossing 7000 rejected before copy; redzone preserved",
+  "ASM stale resume refused after persistent takeover",
+  "persistent AP after STR8 software W entry",
+  "persistent AP after STR8 software C entry"
+]

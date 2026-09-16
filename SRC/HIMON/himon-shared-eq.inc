@@ -128,6 +128,8 @@ HIM_AP_OP_LOAD             EQU             ASM_ABI_AP_OP_LOAD
 HIM_AP_OP_SUGGEST          EQU             ASM_ABI_AP_OP_SUGGEST
 HIM_AP_OP_LINK             EQU             ASM_ABI_AP_OP_LINK
 HIM_AP_OP_MANAGER          EQU             ASM_ABI_AP_OP_MANAGER
+HIM_AP_OP_TAKEOVER         EQU             ASM_ABI_AP_OP_TAKEOVER
+HIM_ASM_SESSION_RESUME     EQU             ASM_ABI_SESSION_RESUME
 HIM_AP_TMP_LO              EQU             $7E41
 HIM_AP_TMP_HI              EQU             $7E42
 HIM_AP_TMP2_LO             EQU             $7E43
@@ -152,7 +154,8 @@ HIM_SVC_VECTOR_COUNT       EQU             ASM_ABI_SVC_VECTOR_COUNT
 ; - $7E2D-$7E40 optional AP package service vector/request/result cells
 ; - $7E41-$7E45 AP package service scratch
 ; - $7E46-$7E65 debugger/assembler workspace
-; - $7E66-$7E75 hash record/exec metadata
+; - $7E66-$7E69 hash metadata; $7E6A durable ASM SEAL-resume flag
+; - $7E6B-$7E6D unused; $7E6E-$7E75 exec metadata
 ; - $7E76-$7E94 command/parser/keytest workspace; $7E78-$7E83 is reused by
 ;                 persistent loader state while CMD_L owns the foreground
 ; - $7E95-$7EDD loader workspace and range table

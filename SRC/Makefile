@@ -80,7 +80,10 @@ RYORS_FLASH_S19_GEN := tools/build_ryors_28k_s19.ps1
 
 HIM_SUBDIR := $(HIMON_DIR)
 HIMON_SRC := $(HIM_SUBDIR)/himon.asm
-HIMON_INC := $(wildcard $(HIM_SUBDIR)/*.inc)
+# Resident AP and its HIMON adapters remain linked in-place into both variants.
+# HIMON_INC's wildcard also tracks the nested resolver and manager adapters.
+HIMON_AP_INC := AP/ap-contract.inc AP/ap-manager.inc AP/ap-core.inc AP/ap-link.inc AP/ap-space.inc
+HIMON_INC := $(wildcard $(HIM_SUBDIR)/*.inc) $(HIMON_AP_INC)
 HIMON_IMAGE_EQ := $(HIM_SUBDIR)/himon-image-eq.inc
 HIMON_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon-c000.obj
 HIMON_ROM_OBJ := $(OBJ_DIR)/$(HIM_SUBDIR)/himon-rom-c000.obj
@@ -723,8 +726,18 @@ board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(
 release-files: $(PUBLISH_RELEASE_TOOL) tools/package_component_releases.py tools/verify_component_release.py
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
-asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show microchess asm-ap-v2-check asm-error-check asm-size-check himon-size-check
+asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show microchess asm-ap-v2-check asm-error-check asm-size-check himon-size-check himon-ap-contract-check
 	@echo "ASM v1 smoke checks passed."
+
+.PHONY: himon-ap-contract-check himon-ap-boundary-check apman-size-check
+apman-size-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN) tools/check_apman_size.py
+	$(PYTHON) -B tools/check_apman_size.py --output "$(BUILD_DIR)/tmp/apman-size.json"
+
+himon-ap-boundary-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
+	$(PYTHON) -B tools/check_himon_ap_boundary.py --output "$(BUILD_DIR)/tmp/himon-ap-boundary.json"
+
+himon-ap-contract-check: himon-ap-boundary-check apman-size-check $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
+	$(PYTHON) -B tools/check_himon_ap_contracts.py --output "$(BUILD_DIR)/tmp/himon-ap-contracts.json"
 
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(ASM_V1_FLASH_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_ABI_CHECK) -PackagePath "$(ASM_SESSION_REPORT_AP_BIN)"
@@ -1500,12 +1513,12 @@ $(ASMTEST_3000_WDC_S19): $(ASMTEST_3000_WDC_OBJ) Makefile
 	@echo [ps] set S9 start $$6800 in $(ASMTEST_3000_WDC_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(ASMTEST_3000_WDC_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S903680094'; Set-Content -Path $$p -Value $$lines"
 
-$(GENERATED_DOCS): $(CALL_ORDER_SRC) $(DOCS_GEN)
+$(GENERATED_DOCS): $(CALL_ORDER_SRC) $(HIMON_INC) $(DOCS_GEN) tools/read_wdc_source.ps1
 	powershell -NoProfile -ExecutionPolicy Bypass -Command "New-Item -ItemType Directory -Force -Path '$(DOC_GENERATED_DIR)' | Out-Null"
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(DOCS_GEN) -Src . -OutDir $(DOC_GENERATED_DIR)
 
-$(HIMON_EDGE_DUMP): HIMON/himon.asm $(EDGE_DOCS_GEN)
-	powershell -NoProfile -ExecutionPolicy Bypass -File $(EDGE_DOCS_GEN) -SourcePath "HIMON/himon.asm" -OutPath "$@" -Title "HIMON Edge Dump" -DisplaySource "HIMON/himon.asm" -ReadableMap "[HIMON_MAP.md](../GUIDES/HIMON/HIMON_MAP.md)"
+$(HIMON_EDGE_DUMP): HIMON/himon.asm $(HIMON_INC) $(EDGE_DOCS_GEN) tools/read_himon_source.ps1 tools/read_wdc_source.ps1
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(EDGE_DOCS_GEN) -SourcePath "HIMON/himon.asm" -OutPath "$@" -Title "HIMON Edge Dump" -DisplaySource "HIMON/himon.asm + AP/monitor-adapter includes" -HimonIncludes -ReadableMap "[HIMON_MAP.md](../GUIDES/HIMON/HIMON_MAP.md)"
 
 artifacts:
 	@echo [ps] sync sidecar artifacts

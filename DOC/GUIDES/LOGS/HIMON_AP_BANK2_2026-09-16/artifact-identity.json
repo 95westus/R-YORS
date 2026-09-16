@@ -1,0 +1,87 @@
+{
+  "result": "PASS",
+  "baseline": "LOCAL\\himon-ap-change-20260916\\functional",
+  "candidate": "SRC\\BUILD",
+  "exclusions": [],
+  "identical_artifacts": [
+    {
+      "path": "s19/himon-c000.s19",
+      "bytes": 32652,
+      "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e"
+    },
+    {
+      "path": "s19/himon-c000.map",
+      "bytes": 47118,
+      "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+      "identical_symbols": 1576
+    },
+    {
+      "path": "s19/himon-rom-c000.s19",
+      "bytes": 32652,
+      "sha256": "290c1b6ae6940840aa36ece030bc6aa09ea7cc1b1ab56bb12e09c4e58a77377e"
+    },
+    {
+      "path": "s19/himon-rom-c000.map",
+      "bytes": 47118,
+      "sha256": "fb3154f95dc2e33d25db33d6cdbbd696530de8df40c9f2d59afcd9761d150a49",
+      "identical_symbols": 1576
+    },
+    {
+      "path": "bin/himon-rom-c000.bin",
+      "bytes": 32768,
+      "sha256": "1ac1946839e14a251a055939f9b35f5dd6b2432c1fd4ef12f5ef978cab3e102c"
+    },
+    {
+      "path": "s19/asm-v1-flash-8000.s19",
+      "bytes": 41918,
+      "sha256": "07d68a8306f4f38adec04946a3bc1e3701340722e5cc9d55ec9c74c711a07ec5"
+    },
+    {
+      "path": "s19/asm-v1-flash-8000.map",
+      "bytes": 66253,
+      "sha256": "d82707ea8cafd3eb02574fec818677fb7948a526a97c2a4cdfd2a09cec7fc88e",
+      "identical_symbols": 2007
+    },
+    {
+      "path": "s19/apman-7000.s19",
+      "bytes": 8460,
+      "sha256": "7c15c2ee91989d095f0e024dea2b1eef571718508433ca73b8d891d4f7e21e33"
+    },
+    {
+      "path": "s19/apman-7000.map",
+      "bytes": 11948,
+      "sha256": "8378ca8e36ac0c89d3c7bb65c02b0392e6799f8f5c185cff4d5c49e1d51fe03a",
+      "identical_symbols": 406
+    },
+    {
+      "path": "bin/apman-v1.ap",
+      "bytes": 3118,
+      "sha256": "4bf5ad6432f379acca19adc2d352fcacf207a1fcce5bd842beb219235aab67ef"
+    },
+    {
+      "path": "bin/apman-v1-bank2-8000.bin",
+      "bytes": 4096,
+      "sha256": "cb35dca62db5523b536dfd42ff30ab618c5e9f3a241b6a8f38319258f794c5f9"
+    },
+    {
+      "path": "s19/apman-v1-bank2-8000.s19",
+      "bytes": 9740,
+      "sha256": "506c65862ed4193f946ca33ff0512e9b1637263338d0744dc857aab07d98608d"
+    },
+    {
+      "path": "s19/ryors-v1.2-asm-bank3-8-b.s19",
+      "bytes": 38924,
+      "sha256": "79af47c34c28ebdfcb582f15b9fbec2e21db4e158c3a91a0870203ef28a27414"
+    },
+    {
+      "path": "s19/ryors-v1.2-himon-bank3-c-e.s19",
+      "bytes": 29196,
+      "sha256": "1a0cdd7aa81663f2198f91ee6e304b17685cf00674eef4d1a5abb4074ccc6648"
+    },
+    {
+      "path": "s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
+      "bytes": 68108,
+      "sha256": "1df35459031737042fc5a1cc172f6e9e16d0ec664376910ac9d0dc246ecc50e9"
+    }
+  ]
+}

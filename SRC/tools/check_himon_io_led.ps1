@@ -7,6 +7,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'read_himon_source.ps1')
 
 function Fail-Check([string]$Message) {
     throw "HIMON I/O LED check: $Message"
@@ -18,7 +19,7 @@ foreach ($path in @($HimonSourcePath, $LedContractPath, $HimonS19Path, $HimonMap
     }
 }
 
-$source = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $HimonSourcePath))
+$source = (Read-HimonSource -Path $HimonSourcePath)
 $contract = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $LedContractPath))
 
 function Read-Equ([string]$Name) {

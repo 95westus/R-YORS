@@ -1,0 +1,77 @@
+HIM_AP_STATUS_OK         EQU             ASM_ABI_STATUS_OK
+HIM_AP_STATUS_BAD_RANGE  EQU             ASM_ABI_STATUS_BAD_RANGE
+HIM_AP_STATUS_BAD_LINE   EQU             ASM_ABI_STATUS_BAD_LINE
+HIM_AP_STATUS_BAD_FIX    EQU             ASM_ABI_STATUS_BAD_FIX
+HIM_AP_HDR_BYTES         EQU             ASM_ABI_AP_HEADER_BYTES
+HIM_AP_VERSION           EQU             $02
+HIM_AP_SIG0              EQU             ASM_ABI_AP_SIG0_VALUE
+HIM_AP_SIG1              EQU             ASM_ABI_AP_SIG1_VALUE
+HIM_AP_TAG_SEAL          EQU             'S'
+HIM_AP_TAG_RELOC         EQU             'R'
+HIM_AP_TAG_EXPORT        EQU             'E'
+HIM_AP_TAG_IMPORT        EQU             'I'
+HIM_AP_TAG_BODY          EQU             'B'
+HIM_AP_OFF_SIG0          EQU             $00
+HIM_AP_OFF_SIG1          EQU             $01
+HIM_AP_OFF_VER           EQU             $02
+HIM_AP_OFF_TOTAL         EQU             $03
+HIM_AP_SEAL_REC_BYTES    EQU             $0B
+HIM_AP_SEAL_OFF_FLAGS    EQU             $00
+HIM_AP_SEAL_OFF_BASE     EQU             $01
+HIM_AP_SEAL_OFF_END      EQU             $03
+HIM_AP_SEAL_OFF_LEN      EQU             $05
+HIM_AP_SEAL_OFF_FNV      EQU             $07
+HIM_AP_IMPORT_REC_OFF_COUNT EQU          $00
+HIM_AP_RELOC_MAX         EQU             $40
+HIM_AP_PUBLIC_MAX        EQU             $40
+HIM_AP_KIND_EXEC         EQU             ASM_ABI_AP_KIND_EXEC
+HIM_AP_KIND_DATA         EQU             ASM_ABI_AP_KIND_DATA
+HIM_AP_KIND_MASK         EQU             $03
+HIM_AP_FLAG_ENTRY        EQU             ASM_ABI_AP_FLAG_ENTRY
+HIM_AP_RELOC_ABS16_INTERNAL EQU          ASM_ABI_AP_RELOC_ABS16
+HIM_AP_RELOC_LO8_INTERNAL EQU            ASM_ABI_AP_RELOC_LO8
+HIM_AP_RELOC_HI8_INTERNAL EQU            ASM_ABI_AP_RELOC_HI8
+HIM_AP_RELOC_ABS16_IMPORT EQU            ASM_ABI_AP_RELOC_ABS16_IMP
+HIM_AP_RELOC_LO8_IMPORT EQU              ASM_ABI_AP_RELOC_LO8_IMP
+HIM_AP_RELOC_HI8_IMPORT EQU              ASM_ABI_AP_RELOC_HI8_IMP
+HIM_AP_RAM_BASE_HI      EQU             $20
+HIM_AP_SOURCE_LIMIT_HI  EQU             $50
+HIM_AP_LOAD_LIMIT_HI    EQU             $50
+HIM_AP_TAKEOVER_LIMIT_HI EQU            $70
+HIM_AP_TOOL_BASE_HI     EQU             $70
+HIM_AP_TOOL_LIMIT_HI    EQU             $7C
+HIM_AP_FLASH_BASE_HI    EQU             $80
+HIM_AP_FLASH_LIMIT_HI   EQU             $FF
+
+; AP import-link scratch. The zero-page cells are shared service scratch; the
+; persistent cells live in the reserved RJOIN/link-debug area because FNV and
+; the HIMON import resolver may overwrite shared scratch while resolving a row.
+HIM_AP_LINK_ADDR_LO     EQU             $CF
+HIM_AP_LINK_ADDR_HI     EQU             $D0
+HIM_AP_LINK_TMP_LO      EQU             $D1
+HIM_AP_LINK_TMP_HI      EQU             $D2
+HIM_AP_LINK_IMP_PTR_LO  EQU             $D3
+HIM_AP_LINK_IMP_PTR_HI  EQU             $D4
+HIM_AP_LINK_NAME_INDEX  EQU             $D5
+HIM_AP_LINK_CODE0       EQU             $E6
+HIM_AP_LINK_CODE1       EQU             $E7
+HIM_AP_LINK_CODE2       EQU             $E8
+HIM_AP_LINK_VALUE_LO    EQU             $E9
+HIM_AP_LINK_VALUE_HI    EQU             $EA
+HIM_AP_LINK_PATCH_KIND  EQU             HIM_AP_LINK_WORK_BASE+$00
+HIM_AP_LINK_PATCH_LO    EQU             HIM_AP_LINK_WORK_BASE+$01
+HIM_AP_LINK_PATCH_HI    EQU             HIM_AP_LINK_WORK_BASE+$02
+HIM_AP_LINK_RES_LO      EQU             HIM_AP_LINK_WORK_BASE+$03
+HIM_AP_LINK_RES_HI      EQU             HIM_AP_LINK_WORK_BASE+$04
+HIM_AP_LINK_INDEX       EQU             HIM_AP_LINK_WORK_BASE+$05
+HIM_AP_LINK_RELOC_COUNT EQU             HIM_AP_LINK_WORK_BASE+$06
+HIM_AP_LINK_IMPORT_COUNT EQU            HIM_AP_LINK_WORK_BASE+$07
+
+AP_STAGE_BUF_HI          EQU             $0A
+AP_STAGE_BUF_END_HI      EQU             $1A
+HIM_AP_BANK_STAGE_RAM    EQU             $0300
+HIM_AP_STAGE_SRC_LO      EQU             $D1
+HIM_AP_STAGE_SRC_HI      EQU             $D2
+HIM_AP_STAGE_DST_LO      EQU             $D3
+HIM_AP_STAGE_DST_HI      EQU             $D4
+

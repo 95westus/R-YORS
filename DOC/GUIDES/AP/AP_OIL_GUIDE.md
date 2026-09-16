@@ -70,8 +70,14 @@ nibble identifies sector `$8-$F`, while the low bits identify Bank 0-2. This
 applies to `AP`, `AP L`, `AP D`, and `APS`; it adds no delay. HIMON's next
 console output or input wait replaces it with the normal activity/wait status,
 and a launched application remains free to take ownership of Port A. Hardware
-load/inspect/run paths have passed on COM4; operator-observed LED values and
-physical-reset recovery are still pending.
+load/inspect/run paths and physical-reset recovery have passed on COM4;
+operator-observed LED values are still pending. The latest
+[size qualification](../LOGS/APMAN_SIZE_2026-09-16.md) identifies the workbench
+image after the initial [Bank-2 setup](../LOGS/HIMON_AP_BANK2_2026-09-16.md).
+Shared INSTALL facts and carrier formatting reduce APMAN's BODY to `$0BD7`
+(3,031 bytes), leaving 41 bytes below `$7C00`; its envelope is `$0C05`.
+Commands, resident images, RAM allocation, and the one-sector carrier model
+are unchanged. This workbench qualification does not update published ZIPs.
 
 The exact syntax and limits are maintained in the
 [ASM User Guide](../ASM/ASM_USER_GUIDE.md). Safe address choices are in
@@ -110,8 +116,8 @@ APMAN carrier, envelope, staging, and overlay maps are in the
 
 - HIMON owns AP parsing, BODY loading, relocation, resident-import linking,
   entry derivation, and the public AP service.
-- The current APMAN candidate occupies `$7000-$7BFB` while delegated carrier
-  operations are active, leaving four bytes below `$7C00`.
+- The current APMAN candidate occupies `$7000-$7BD6` while delegated carrier
+  operations are active, leaving 41 bytes below `$7C00`.
 - Banked media is staged at `$0A00-$19FF`.
 - The HIMON command buffer is at `$7A00`; manager operations shadow it before
   APMAN overwrites its own execution range.
@@ -121,6 +127,18 @@ APMAN carrier, envelope, staging, and overlay maps are in the
   mechanisms used by the manager.
 
 The [Memory Map](../MEMORY/MEMORY_MAP.md) is authoritative for addresses.
+
+The [2026-09-16 contract correction](HIMON_AP_CONTRACT_CHANGE_2026-09-16.md)
+adds explicit takeover loading through `$6FFF`; ordinary ASM LOAD still ends
+at `$4FFF`. HIMON AP and APMAN children use takeover and invalidate the old
+ASM session. `ASM S` then refuses resume; `ASM` begins fresh. Manager INSTALL
+rejects unstable sources before staging, including the `$0A00` tray. Missing
+manager returns `$DA`; duplicate names retain `$D2`. The resident changes are
+installed on COM4. The subsequent [Bank-2 provisioning and board cycle](../LOGS/HIMON_AP_BANK2_2026-09-16.md)
+installed APMAN at B2:$8000 and an onboard-built APTEST at B2:$9000. Persistent
+discovery, inspection, load/run through `$6FFF`, real INSTALL, fresh-session
+return, software warm/cold recovery, and physical RESET passed with exact flash readback.
+Bank 2 is AP storage (`A2 APC02`); it has no bootable guest RESET vector.
 
 ## AP Carrier Versus AP Store
 

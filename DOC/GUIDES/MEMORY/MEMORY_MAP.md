@@ -15,11 +15,17 @@ owns `$F000-$FFFF` and composes the optional full-bank payload.
 
 Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
+The [2026-09-16 functional correction](../AP/HIMON_AP_CONTRACT_CHANGE_2026-09-16.md)
+updates the original baseline. The [generated ownership ledger](../../GENERATED/HIMON_AP_BASELINE.md)
+separates resident AP, shared support, other HIMON bytes, and external APMAN.
+The functional change reserves one durable session byte at `$7E6A`; the later
+source extraction adds no ROM or RAM.
+
 ```text
 $8000-$BFFF   outside the HIMON component; ASM-F2 in the combined image
-$C000-$E953   HIMON CODE, START entry at $C000
-$E954-$EDE9   HIMON DATA
-$EDEA-$EFFF   534-byte HIMON component growth margin, padded FF
+$C000-$E9C5   HIMON CODE, START entry at $C000
+$E9C6-$EE5B   HIMON DATA
+$EE5C-$EFFF   420-byte HIMON component growth margin, padded FF
 $F000-$FFFF   outside the HIMON component; STR8-N owns the top and vectors
 ```
 
@@ -48,10 +54,10 @@ bank is a separate STR8-N composition product, not any of these component
 BINs. On the integrated board RESET is `$F000`; NMI and IRQ/BRK entry stubs
 are owned and checked by STR8-N.
 
-The [current releases](../../../RELEASE/README.md) use HIMON and ASM-F2
-`00.0915(2324)` with STR8-N v1.34. The restamped firmware has full host
-checks and timestamp-only equivalence to the reset-tested board. It has not
-been reflashed; the board retains HIMON `2233` and ASM-F2 `2243` stamps.
+The current workbench HIMON/ASM pair is installed on COM4 with STR8-N v1.34.
+The frozen comparison stamp remains `00.0915(2324)`; use the dated contract
+record's hashes to identify these changed bytes. Previously published
+[release packages](../../../RELEASE/README.md) remain separate and unchanged.
 
 ## Target Live-Bank Budget
 
@@ -81,8 +87,8 @@ Combined image layout:
 ```text
 $8000-$BB82   ASM-F2 low-flash image, entry $800C
 $BB83-$BFFF   1,149-byte low-flash growth margin; no carrier storage in Bank 3
-$C000-$EDE9   HIMON body, including resident AP-v2 linker/APMAN bootstrap
-$EDEA-$EFFF   534-byte image gap inside the E sector
+$C000-$EE5B   HIMON body, including resident AP-v2 linker/APMAN bootstrap
+$EE5C-$EFFF   420-byte image gap inside the E sector
 $F000-$FCF1   STR8-N v1.34 resident supervisor, installer, loader, and services
 $FCF2-$FD77   currently available resident growth, 134 bytes
 $FD78-$FFAF   stored unified STR8-N RAM worker, copied to $0200-$0437
@@ -155,9 +161,9 @@ AP Capsule in RAM, visible flash, or banked flash
 
 A banked AP is staged one 4K sector at a time; it is not executed directly
 from the banked flash window. The resident direct `AP pkg dst` recovery form
-uses the ordinary `$2000-$4FFF` lane. APMAN occupies `$7000-$7B11`, so its
-managed child destination must begin at or above `$2000` and end at or below
-`$7000`.
+uses TAKEOVER `$05`, allowing `$2000-$6FFF`. Ordinary service LOAD `$01`
+keeps `$2000-$4FFF` and the separate tool tray. APMAN occupies `$7000-$7BD6`,
+so managed children must have an exclusive end no greater than `$7000`.
 
 Historical owner-local language images were built to sit below the protected
 HIMON/STR8 region:
@@ -267,8 +273,8 @@ $1B00-$1FFF   user/free outside another phase owner
 $2000-$4FFF   AIR: Build Bay, Envelope Bay, and normal Run/Tray Bay
 $5000-$6D6D   AWH: flash ASM UDATA
 $6D6E-$6FFF   SOD/application headroom
-$7000-$7B11   APMAN transient body when resident AP/APS/INSTALL delegates
-$7B12-$7BFF   APMAN/tool-tray remainder when that phase is active
+$7000-$7BD6   APMAN transient body when resident AP/APS/INSTALL delegates
+$7BD7-$7BFF   41 bytes of remaining manager overlay headroom
 $7A00-$7AFF   VOD: command buffer and volatile monitor scratch
 $7B00-$7BFB   RPT: validated-record decoded payload tray (252 bytes)
 $7BFC-$7BFF   VOD: remaining volatile monitor scratch
@@ -286,7 +292,10 @@ $7E25-$7E2C   optional flash-install service vector/request cells
 $7E2D-$7E40   optional AP package service vector/request/result cells
 $7E41-$7E45   AP package service scratch
 $7E46-$7E65   debugger / assembler workspace
-$7E66-$7E75   FNV hash and command-exec metadata
+$7E66-$7E69   FNV hash metadata
+$7E6A         durable ASM SEAL-resume flag
+$7E6B-$7E6D   unused in the current image
+$7E6E-$7E75   command-exec metadata
 $7E76-$7E94   command/parser/keytest workspace
 $7E95-$7EA8   RTC: STR8 validated-record request/result card
 $7EA9-$7EDD   HSD loader workspace and range table
@@ -304,11 +313,11 @@ The LRS is a switchyard, not two permanent data stores. The `$0A00-$19FF` SSD
 is retained staging, not an execution region. It can hold a complete
 flash-sector mirror/update image or a banked AP Capsule copied from banks 0-2.
 AP BODY bytes execute only after the AP loader relocates/links them into the
-requested AIR load address, currently inside `$2000-$4FFF`.
+requested load address, within `$2000-$6FFF` for explicit takeover.
 
 APMAN changes the foreground phase map while it is active. HIMON copies the
 command page to `$1A00`, loads APMAN at `$7000`, stages one bank sector at
-`$0A00-$19FF`, and loads a selected child below `$7000`. These areas are not
+`$0A00-$19FF`, and loads a selected child within `$2000-$6FFF` through TAKEOVER. These areas are not
 independent persistent buffers; a caller that wants to survive a child AP must
 keep its own code/data and stack outside every child destination and manager
 scratch range.
@@ -325,6 +334,12 @@ into RAM, apply relocation/fixups there, restore the normal flash bank, then run
 from `$6000 + entry_offset`. This keeps banked flash as storage first and avoids
 duplicating HIMON/STR8 helper code across banks. The fixed `@6000` tray is a
 convention proposal, not a current HIMON allocator.
+
+The [current contract](../AP/HIMON_AP_CONTRACT_CHANGE_2026-09-16.md) records these
+phase aliases. Bootstrap clears the durable resume flag before overwriting ASM
+names; ASM INSTALL returns to a fresh session. Unsafe INSTALL source spans
+are rejected before staging. `$5000-$6D6D` becomes application RAM only after
+explicit takeover; its previous ASM contents cannot then be resumed.
 
 The `$7F00-$7FFF` I/O window is decoded as eight `$20`-byte slots on the
 current board. HIMON `D` and flash-resident `S` treat the whole page as

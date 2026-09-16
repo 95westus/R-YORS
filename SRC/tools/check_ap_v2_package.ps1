@@ -10,6 +10,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'read_himon_source.ps1')
 
 function Fail([string]$Message) { throw "AP v2 check: $Message" }
 
@@ -167,7 +168,7 @@ for ($i = 0; $i -lt 64; $i++) {
 $asmText = [System.IO.File]::ReadAllText((Resolve-Path $AsmSourcePath))
 $asmFlashText = [System.IO.File]::ReadAllText((Resolve-Path $AsmFlashSourcePath))
 $runtimePasteText = [System.IO.File]::ReadAllText((Resolve-Path $RuntimePasteSourcePath))
-$himonText = [System.IO.File]::ReadAllText((Resolve-Path $HimonSourcePath))
+$himonText = (Read-HimonSource -Path $HimonSourcePath)
 foreach ($check in @(
     @($asmText, 'ASM_PACKAGE_VERSION', 2),
     @($asmText, 'ASM_RELOC_MAX', 64),

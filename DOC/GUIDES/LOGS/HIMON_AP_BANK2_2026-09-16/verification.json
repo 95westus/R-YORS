@@ -1,0 +1,66 @@
+{
+  "result": "PASS",
+  "board_checks": {
+    "manager": [
+      "persistent manager bootstrap and complete inventory",
+      "exact installed manager identity/length/load address",
+      "AP D B2 APMAN validates and inspects stored manager",
+      "AP D B2 8000 validates and inspects stored manager",
+      "AP B2 APMAN 2000 self-execution guard",
+      "AP L B2 APMAN 5000 self-execution guard",
+      "persistent manager loads linked child at 5000 without running",
+      "persistent manager links/runs BANKAUDIT at 5000 and returns",
+      "missing child returns one D1 diagnostic/status"
+    ],
+    "install": [
+      "onboard source/package exactly matches independent expected AP bytes",
+      "ASM INSTALL writes B2:9 through carried worker and returns AC",
+      "INSTALL returns fresh ASM at 2000 with zero symbol/fixup counts",
+      "INSTALL preserves source package and all Bank 3 bytes"
+    ],
+    "fixture": [
+      "APTEST exact BODY at 2000; entry +2; return to HIMON",
+      "APTEST exact BODY at 5000; entry +2; return to HIMON",
+      "APTEST exact BODY at 6FFA; entry +2; return to HIMON",
+      "resident MANAGER + persistent child RTS returns A=5A/C=1 to RAM caller",
+      "BODY crossing 7000 rejected before copy; redzone preserved",
+      "ASM stale resume refused after persistent takeover",
+      "persistent AP after STR8 software W entry",
+      "persistent AP after STR8 software C entry"
+    ],
+    "isolation": [
+      "exact final four-bank readback; only authorized B2 and D2 changes"
+    ],
+    "physical": [
+      "receive-only RST H / STR8-N 1.34 / default warm HIMON recovery",
+      "reset clears ASM resume and rediscovers both B2 carriers",
+      "post-reset APTEST executes at 5002 with exact BODY",
+      "post-reset fresh ASM assembles and runs A=AC/C=1",
+      "post-reset complete Bank 3 remains exact"
+    ]
+  },
+  "check_count": 27,
+  "bank3_changed_addresses": [
+    "FFD0",
+    "FFD4",
+    "FFD5",
+    "FFD6",
+    "FFD7"
+  ],
+  "bank_audit_crc_fields_matched": 32,
+  "physical_reset_operator_confirmed": true,
+  "pending": [
+    "operator-observed bank/sector LED values",
+    "NMI"
+  ],
+  "final_state": "HIMON prompt in Bank 3; COM4 closed",
+  "prior_contract_artifacts_unchanged": true,
+  "unrelated_files_preserved": [
+    "DOC/GUIDES/ASM/SAMPLES/README.md",
+    "DOC/GUIDES/ASM/RTERM_ADVANCED_DEMO.md",
+    "DOC/GUIDES/ASM/SAMPLES/rterm-advanced-7000.a",
+    "SRC/APPS/rterm-advanced-7000.asm",
+    "SRC/tools/build_rterm_demo.py",
+    "SRC/tools/check_rterm_demo.py"
+  ]
+}

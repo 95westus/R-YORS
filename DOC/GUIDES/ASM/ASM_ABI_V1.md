@@ -20,8 +20,11 @@ write HB string.
 ASM also consumes the PACK40 vectors at `$7E1F/$7E21`, the flash-install
 doorway at `$7E25`, and the AP service doorway at `$7E2D`. The AP request/result
 card is frozen at `$7E2F-$7E40`; operations are PARSE `$00`, LOAD `$01`,
-SUGGEST `$02`, LINK `$03`, and foreground APMAN bootstrap `$04`. Success
-returns `C=1`; failure returns `C=0` with the status in A and `$7E30`.
+SUGGEST `$02`, LINK `$03`, foreground APMAN bootstrap `$04`, and explicit
+TAKEOVER `$05`. For operations `$00-$03` and `$05`, success returns `C=1`; failure returns `C=0` with the status in A
+and `$7E30`. MANAGER is a foreground transition with a separate card and
+phase-specific return contract documented in the
+[2026-09-16 correction](../AP/HIMON_AP_CONTRACT_CHANGE_2026-09-16.md).
 Successful LOAD returns the destination in X/Y, and successful SUGGEST returns
 the suggested install base in X/Y.
 
@@ -61,12 +64,25 @@ leave an already-programmed prefix; there is no rollback promise.
 
 For the AP doorway, the caller writes operation `$7E2F`, source `$7E31-$7E32`,
 and destination `$7E33-$7E34` as required. Parse fills package/body lengths,
-counts, install/relocation pointers, and status without copying BODY. Load may
+counts, import/relocation pointers, and status without copying BODY. Load may
 copy or patch part of the destination before a later validation/link failure;
 the caller must never execute a failed result. Suggest is read-only and returns
 the chosen install address in X/Y. Link consumes the parsed import/relocation
 state. Manager is a foreground transition that may overwrite the documented
-APMAN staging, command-shadow, and overlay ranges.
+APMAN staging, command-shadow, and overlay ranges. Those ranges also include
+ASM's low-memory symbol/fixup name storage; retained ASM UDATA does not make
+the old session safe to reuse after the transition. A missing/corrupt manager
+prints `APMAN NF` and returns C=0, A/AP status/APMAN status `$DA`. Invalid
+INSTALL source is rejected before bootstrap staging with C=0 and `$D4`.
+
+Ordinary LOAD retains `$2000-$4FFF` and the separate `$7000-$7BFF` tool tray.
+TAKEOVER accepts a complete BODY within `$2000-$6FFF`; HIMON `AP` and APMAN
+child loads use it. Source acceptance remains unchanged. TAKEOVER invalidates
+the previous ASM session before copying, even if linking subsequently fails.
+The durable SEAL-resume flag is `$7E6A` (`ASM_ABI_SESSION_RESUME`); reset and
+manager entry clear it. ASM `INSTALL package Bn` starts a fresh session on
+return. ASM's own LOAD continues to use the ordinary operation. Old providers
+reject operation `$05`; deploy the matching HIMON/ASM pair and new APMAN.
 
 All calls require Bank 3 on entry and return with Bank 3 selected. They are
 foreground and non-reentrant. A, X, Y, and processor flags are volatile except

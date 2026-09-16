@@ -8,6 +8,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'read_himon_source.ps1')
 
 function Fail([string]$Message) {
     throw "AP Store inventory check: $Message"
@@ -287,7 +288,7 @@ foreach ($path in @($HimonSourcePath, $HimonS19Path, $HimonMapPath, $PublicContr
     if (-not (Test-Path -LiteralPath $path)) { Fail "missing $path" }
 }
 
-$source = [IO.File]::ReadAllText((Resolve-Path $HimonSourcePath))
+$source = (Read-HimonSource -Path $HimonSourcePath)
 if ($source.Contains('HIM_APMAN_BOOTSTRAP:')) {
     foreach ($path in @($ApmanSourcePath, $ApmanPackagePath)) {
         if (-not (Test-Path -LiteralPath $path)) { Fail "missing $path" }

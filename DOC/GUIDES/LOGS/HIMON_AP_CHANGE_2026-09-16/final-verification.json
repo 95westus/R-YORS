@@ -1,0 +1,19 @@
+{
+  "result": "PASS",
+  "identical_artifacts": 15,
+  "contract_cases": 53,
+  "board_checks": 13,
+  "board_payload_matches_extraction": true,
+  "unrelated_files_unchanged": [
+    "DOC/GUIDES/ASM/SAMPLES/README.md",
+    "DOC/GUIDES/ASM/RTERM_ADVANCED_DEMO.md",
+    "DOC/GUIDES/ASM/SAMPLES/rterm-advanced-7000.a",
+    "SRC/APPS/rterm-advanced-7000.asm",
+    "SRC/tools/build_rterm_demo.py",
+    "SRC/tools/check_rterm_demo.py"
+  ],
+  "historical_log_prefix_sha256": "8ad440c01a1f1eb1df9f9353c1d9c7270d8e583e4fea9687c2bc5d179832904c",
+  "historical_log_prefix_bytes": 744103,
+  "generated_ap_scope": true,
+  "disabled_legacy_route_excluded": true
+}

@@ -1,0 +1,24 @@
+{
+  "command": [
+    "make",
+    "-C",
+    "SRC",
+    "HIMON_VISIBLE_STAMP=0915(2324)",
+    "-W",
+    "HIMON/himon.asm",
+    "-W",
+    "ASM/asm-v1-flash.asm",
+    "-W",
+    "APPS/apman-7000.asm",
+    "asm-test",
+    "himon-banked-ap-check",
+    "himon-str8-record-check",
+    "himon-io-led-check",
+    "board-s19-check",
+    "himon-rom-bin"
+  ],
+  "cwd": "C:\\SRC\\R-YORS",
+  "start_utc": "2026-09-16T16:09:54.046982+00:00",
+  "end_utc": "2026-09-16T16:15:12.847000+00:00",
+  "exit_code": 0
+}

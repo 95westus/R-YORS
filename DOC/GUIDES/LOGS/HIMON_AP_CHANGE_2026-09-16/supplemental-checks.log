@@ -1,0 +1,6 @@
+BOARD S19 IDENTITY = PASS; ASM=$3B83 HIMON=$2E5C targets=9
+PASS expanded HIMON/AP source equals frozen functional source
+PASS moved AP declaration mutation is rejected by existing checker
+PASS cyclic AP include is rejected
+COMMAND ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'tools/check_board_s19_identity.ps1', '-S19Dir', 'BUILD/s19', '-Str8FullBankPath', '../../STR8-N/BUILD/v1.34/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19']
+COMMAND ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'C:\\SRC\\R-YORS\\LOCAL\\himon-ap-change-20260916\\check_extraction_source.ps1']

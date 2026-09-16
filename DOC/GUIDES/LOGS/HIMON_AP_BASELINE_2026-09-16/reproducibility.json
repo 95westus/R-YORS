@@ -1,0 +1,89 @@
+{
+  "result": "PASS",
+  "identical_artifacts": [
+    {
+      "path": "s19/himon-rom-c000.s19",
+      "bytes": 32340,
+      "sha256": "dbfc611656819587652fbd184f366f73da6a8b7c7652eb4cbd96a9825319fddc"
+    },
+    {
+      "path": "s19/himon-rom-c000.map",
+      "bytes": 46759,
+      "sha256": "7a69f6e6a0ef6c5205edcf757a2a59735d13abdb8eec2024f9d77ffe634be1a2"
+    },
+    {
+      "path": "s19/asm-v1-flash-8000.s19",
+      "bytes": 41918,
+      "sha256": "2cb443812c4f458282339c629cd0c95a19c8821f7358d6f025b02810b5c229a1"
+    },
+    {
+      "path": "s19/asm-v1-flash-8000.map",
+      "bytes": 66087,
+      "sha256": "e598f62b22c03c9f1a6c0e716034e9b55395727d274102faeb86adff44b5d3d6"
+    },
+    {
+      "path": "s19/apman-7000.s19",
+      "bytes": 8452,
+      "sha256": "7964a65e0c35e299a2b41230df0594317923e4848bbe95779646307c7dfc8fe6"
+    },
+    {
+      "path": "s19/apman-7000.map",
+      "bytes": 11807,
+      "sha256": "f6f0ce385946bf8c28b283e04846dc731192b29399dbd563a6f71d04bb8dc71c"
+    },
+    {
+      "path": "bin/apman-v1.ap",
+      "bytes": 3114,
+      "sha256": "7bdbf6beed95958637750604f06698b5ed92de03ba941a9afc06d60fe53fd718"
+    },
+    {
+      "path": "bin/apman-v1-bank2-8000.bin",
+      "bytes": 4096,
+      "sha256": "6cd0c842aa6e5b1a5913267e8ed8753583a818c4e3c72dca454dc45879c93584"
+    },
+    {
+      "path": "s19/apman-v1-bank2-8000.s19",
+      "bytes": 9740,
+      "sha256": "ac2774dcac41fc49401935e101308dc94306b5e13a4065f81856ddc64dea6a82"
+    },
+    {
+      "path": "s19/ryors-v1.2-asm-bank3-8-b.s19",
+      "bytes": 38924,
+      "sha256": "68f817d2bdd21a7cecf622b26a9be4821538c68a2bc6badfc7fee73bcd061ae7"
+    },
+    {
+      "path": "s19/ryors-v1.2-himon-bank3-c-e.s19",
+      "bytes": 29196,
+      "sha256": "310ec89f19da208d6ccfed87ba109b0c830dcae0f4fb26d632524f62c976c7db"
+    },
+    {
+      "path": "s19/ryors-v1.2-himon-asm-bank3-8-e.s19",
+      "bytes": 68108,
+      "sha256": "8d0d240c7cf908b6e626b8e24ac0b8e75040f2cb91fe4287c64755e64f420131"
+    }
+  ],
+  "ledger_identical": true,
+  "negative_checks": [
+    {
+      "case": "S19 checksum corruption",
+      "result": "rejected",
+      "message": "Bad S-record checksum/count in C:\\SRC\\R-YORS\\LOCAL\\himon-ap-baseline-20260916\\ledger-negative\\s19\\himon-rom-c000.s19"
+    },
+    {
+      "case": "Map span mismatch",
+      "result": "rejected",
+      "message": "himon-rom-c000: map span and S19 bytes disagree; audit holes/extra records"
+    },
+    {
+      "case": "AP package BODY corruption",
+      "result": "rejected",
+      "message": "APMAN package BODY differs from linked S19"
+    },
+    {
+      "case": "Carrier erased-tail corruption",
+      "result": "rejected",
+      "message": "APMAN carrier is not exact package plus erased padding"
+    }
+  ],
+  "generator_sha256": "fc78a3f45d799725b7755e7c91e1c50634b06be9ef165565008bba4da0f77e31"
+}

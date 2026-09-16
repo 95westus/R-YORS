@@ -1,0 +1,15 @@
+[
+  "takeover 5000+4 accepted=True; exact BODY/redzones",
+  "takeover 6FFF+1 accepted=True; exact BODY/redzones",
+  "takeover 6FFF+2 accepted=False; exact BODY/redzones",
+  "takeover 7000+1 accepted=False; exact BODY/redzones",
+  "ordinary LOAD 5000 rejected; RAM preserved",
+  "ASM S refused after takeover; fresh ASM entry works",
+  "resident INSTALL 0A00 rejected before bootstrap",
+  "new RAM APMAN rejects unstable INSTALL; no worker entered",
+  "new RAM APMAN scans B1 and returns with B3 restored",
+  "new RAM APMAN links and tail-runs BANKAUDIT at 5000; B3 restored",
+  "ASM INSTALL absent manager returns DA; fresh session and zero name counts",
+  "STR8 software W entry republishes services and clears resume",
+  "STR8 software C entry republishes services and clears resume"
+]

@@ -1,0 +1,562 @@
+make: Entering directory `C:/SRC/R-YORS/SRC'
+HIMON visible version   = HIMON V 00.0915(2324)
+ASM-F2 visible version  = ASM-F2 00.0915(2324)
+R-YORS logo version     = VERSION .0915
+wdc02as -G -L -S -W -I BUILD -I BUILD/inc ASM/asm-v1-flash.asm
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath 'ASM\asm-v1-flash.obj' -Destination 'BUILD\obj\ASM\asm-v1-flash.obj' -Force"
+wdcln -g -s -t -c8000 -u5000 -hm19 -j -o BUILD/s19/asm-v1-flash-8000.s19 BUILD/obj/ASM/asm-v1-flash.obj BUILD/obj/ASM/asm-v1-flash-runtime.obj
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     008000  008000     38CEH ( 14542)
+DATA     00B8CE  00B8CE      2B5H (   693)
+UDATA    005000  ------     1D6EH (  7534)
+Total                       58F1H ( 22769)
+
+[ps] set S9 start from START in BUILD/s19/asm-v1-flash-8000.s19
+asm-v1-flash headroom to C000 = 047D (_END_DATA=BB83)
+asm-v1-flash RAM map low=0200-19FF user=1A00-1FFF udata=5000-6D6E upper=6D6E-7CFF
+wdc02as -G -L -S -W -I BUILD -I BUILD/inc PROOFS/asm-session-report.asm
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath 'PROOFS\asm-session-report.obj' -Destination 'BUILD\obj\PROOFS\asm-session-report.obj' -Force"
+wdcln -g -s -t -c7000 -hm19 -j -o BUILD/s19/asm-session-report-v1.2-7000.s19 BUILD/obj/PROOFS/asm-session-report.obj -L BUILD\lib\rom
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     007000  007000      567H (  1383)
+DATA     007567  007567      1B4H (   436)
+Total                        71BH (  1819)
+
+[ps] set S9 start $7000 in BUILD/s19/asm-session-report-v1.2-7000.s19
+asm-session-report end = 771B (limit 7A00)
+[ps] build BUILD/bin/asm-session-report-v1.2-7000.ap.bin
+AP package built: C:\SRC\R-YORS\SRC\BUILD\bin\asm-session-report-v1.2-7000.ap.bin
+  body: $7000-$771B len=$071B
+  entry/export: ASMREPORT @ $7000 offset=$0000
+  fnv32: $EC97828D
+  imports/relocations: 0/0
+  package length: $074B
+  head: 41 50 02 4B 07 53 0B 00 01 00 70 1B 77 1B 07 8D 82 97 EC 52 01 00 00 45
+ASM ABI v1 check passed; published $7E00-$7E40 addresses have one literal owner.
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/write_apman_worker_inc.ps1 -SourcePath "../../STR8-N/tools/bank-maint/str8n-v1.23-bank-maint-2000.asm" -OutPath "BUILD/inc/apman-str8-worker.inc"
+APMAN worker include unchanged: BUILD/inc/apman-str8-worker.inc
+wdc02as -G -L -S -W -I BUILD -I BUILD/inc APPS/apman-7000.asm
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+        1 file(s) moved.
+wdcln -g -s -t -c7000 -hm19 -j -o BUILD/s19/apman-7000.s19 BUILD/obj/APPS/apman-7000.obj
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     007000  007000      C00H (  3072)
+Total                        C00H (  3072)
+
+[ps] set S9 start $7000 in BUILD/s19/apman-7000.s19
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_ap_fixed_package.ps1 -S19Path "BUILD/s19/apman-7000.s19" -MapPath "BUILD/s19/apman-7000.map" -PackagePath "BUILD/bin/apman-v1.ap" -BaseAddress 0x7000 -EntrySymbol APMAN -ExportName APMAN -EndSymbol APMAN_IMAGE_END
+AP package built: C:\SRC\R-YORS\SRC\BUILD\bin\apman-v1.ap
+  body: $7000-$7C00 len=$0C00
+  entry/export: APMAN @ $7000 offset=$0000
+  fnv32: $836829BE
+  imports/relocations: 0/0
+  package length: $0C2E
+  head: 41 50 02 2E 0C 53 0B 00 01 00 70 00 7C 00 0C BE 29 68 83 52 01 00 00 45
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_ap_carrier_sector.ps1 -PackagePath "BUILD/bin/apman-v1.ap" -BinPath "BUILD/bin/apman-v1-bank2-8000.bin"
+AP carrier sector built: C:\SRC\R-YORS\SRC\BUILD\bin\apman-v1-bank2-8000.bin
+  envelope: $0000-$0C2D length=$0C2E
+  sector:   $0000-$0FFF length=$1000; erased tail verified
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_rom_install_s19.ps1 -BinPath "BUILD/bin/apman-v1-bank2-8000.bin" -S19Path "BUILD/s19/apman-v1-bank2-8000.s19" -BaseAddress 0x8000 -StartAddress 0x8000
+BIN                  = BUILD/bin/apman-v1-bank2-8000.bin
+Install S19          = BUILD/s19/apman-v1-bank2-8000.s19
+Address range        = 8000-8FFF
+S9 start             = 8000
+Record types         = S1 S9
+All-FF S1 records    = kept
+APMAN bootstrap OK: package=$0C2E; dense BIN/S19=$8000-$8FFF; S9=$8000
+APMAN inspect check OK package=$0C2E body-end=$7C00 sections=S:0005-0012,R:0013-0016,E:0017-0026,I:0027-002A,B:002B-0C2D dump=0000-003F self=APMAN read-only LED=SECTOR|BANK
+"Built APMAN carrier manager: BUILD/s19/apman-7000.s19, BUILD/bin/apman-v1.ap, BUILD/bin/apman-v1-bank2-8000.bin, and BUILD/s19/apman-v1-bank2-8000.s19."
+AP Store V1 check passed: AS1 packed-location FNV32 active-low-state candidates=24 active=1 retired=1 bad=1 opaque=1 header-ff=20
+AP Store V1 capacity: sector=4096 header=16 record-overhead=21 empty-payload=4059 AP-max=4096 min-sectors=2
+AP Store V1 chain model passed: mask=0A used=0A sectors=09,0B chunks=2 lengths=0F8F,0071 actions=4138 fault-cuts=4138
+AP Store V1 delete model passed: tombstone=21 actions=21 fault-cuts=21 newest=0001 live=99 stale=161 free=16060 blocked=0
+make[1]: Entering directory `C:/SRC/STR8-N'
+RESIDENT            = $F000-$FCF1; 3314 bytes
+UNUSED MARGIN        = $FCF2-$FD77; 134 bytes (minimum 128)
+UNIFIED WORKER       = run $0200-$0437; store $FD78-$FFAF; 568 bytes
+SELECTOR PREFIX      = $0200-$0226; 39 bytes
+WORKER S19 SHA-256   = 485BA4C3ADCD622EAE90D74DE6FEB5BA8EBE0EAD6FC764CB9DBE6133B51324CC
+DIRECTORY/CONFIG/VEC = $FFB0-$FFEF / $FFF0-$FFF9 / $FFFA-$FFFF
+PUBLIC RESIDENT ABI  = INIT $F003; QUERY $F006; CHARIN $F013; CHAROUT $F019; READY $F03E
+RAM ABI              = $12; LOW USER $1A00-$1FFF; STR8 STATE $7DE7-$7DFF
+LAYOUT CHECK         = PASS
+STR8 RESIDENT       = $F000-$FCF1
+UNIFIED WORKER      = run $0200-$0437; stored $FD78-$FFAF
+NEW DIRECTORY       = $FFB0-$FFEF; all FF
+SECTOR ROLES        = $FFF0=$1E B1:E WORK; $FFF1=$1F B1:F B3:F backup; $FFF2-$FFF9 all FF
+VECTORS FFFA-FFFF   = CF F0 00 F0 E3 F0
+CPU RANGE           = $F000-$FFFF; 4096 bytes
+SST39SF010A B3 PHYS = $1F000-$1FFFF; file offset $000-$FFF
+SHA-256             = 9538D97854BA9D5D76143CBA0FEDB3B2E7CE18F977CE89557406E63404026CB7
+T48 BIN             = BUILD/v1.34/bin/str8n-v1.34-bank3-f000-ffff.bin
+TOP UPDATE IMAGE    = BUILD/v1.34/generated/str8n-v1.34-top-image.inc; sum=$74C1; SHA256=9538D97854BA9D5D76143CBA0FEDB3B2E7CE18F977CE89557406E63404026CB7
+wdc02as -G -L -S -W -I BUILD/v1.34/generated -DSTR8_TOP_EMBED=0 -DSTR8_DIRECTORY_REFRESH=0 -DSTR8_IN65_VERSION_134=1 tools/top-update/str8n-v1.23-top-update-2000.asm
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+        1 file(s) moved.
+        1 file(s) moved.
+wdcln -g -s -t -hm19 -j -o BUILD/v1.34/s19/str8n-v1.34-top-update-2000.s19 BUILD/obj/str8n-v1.34-top-update-2000.obj
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     002000  002000     3000H ( 12288)
+Total                       3000H ( 12288)
+
+TOP UPDATE S19        = PASS; bytes=12288; S9=$2000; SHA256=247B7213A2E3CC970620C5E731BA3057895525CA5BE77803D7E7ED65B306412D
+wdc02as -G -L -S -W -I BUILD/v1.34/generated -DSTR8_TOP_EMBED=0 -DSTR8_DIRECTORY_REFRESH=1 -DSTR8_IN65_VERSION_134=1 tools/top-update/str8n-v1.23-top-update-2000.asm
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+        1 file(s) moved.
+        1 file(s) moved.
+wdcln -g -s -t -hm19 -j -o BUILD/v1.34/s19/str8n-v1.34-directory-refresh-2000.s19 BUILD/obj/str8n-v1.34-directory-refresh-2000.obj
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     002000  002000     3000H ( 12288)
+Total                       3000H ( 12288)
+
+DIRECTORY REFRESH S19 = PASS; bytes=12288; S9=$2000; SHA256=FA44BB17C19A99A6CBC105EE8CF5539CD04C3D55DDF6886578608B95BA42A62F
+WDCMONV2 EXTERNAL TOP = BUILD/v1.34/bin/str8n-v1.34-wdcmonv2-bank3-f000-ffff.bin; exact canonical 4096-byte BIN; FNV1A=9AA5AEE2; SHA256=9538D97854BA9D5D76143CBA0FEDB3B2E7CE18F977CE89557406E63404026CB7
+wdc02as -G -L -S -W -I BUILD/v1.34/generated -DSTR8_IN65_VERSION_134=1 tools/wdcmonv2/wdcmonv2str8n-install-2000.asm
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+        1 file(s) moved.
+        1 file(s) moved.
+wdcln -g -s -t -hm19 -j -o BUILD/v1.34/s19/str8n-v1.34-wdcmonv2-install-2000.s19 BUILD/obj/str8n-v1.34-wdcmonv2-install-2000.obj
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     002000  002000      9B5H (  2485)
+Total                        9B5H (  2485)
+
+WDCMONV2 LOADER S19  = PASS; range=$2000-$29B4; S9=$2000; no embedded top
+EXTERNAL STR8-N BIN  = PASS; exact canonical 4096-byte top; SHA256=9538D97854BA9D5D76143CBA0FEDB3B2E7CE18F977CE89557406E63404026CB7
+GATE ORDER           = B0 POLICY -> COPY -> B0 EXACT -> RECEIVE BIN -> INSTALL; B1/B2 untouched
+STR8-N MANIFEST     = BUILD/str8n-manifest.json
+GIT COMMIT          = 846032d48e4345e389dfd6b0b5d40c1e70e10129
+TOP BIN SHA-256     = 9538D97854BA9D5D76143CBA0FEDB3B2E7CE18F977CE89557406E63404026CB7
+WORKER SHA-256      = 485BA4C3ADCD622EAE90D74DE6FEB5BA8EBE0EAD6FC764CB9DBE6133B51324CC
+BANK MAINT SHA-256  = 95AEE537E486E6A16E40DBD3CE7BAA181D018F44AB13F6A29601779D77650C2F
+CONSOLE ABI SHA-256 = 25C2F6CCE1F22BF09916739B9BB9C382BD71CF86403C8F58E1E1EDC97C8CDE77
+TOP UPDATE SHA-256   = 247B7213A2E3CC970620C5E731BA3057895525CA5BE77803D7E7ED65B306412D
+DIR REFRESH SHA-256  = FA44BB17C19A99A6CBC105EE8CF5539CD04C3D55DDF6886578608B95BA42A62F
+WDC ARCHIVE SHA-256  = 5E0811701830821022EDE13B7B8E5FA26392F0CAF42D3FB8993C7CDFA5698F5C
+WDC INSTALL SHA-256  = 0958968D8857DB7DF79F766357544ABACB604DF0B129A571128BBA1A46D3F395
+WDC TOP BIN SHA-256  = 9538D97854BA9D5D76143CBA0FEDB3B2E7CE18F977CE89557406E63404026CB7
+PUBLIC ABI SHA-256   = 947F8D096EBE42CE07C072E179B618115341E390D0975131B6204D863C95E4DD
+make[1]: Leaving directory `C:/SRC/STR8-N'
+STR8-N EXTERNAL      = PASS; 1.34 846032d4
+STR8-N TOP SHA-256   = 9538D97854BA9D5D76143CBA0FEDB3B2E7CE18F977CE89557406E63404026CB7
+STR8-N ABI SHA-256   = 947F8D096EBE42CE07C072E179B618115341E390D0975131B6204D863C95E4DD
+STR8-N PUBLIC ABI    = BUILD/inc/str8n-public.inc
+wdc02as -G -L -S -W -I BUILD -I BUILD/inc HIMON/himon.asm
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+wdcln -g -s -t -cC000 -hm19 -j -o BUILD/s19/himon-rom-c000.s19 BUILD/obj/HIMON/himon-rom-c000.obj -L BUILD\lib\rom
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     00C000  00C000     29C6H ( 10694)
+DATA     00E9C6  00E9C6      496H (  1174)
+Total                       2E5CH ( 11868)
+
+AP Store inventory check: APMAN split pass; package=$0C2E, bootstrap=$D407
+AP Store sector tool check passed: bytes=1881 end=$7759 inventory-rows=24 locations=22 fault-cuts=50
+AP Store sector tool package: APSTORE entry=$7000 body=$7000-$7758
+AP Store sector tool policy: CLAIM erased-only; CONVERT occupied-unmanaged; FORMAT managed-empty-log; commit-last
+AP STORE .A IDENTITY = PASS; entry=$7000 bytes=1881
+AP v2 check OK len=$0789 body=$0759 rel=0/64 exp=1/64 imp=0/64 syms=128 pool=$0800 card-import-uses=64 sentinels=$7900-$7902 wrapper-zp=$82-$83
+AP Store Slice 5 tools passed: installer=$7000-$7944 (2373) reader=$7000-$7869 (2154) marker=4096
+AP Store Slice 5 policy: B1:E WORK and B1:F B3:F backup excluded; read-only PLAN; source/request/CRC recheck; header-payload-commit; bank-wide sorted reconstruction; AP-v2 validate before load
+AP v2 check OK len=$0973 body=$0945 rel=0/64 exp=1/64 imp=0/64 syms=128 pool=$0800 card-import-uses=64 sentinels=$7900-$7902 wrapper-zp=$82-$83
+AP v2 check OK len=$0898 body=$086A rel=0/64 exp=1/64 imp=0/64 syms=128 pool=$0800 card-import-uses=64 sentinels=$7900-$7902 wrapper-zp=$82-$83
+AP v2 check OK len=$1000 body=$0FD2 rel=0/64 exp=1/64 imp=0/64 syms=128 pool=$0800 card-import-uses=64 sentinels=$7900-$7902 wrapper-zp=$82-$83
+"Built AP Store Slice 6 reader, read-only delete planner, and delete executor carriers."
+make[1]: Entering directory `C:/SRC/R-YORS/SRC'
+[ps] sync sidecar artifacts
+"Synced sidecar artifacts into BUILD/{lst,sym,map,bin,s19}."
+make[1]: Leaving directory `C:/SRC/R-YORS/SRC'
+AP Store Slice 6 tools passed: reader=$7000-$79C3 (2500) planner=$7000-$7980 (2433) delete=$7000-$774E (1871)
+AP Store Slice 6 policy: B1:E WORK and B1:F B3:F backup excluded; fixed read-only newest reader; fixed read-only counter/planner; separate CRC-rechecking 21-byte commit-last executor
+AP v2 check OK len=$09F2 body=$09C4 rel=0/64 exp=1/64 imp=0/64 syms=128 pool=$0800 card-import-uses=64 sentinels=$7900-$7902 wrapper-zp=$82-$83
+AP v2 check OK len=$09AF body=$0981 rel=0/64 exp=1/64 imp=0/64 syms=128 pool=$0800 card-import-uses=64 sentinels=$7900-$7902 wrapper-zp=$82-$83
+AP v2 check OK len=$077D body=$074F rel=0/64 exp=1/64 imp=0/64 syms=128 pool=$0800 card-import-uses=64 sentinels=$7900-$7902 wrapper-zp=$82-$83
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/check_asm_opcode_coverage.ps1 -SourcePath "ASM/asm-v1-core.asm"
+ASM opcode coverage OK rows=217 mnemonics=70 patterns=20 pattern_bytes=166 source=asm-v1-core.asm
+ADC IMM8:$69 ZP_X_IND:$61 ZP8:$65 ABS16:$6D ZP_IND:$72 ZP_X:$75 ZP_IND_Y:$71 ABS_Y:$79 ABS_X:$7D
+AND IMM8:$29 ZP_X_IND:$21 ZP8:$25 ABS16:$2D ZP_IND:$32 ZP_X:$35 ZP_IND_Y:$31 ABS_Y:$39 ABS_X:$3D
+ASL NONE:$0A ACC:$0A ZP8:$06 ABS16:$0E ZP_X:$16 ABS_X:$1E
+BBR BIT0_ZP_REL:$0F BIT1_ZP_REL:$1F BIT2_ZP_REL:$2F BIT3_ZP_REL:$3F BIT4_ZP_REL:$4F BIT5_ZP_REL:$5F BIT6_ZP_REL:$6F BIT7_ZP_REL:$7F
+BBS BIT0_ZP_REL:$8F BIT1_ZP_REL:$9F BIT2_ZP_REL:$AF BIT3_ZP_REL:$BF BIT4_ZP_REL:$CF BIT5_ZP_REL:$DF BIT6_ZP_REL:$EF BIT7_ZP_REL:$FF
+BCC REL8:$90
+BCS REL8:$B0
+BEQ REL8:$F0
+BIT IMM8:$89 ZP8:$24 ABS16:$2C ZP_X:$34 ABS_X:$3C
+BMI REL8:$30
+BNE REL8:$D0
+BPL REL8:$10
+BRA REL8:$80
+BRK IMM8:$00 ZP8:$00
+BVC REL8:$50
+BVS REL8:$70
+CLC NONE:$18
+CLD NONE:$D8
+CLI NONE:$58
+CLV NONE:$B8
+CMP IMM8:$C9 ZP_X_IND:$C1 ZP8:$C5 ABS16:$CD ZP_IND:$D2 ZP_X:$D5 ZP_IND_Y:$D1 ABS_Y:$D9 ABS_X:$DD
+CPX IMM8:$E0 ZP8:$E4 ABS16:$EC
+CPY IMM8:$C0 ZP8:$C4 ABS16:$CC
+DEC ACC:$3A ZP8:$C6 ABS16:$CE ZP_X:$D6 ABS_X:$DE
+DEX NONE:$CA
+DEY NONE:$88
+EOR IMM8:$49 ZP_X_IND:$41 ZP8:$45 ABS16:$4D ZP_IND:$52 ZP_X:$55 ZP_IND_Y:$51 ABS_Y:$59 ABS_X:$5D
+INC ACC:$1A ZP8:$E6 ABS16:$EE ZP_X:$F6 ABS_X:$FE
+INX NONE:$E8
+INY NONE:$C8
+JMP ABS16:$4C ABS_IND:$6C ABS_X_IND:$7C
+JSR ABS16:$20
+LDA IMM8:$A9 ZP_X_IND:$A1 ZP8:$A5 ABS16:$AD ZP_IND:$B2 ZP_X:$B5 ZP_IND_Y:$B1 ABS_Y:$B9 ABS_X:$BD
+LDX IMM8:$A2 ZP8:$A6 ABS16:$AE ZP_Y:$B6 ABS_Y:$BE
+LDY IMM8:$A0 ZP8:$A4 ABS16:$AC ZP_X:$B4 ABS_X:$BC
+LSR NONE:$4A ACC:$4A ZP8:$46 ABS16:$4E ZP_X:$56 ABS_X:$5E
+NOP NONE:$EA
+ORA IMM8:$09 ZP_X_IND:$01 ZP8:$05 ABS16:$0D ZP_IND:$12 ZP_X:$15 ZP_IND_Y:$11 ABS_Y:$19 ABS_X:$1D
+PHA NONE:$48
+PHP NONE:$08
+PHX NONE:$DA
+PHY NONE:$5A
+PLA NONE:$68
+PLP NONE:$28
+PLX NONE:$FA
+PLY NONE:$7A
+RMB BIT0_ZP:$07 BIT1_ZP:$17 BIT2_ZP:$27 BIT3_ZP:$37 BIT4_ZP:$47 BIT5_ZP:$57 BIT6_ZP:$67 BIT7_ZP:$77
+ROL NONE:$2A ACC:$2A ZP8:$26 ABS16:$2E ZP_X:$36 ABS_X:$3E
+ROR NONE:$6A ACC:$6A ZP8:$66 ABS16:$6E ZP_X:$76 ABS_X:$7E
+RTI NONE:$40
+RTS NONE:$60
+SBC IMM8:$E9 ZP_X_IND:$E1 ZP8:$E5 ABS16:$ED ZP_IND:$F2 ZP_X:$F5 ZP_IND_Y:$F1 ABS_Y:$F9 ABS_X:$FD
+SEC NONE:$38
+SED NONE:$F8
+SEI NONE:$78
+SMB BIT0_ZP:$87 BIT1_ZP:$97 BIT2_ZP:$A7 BIT3_ZP:$B7 BIT4_ZP:$C7 BIT5_ZP:$D7 BIT6_ZP:$E7 BIT7_ZP:$F7
+STA ZP_X_IND:$81 ZP8:$85 ABS16:$8D ZP_IND:$92 ZP_X:$95 ZP_IND_Y:$91 ABS_Y:$99 ABS_X:$9D
+STP NONE:$DB
+STX ZP8:$86 ABS16:$8E ZP_Y:$96
+STY ZP8:$84 ABS16:$8C ZP_X:$94
+STZ ZP8:$64 ABS16:$9C ZP_X:$74 ABS_X:$9E
+TAX NONE:$AA
+TAY NONE:$A8
+TRB ZP8:$14 ABS16:$1C
+TSB ZP8:$04 ABS16:$0C
+TSX NONE:$BA
+TXA NONE:$8A
+TXS NONE:$9A
+TYA NONE:$98
+WAI NONE:$CB
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/check_asm_dc_contract.ps1 -AsmSourcePath "ASM/asm-v1-core.asm" -HimonSourcePath "HIMON/himon.asm"
+ASM compact DC contract OK: success=15 failure=8 boundaries=4 seal-uppercase=7
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+VT100 OK org=3000 symbols=36/64 line=61 STR8-N=1.29
+VT102 OK range=7000-79CD end=79CE fixups=11 line=63 waits=2
+VT525 OK range=7000-79B2 end=79B3 fixups=11 line=63 waits=3
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+STR8 READ-ONLY BANK SOURCES = PASS; CRC=38/64; archived inventory proof=46/64; read AP=58/64; dump AP=63/64; $F010/$0203 only
+wdc02as -G -L -S -W -I BUILD -I BUILD/inc "../DOC/GUIDES/ASM/SAMPLES/OLD/ASMTEST_3000.asm"
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '..\DOC\GUIDES\ASM\SAMPLES\OLD\ASMTEST_3000.obj' -Destination 'BUILD\obj\ASM\asmtest-6800-wdc.obj' -Force"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Copy-Item -LiteralPath '..\DOC\GUIDES\ASM\SAMPLES\OLD\ASMTEST_3000.lst' -Destination 'BUILD\lst\asmtest-6800-wdc.lst' -Force"
+wdcln -g -s -t -hm19 -j -o BUILD/s19/asmtest-6800-wdc.s19 BUILD/obj/ASM/asmtest-6800-wdc.obj
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     006800  006800       27H (    39)
+Total                         27H (    39)
+
+[ps] set S9 start $6800 in BUILD/s19/asmtest-6800-wdc.s19
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/check_asmtest_3000.ps1 -SourcePath "../DOC/GUIDES/ASM/SAMPLES/OLD/ASMTEST_3000.asm" -S19Path "BUILD/s19/asmtest-6800-wdc.s19"
+ASMTEST_3000 OK org=$6800 lines=24 max=49 seed=16 checksum=$0F
+defs=ASMTEST,COUNT,LOOP,OUT,SEED,SUM
+refs=COUNT,LOOP,OUT,SEED,SUM
+image=$6800-$6826 bytes=39 output=$6900-$6910
+wdc-s19=$6800-$6826 bytes=39 start=$6800
+"Built BUILD/s19/asm-v1-core-2000.s19."
+make[1]: Entering directory `C:/SRC/R-YORS/SRC'
+[ps] sync sidecar artifacts
+"Synced sidecar artifacts into BUILD/{lst,sym,map,bin,s19}."
+make[1]: Leaving directory `C:/SRC/R-YORS/SRC'
+"Built BUILD/s19/asm-v1-runtime-2000.s19."
+make[1]: Entering directory `C:/SRC/R-YORS/SRC'
+[ps] sync sidecar artifacts
+"Synced sidecar artifacts into BUILD/{lst,sym,map,bin,s19}."
+make[1]: Leaving directory `C:/SRC/R-YORS/SRC'
+"Built BUILD/s19/asm-v1-runtime-smoke-2000.s19."
+make[1]: Entering directory `C:/SRC/R-YORS/SRC'
+[ps] sync sidecar artifacts
+"Synced sidecar artifacts into BUILD/{lst,sym,map,bin,s19}."
+make[1]: Leaving directory `C:/SRC/R-YORS/SRC'
+"Built BUILD/s19/asm-v1-runtime-asmtest-2000.s19."
+make[1]: Entering directory `C:/SRC/R-YORS/SRC'
+[ps] sync sidecar artifacts
+"Synced sidecar artifacts into BUILD/{lst,sym,map,bin,s19}."
+make[1]: Leaving directory `C:/SRC/R-YORS/SRC'
+"Built BUILD/s19/asm-v1-runtime-paste-2000.s19."
+make[1]: Entering directory `C:/SRC/R-YORS/SRC'
+[ps] sync sidecar artifacts
+"Synced sidecar artifacts into BUILD/{lst,sym,map,bin,s19}."
+make[1]: Leaving directory `C:/SRC/R-YORS/SRC'
+"Built BUILD/s19/asm-v1-flash-8000.s19."
+make[1]: Entering directory `C:/SRC/R-YORS/SRC'
+[ps] sync sidecar artifacts
+"Synced sidecar artifacts into BUILD/{lst,sym,map,bin,s19}."
+make[1]: Leaving directory `C:/SRC/R-YORS/SRC'
+"Built BUILD/s19/asm-session-report-v1.2-7000.s19 and BUILD/bin/asm-session-report-v1.2-7000.ap.bin."
+make[1]: Entering directory `C:/SRC/R-YORS/SRC'
+[ps] sync sidecar artifacts
+"Synced sidecar artifacts into BUILD/{lst,sym,map,bin,s19}."
+make[1]: Leaving directory `C:/SRC/R-YORS/SRC'
+BANKAUDIT .a/.asm shared body: 228 logical lines, identical
+BANKAUDIT S19: $2000-$2201, 514 bytes, FNV32=$0EFD2A83
+BANKAUDIT onboard AP v2: 17 relocations, package length=$0299
+BANKAUDIT policy: read-only bank select/stage/CRC; no mutation doorway
+"Built and checked BUILD/s19/bank-audit-2000.s19 against ../DOC/GUIDES/ASM/SAMPLES/bank-audit-2000.a."
+make[1]: Entering directory `C:/SRC/R-YORS/SRC'
+[ps] sync sidecar artifacts
+"Synced sidecar artifacts into BUILD/{lst,sym,map,bin,s19}."
+make[1]: Leaving directory `C:/SRC/R-YORS/SRC'
+BANKDUMP onboard source updated: C:\Users\Walter\AppData\Local\Temp\bank-dump-e5ea284c-19fe-4fe1-85e6-08a3741995aa.a
+BANKDUMP host map/onboard fixed operands: identical and current
+BANKDUMP onboard symbols: BANKDUMP plus 3 imports; branches/constants fixed
+BANKDUMP S19: $2000-$292B, 2348 bytes, FNV32=$CEF1F837
+BANKDUMP onboard AP v2: 3 import relocations, package length=$09AD
+BANKDUMP policy: map/stage/restore/decode/dump/CRC; no mutation doorway
+"Built and checked BUILD/s19/bank-dump-2000.s19 against ../DOC/GUIDES/ASM/SAMPLES/bank-dump-2000.a."
+make[1]: Entering directory `C:/SRC/R-YORS/SRC'
+[ps] sync sidecar artifacts
+"Synced sidecar artifacts into BUILD/{lst,sym,map,bin,s19}."
+make[1]: Leaving directory `C:/SRC/R-YORS/SRC'
+PIA LED .a/.asm shared body: 57 logical lines, identical
+PIA LED S19: $2000-$2083, 132 bytes, FNV32=$9F3CAF3C
+PIA LED AP: 6 internal relocations, expected onboard package length=$00D0
+"Built and checked BUILD/s19/pia-led-show-2000.s19 against ../DOC/GUIDES/ASM/SAMPLES/pia-led-show-2000.a."
+make[1]: Entering directory `C:/SRC/R-YORS/SRC'
+[ps] sync sidecar artifacts
+"Synced sidecar artifacts into BUILD/{lst,sym,map,bin,s19}."
+make[1]: Leaving directory `C:/SRC/R-YORS/SRC'
+Microchess AP check passed: engine=$2000-$2625, linked end=$2625, body=1573, package=1702
+Microchess runtime smoke passed: help, reset, opening move, human move, searched reply, Q return
+Microchess onboard ASM-F2 check passed: 678 source lines, exact 1702-byte AP
+"Built and checked Microchess AP: BUILD/s19/microchess-2000.s19, BUILD/bin/microchess.ap, and BUILD/s19/microchess-ap-3000.s19."
+make[1]: Entering directory `C:/SRC/R-YORS/SRC'
+[ps] sync sidecar artifacts
+"Synced sidecar artifacts into BUILD/{lst,sym,map,bin,s19}."
+make[1]: Leaving directory `C:/SRC/R-YORS/SRC'
+AP v2 check OK len=$074B body=$071B rel=0/64 exp=1/64 imp=0/64 syms=128 pool=$0800 card-import-uses=64 sentinels=$7900-$7902 wrapper-zp=$82-$83
+PASS 23 message/address checks, including shared READ/FAIL and ASM/OK suffixes
+PASS 1024 decoder cases: all 256 bytes in native/PC/seal/AP contexts and return ABI
+PASS 2550 command failure cases: parser/worker domains, SEAL flags, READ, status retention
+PASS real-source 01,03-09; addressing/range/name variants; row/name-pool/fixup exhaustion
+PASS rollback/boundary; sticky failure/NEW; SEAL/RELOCATE/PACKAGE/LOAD success; invalid/no-END/malformed AP
+PASS entry/service/resume/.P/post-END handling; 255 two-address INSTALL statuses; flash failure mapping
+PASS ASMF2 error regression; ROM end=$BB83, headroom=$047D
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     008000  008000     3B75H ( 15221)
+DATA     007080  007080      2CCH (   716)
+UDATA    005000  ------     1D6EH (  7534)
+Total                       5BAFH ( 23471)
+
+asm-v1-flash RAM map low=0200-19FF user=1A00-1FFF udata=5000-6D6E upper=6D6E-7CFF
+PASS 23 message/address checks, including shared READ/FAIL and ASM/OK suffixes
+PASS 1024 decoder cases: all 256 bytes in native/PC/seal/AP contexts and return ABI
+PASS 3060 command failure cases: parser/worker domains, SEAL flags, READ, status retention
+PASS real-source 01,03-09; addressing/range/name variants; row/name-pool/fixup exhaustion
+PASS rollback/boundary; sticky failure/NEW; SEAL/RELOCATE/PACKAGE/LOAD success; invalid/no-END/malformed AP
+PASS entry/service/resume/.P/post-END handling; 255 two-address INSTALL statuses; flash failure mapping
+PASS optional host fixture: CODE end=$BB75, DATA end=$734C; not a resident flash image
+python -B tools/check_asm_size.py
+PASS 65536 opcode ID/mode pairs and 1024 numbered-bit byte cases
+PASS 6 exact state-clear cases on nonzero RAM, including unrelated-field guards
+PASS 105 unhooked service-init header/checksum/cold/warm cases
+python -B tools/check_asm_package_writers.py
+PASS 78 exact export/import records: 0-64 rows, nonsequential slots, base borrow, names 1-32, PACK40 triples, source/destination page crossings
+PASS 6 exact complete AP-v2 packages: empty/full records, relocations 0/1/51/52/63/64, BODY lengths 0/1/255/256/257/511 and guards
+PASS ASM-F2 package writer regression (asm-v1-flash-8000.s19)
+python -B tools/check_himon_size.py
+PASS all 256 opcode step displays, including bit suffixes and unknown opcodes
+PASS 262 FNV vectors through initialized resident service pointers
+PASS 77 AP parse/load cases: page boundaries, seal errors, truncation, and range policy
+python -B tools/check_himon_ap_boundary.py --output "BUILD/tmp/himon-ap-boundary.json"
+PASS AP/HIMON boundaries; 5 bypass negatives; 6 resolver + 7 manager cases
+python -B tools/check_himon_ap_contracts.py --output "BUILD/tmp/himon-ap-contracts.json"
+load-1-dst-4000-len-1 PASS
+load-1-dst-4FFF-len-1 PASS
+load-1-dst-4FFF-len-2 PASS
+load-1-dst-5000-len-1 PASS
+load-1-dst-6FFF-len-1 PASS
+load-1-dst-7000-len-1 PASS
+load-1-dst-7BFF-len-1 PASS
+load-1-dst-7BFF-len-2 PASS
+load-1-dst-7C00-len-1 PASS
+load-5-dst-1FFF-len-1 PASS
+load-5-dst-2000-len-1 PASS
+load-5-dst-4FFF-len-2 PASS
+load-5-dst-5000-len-4 PASS
+load-5-dst-6D6D-len-1 PASS
+load-5-dst-6FFF-len-1 PASS
+load-5-dst-6FFF-len-2 PASS
+load-5-dst-7000-len-1 PASS
+load-5-dst-FFFF-len-2 PASS
+source-rejected-4FF0 PASS
+source-rejected-5000 PASS
+source-rejected-6FFF PASS
+source-rejected-1FF0 PASS
+overlap-1 PASS
+overlap-5 PASS
+operation-0 PASS
+operation-2 PASS
+operation-255 PASS
+typed-import-1-FNV1A_INIT PASS
+typed-import-2-FNV1A_INIT PASS
+typed-import-2-T PASS
+install-unstable-0200 PASS
+install-unstable-0A00 PASS
+install-unstable-1900 PASS
+install-unstable-1A00 PASS
+install-unstable-4FF0 PASS
+install-unstable-5000 PASS
+install-unstable-7000 PASS
+install-unstable-FEF0 PASS
+manager-absent PASS
+manager-corrupt PASS
+manager-load PASS
+manager-last-byte PASS
+manager-overlay-rejected PASS
+manager-named PASS
+manager-duplicate PASS
+manager-duplicate-detail PASS
+manager-not-found PASS
+manager-child-return PASS
+manager-install PASS
+asm-client-4000 PASS
+asm-client-5000 PASS
+asm-install-fresh-session PASS
+asm-resume-refused-after-takeover PASS
+PASS 53 current contract cases; no flash writes
+"ASM v1 smoke checks passed."
+HIMON STR8 client = PASS; SR/02 parser + ordered RS reset marker; end=$EE5C; margin=$01A4
+HIMON banked AP check OK body=$D502-$D537 ram=$0300 bytes=$36 cases=11 max-steps=16486 ap-relocs=64 rel-len=$141 reloc-access=4160 max-steps=19
+make: Nothing to be done for `himon-str8-record-check'.
+HIMON I/O LED check = PASS; live wait=$21/$43 rx=$07 tx=$0B; end=$EE5C; margin=$01A4
+wdc02as -G -L -S -W -I BUILD -I BUILD/inc HIMON/himon.asm
+WDC 65C02 Assembler  Version 3.49.1 Feb  6 2006 17:25:36
+       Copyright (C) 1992-2006 by The Western Design Center, Inc.
+wdcln -g -s -t -cC000 -hm19 -j -o BUILD/s19/himon-c000.s19 BUILD/obj/HIMON/himon-c000.obj -L BUILD\lib\rom
+WDC 65C816 Linker Version 3.49.1 Apr 24 2006 15:40:38
+   Copyright (C) 1992-2006 The Western Design Center, Inc.
+
+Section: ORG:    ROM ORG:  SIZE:
+CODE     00C000  00C000     29C6H ( 10694)
+DATA     00E9C6  00E9C6      496H (  1174)
+Total                       2E5CH ( 11868)
+
+[ps] build BUILD/bin/himon-rom-c000.bin
+Symbols NMI/RESET/IRQ = SYS_VEC_ENTRY_NMI/START/SYS_VEC_ENTRY_IRQ_MASTER
+Vectors NMI/RESET/IRQ = E679/C000/E67C
+Image layout          = 32K ROM bank image
+Bank offset           = 0x00000
+Bank head @ 8000      = FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+Reset head @ C000   = 4C 07 C0 A5 5A C3 3C 78 D8 A2 FF 9A A2 03 20 14
+Tail FFFA-FFFF       = 79 E6 00 C0 7C E6
+BIN                 = BUILD/bin/himon-rom-c000.bin
+[ps] clean HIMON ROM vector temp
+[ps] stamp BUILD/bin/himon-rom-c000.bin
+STAMP BIN                 = ROM_IMAGES\himon-rom-c000-2026-09-16T11-09-05-00.bin
+[ps] build BUILD/s19/himon-rom-c000-install-8000.s19
+BIN                  = BUILD/bin/himon-rom-c000.bin
+Install S19          = BUILD/s19/himon-rom-c000-install-8000.s19
+Address range        = 8000-FFFF
+S9 start             = C000
+Record types         = S1 S9
+All-FF S1 records    = kept
+Vectors FFFA-FFFF    = 79 E6 00 C0 7C E6
+[ps] build STR8-N I payload BUILD/s19/himon-apv2-bank3-c-e.s19
+BIN                  = BUILD/bin/himon-rom-c000.bin
+Install S19          = BUILD/s19/himon-apv2-bank3-c-e.s19
+Address range        = C000-EFFF
+S9 start             = C000
+Record types         = S1 S9
+All-FF S1 records    = kept
+R-YORS FLASH S19 = BUILD/s19/ryors-v1.2-asm-bank3-8-b.s19
+RANGE/S9         = $8000-$BFFF / $FFFF
+BYTES/RECORDS    = 16384 / 513
+R-YORS FLASH S19 = BUILD/s19/ryors-v1.2-himon-bank3-c-e.s19
+RANGE/S9         = $C000-$EFFF / $C000
+BYTES/RECORDS    = 12288 / 385
+R-YORS FLASH S19 = BUILD/s19/ryors-v1.2-himon-asm-bank3-8-e.s19
+RANGE/S9         = $8000-$EFFF / $C000
+BYTES/RECORDS    = 28672 / 897
+make[1]: Entering directory `C:/SRC/STR8-N'
+RESIDENT            = $F000-$FCF1; 3314 bytes
+UNUSED MARGIN        = $FCF2-$FD77; 134 bytes (minimum 128)
+UNIFIED WORKER       = run $0200-$0437; store $FD78-$FFAF; 568 bytes
+SELECTOR PREFIX      = $0200-$0226; 39 bytes
+WORKER S19 SHA-256   = 485BA4C3ADCD622EAE90D74DE6FEB5BA8EBE0EAD6FC764CB9DBE6133B51324CC
+DIRECTORY/CONFIG/VEC = $FFB0-$FFEF / $FFF0-$FFF9 / $FFFA-$FFFF
+PUBLIC RESIDENT ABI  = INIT $F003; QUERY $F006; CHARIN $F013; CHAROUT $F019; READY $F03E
+RAM ABI              = $12; LOW USER $1A00-$1FFF; STR8 STATE $7DE7-$7DFF
+LAYOUT CHECK         = PASS
+STR8 RESIDENT       = $F000-$FCF1
+UNIFIED WORKER      = run $0200-$0437; stored $FD78-$FFAF
+NEW DIRECTORY       = $FFB0-$FFEF; all FF
+SECTOR ROLES        = $FFF0=$1E B1:E WORK; $FFF1=$1F B1:F B3:F backup; $FFF2-$FFF9 all FF
+VECTORS FFFA-FFFF   = CF F0 00 F0 E3 F0
+CPU RANGE           = $F000-$FFFF; 4096 bytes
+SST39SF010A B3 PHYS = $1F000-$1FFFF; file offset $000-$FFF
+SHA-256             = 9538D97854BA9D5D76143CBA0FEDB3B2E7CE18F977CE89557406E63404026CB7
+T48 BIN             = BUILD/v1.34/bin/str8n-v1.34-bank3-f000-ffff.bin
+R-YORS FULL BANK    = PASS
+CPU RANGE           = $8000-$FFFF; 32768 bytes
+S1 RECORDS          = 1024
+S9 / RESET          = $F000
+IMAGE SHA256        = 1FDC24D97B68A1A596C5088CC8A7B0CF796C15B684FE40CE2BD91222634A906A
+S19 SHA256          = E67B50EFE468E18586F4DB0206783D4E81F88D546F85AB919CD160B796FCEA61
+OUTPUT               = BUILD/v1.34/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
+make[1]: Leaving directory `C:/SRC/STR8-N'
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/check_board_s19_identity.ps1 -S19Dir "BUILD/s19" -Str8FullBankPath "../../STR8-N/BUILD/v1.34/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
+BOARD S19 IDENTITY = PASS; ASM=$3B83 HIMON=$2E5C targets=9
+"Built BUILD/bin/himon-rom-c000.bin."
+make: Leaving directory `C:/SRC/R-YORS/SRC'

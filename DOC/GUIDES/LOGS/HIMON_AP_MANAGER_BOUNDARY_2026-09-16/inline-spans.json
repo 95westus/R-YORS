@@ -1,0 +1,23 @@
+[
+  {
+    "name": "source-error",
+    "start": 54315,
+    "end_exclusive": 54331,
+    "bytes": 16,
+    "hex": "a2c1a0eb204eccad617c20f5e620e1e6"
+  },
+  {
+    "name": "shadow",
+    "start": 54339,
+    "end_exclusive": 54350,
+    "bytes": 11,
+    "hex": "a200bd007a9d001ae8d0f7"
+  },
+  {
+    "name": "missing",
+    "start": 54462,
+    "end_exclusive": 54472,
+    "bytes": 10,
+    "hex": "a2a9a0eb204ecc20e1e6"
+  }
+]

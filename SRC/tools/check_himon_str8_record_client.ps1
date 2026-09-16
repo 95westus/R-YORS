@@ -6,6 +6,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'read_himon_source.ps1')
 
 function Fail-Check([string]$Message) {
     throw "HIMON STR8 record-client check: $Message"
@@ -26,7 +27,7 @@ foreach ($path in @($HimonSourcePath, $HimonMapPath, $PublicContractPath)) {
     }
 }
 
-$source = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $HimonSourcePath))
+$source = (Read-HimonSource -Path $HimonSourcePath)
 $map = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $HimonMapPath))
 $contract = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $PublicContractPath))
 

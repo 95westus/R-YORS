@@ -1,0 +1,82 @@
+[
+  {
+    "path": "environment.json",
+    "bytes": 4126,
+    "sha256": "9933db942655e3215e21e1b1aa70368bee3840ba47ddb5a0d23ed5da57a0ede8"
+  },
+  {
+    "path": "source-manifest.json",
+    "bytes": 97951,
+    "sha256": "ae2f82dfe85c033a3ae2d79486fa33115249a670648f3f297e3cf7ab5159aa43"
+  },
+  {
+    "path": "initial.patch",
+    "bytes": 6019,
+    "sha256": "f3f7f3d99693b4d0118623e37688878149ed506f987bdff66893576a1c08469e"
+  },
+  {
+    "path": "build-1.log",
+    "bytes": 30748,
+    "sha256": "e81220287c90893c419ff6a820229ebf3ac7e5ab94d8155efd194751a46fa5db"
+  },
+  {
+    "path": "build-1.json",
+    "bytes": 517,
+    "sha256": "ec2c2f6abc029c0f62a6594a57cfddb38290978643318583e27e5aeaa4b1ea50"
+  },
+  {
+    "path": "build-2.log",
+    "bytes": 21630,
+    "sha256": "cb26a5f8509a98dac7da964f20b88c19df79f948101f7ce55ea00fe6ad98fde0"
+  },
+  {
+    "path": "build-2.json",
+    "bytes": 3174,
+    "sha256": "8abec43a4123146d5ad41afc49709d4442c5d088b953f451f50809144f3e5e57"
+  },
+  {
+    "path": "ledger.json",
+    "bytes": 7880,
+    "sha256": "dfbac461abf94ba7ad53260625d7c3185d8c8b7407a5ac82fedb2e03e5b51cbd"
+  },
+  {
+    "path": "board-verification.json",
+    "bytes": 1763,
+    "sha256": "4904ddb2b841236551761128772675b2aaa76e97c02878b0fa74ab6cd4f64284"
+  },
+  {
+    "path": "com4-result.json",
+    "bytes": 205,
+    "sha256": "5d56ecb8a9ccd74442adfca9d89689f42c29b9a765f971b34264493ce360e518"
+  },
+  {
+    "path": "com4.jsonl",
+    "bytes": 319632,
+    "sha256": "e617d85b8861cca3072b7820d2dc8e6d70617f3e1b0074cf35ea180e6da0842b"
+  },
+  {
+    "path": "reproducibility.json",
+    "bytes": 2924,
+    "sha256": "d2e1076b5fc42715bd49dc41f7ee7e646116444688b6f04006233dae288e6be4"
+  },
+  {
+    "path": "capture.py",
+    "bytes": 4723,
+    "sha256": "178ebae53d820b0f06a9272f127cbe5b3065207cce6b90c494e9d8b739001138"
+  },
+  {
+    "path": "probe.py",
+    "bytes": 1322,
+    "sha256": "536239b0815fef92939f16162cb587ffd0326f5259607db1ee28eef033730b8b"
+  },
+  {
+    "path": "verify_board.py",
+    "bytes": 2656,
+    "sha256": "e6fb4eaa805b9da1cea1e6f6cffd7bfa6349965710062c67892e61d1beddbb70"
+  },
+  {
+    "path": "finalize.py",
+    "bytes": 4266,
+    "sha256": "e6a61bae1981b0a1d3c1d8920cc1befdc40f0fc31855a6de832c20c9689eceda"
+  }
+]

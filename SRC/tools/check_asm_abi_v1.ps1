@@ -8,6 +8,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'read_himon_source.ps1')
 function Fail([string]$Message) { throw "ASM ABI v1 check: $Message" }
 
 function Read-Equ([string]$Text, [string]$Name) {
@@ -56,7 +57,7 @@ foreach ($path in @($ContractPath, $AsmSourcePath, $AsmFlashSourcePath, $HimonSo
 $contract = [IO.File]::ReadAllText((Resolve-Path $ContractPath))
 $asm = [IO.File]::ReadAllText((Resolve-Path $AsmSourcePath))
 $asmFlash = [IO.File]::ReadAllText((Resolve-Path $AsmFlashSourcePath))
-$himon = [IO.File]::ReadAllText((Resolve-Path $HimonSourcePath))
+$himon = (Read-HimonSource -Path $HimonSourcePath)
 $shared = [IO.File]::ReadAllText((Resolve-Path $HimonSharedPath))
 
 $expected = [ordered]@{
@@ -78,6 +79,7 @@ $expected = [ordered]@{
     ASM_ABI_AP_OP_PARSE = 0; ASM_ABI_AP_OP_LOAD = 1
     ASM_ABI_AP_OP_SUGGEST = 2; ASM_ABI_AP_OP_LINK = 3
     ASM_ABI_AP_OP_MANAGER = 4
+    ASM_ABI_AP_OP_TAKEOVER = 5; ASM_ABI_SESSION_RESUME = 0x7E6A
     ASM_ABI_STATUS_OK = 0; ASM_ABI_STATUS_BAD_RANGE = 6
     ASM_ABI_STATUS_BAD_LINE = 7; ASM_ABI_STATUS_BAD_FIX = 9
     ASM_ABI_AP_SIG0_VALUE = [int][char]'A'; ASM_ABI_AP_SIG1_VALUE = [int][char]'P'

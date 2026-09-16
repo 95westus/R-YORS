@@ -1,0 +1,7 @@
+[
+  "receive-only RST H / STR8-N 1.34 / default warm HIMON recovery",
+  "reset clears ASM resume and rediscovers both B2 carriers",
+  "post-reset APTEST executes at 5002 with exact BODY",
+  "post-reset fresh ASM assembles and runs A=AC/C=1",
+  "post-reset complete Bank 3 remains exact"
+]

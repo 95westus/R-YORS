@@ -25,6 +25,51 @@ those gates agree.
 
 ## Host Gate
 
+The [2026-09-16 AP interface/RAM audit](../AP/HIMON_AP_INTERFACE_RAM_AUDIT_2026-09-16.md)
+adds a separate 23-case characterization run against the frozen Step-1 images:
+
+```text
+python -B SRC/tools/audit_himon_ap_contracts.py --output DOC/GUIDES/LOGS/HIMON_AP_AUDIT_2026-09-16.json
+```
+
+Run that command from the repository root. It characterizes existing behavior,
+including known faults; passing does not accept those faults. It uses no serial
+port and stops INSTALL before its flash worker. Before accepting a manager
+contract correction, require stable-source rejection before bootstrap, explicit
+ASM session invalidation/preservation, deterministic absent-manager failure,
+single duplicate-status propagation, exact range/size checks, full regression,
+and the relevant board lifecycle/reset proof. The
+[functional correction](../AP/HIMON_AP_CONTRACT_CHANGE_2026-09-16.md) now has 53 passing
+linked-code cases and 13 COM4 checks, including software warm/cold entry.
+`make -C SRC himon-ap-contract-check` runs the current acceptance assertions;
+it is part of `asm-test`. The old audit remains a historical characterization.
+The [typed-import boundary slice](../AP/HIMON_AP_BOUNDARY_2026-09-16.md) adds
+`himon-ap-boundary-check`: six linked resolver cases and two source-boundary
+negative fixtures. It runs through the same contract target and requires
+exact artifact/symbol identity for this source-only ownership change.
+The [manager presentation slice](../AP/HIMON_AP_MANAGER_BOUNDARY_2026-09-16.md)
+extends that gate to 13 linked cases (six resolver, seven manager) and five
+source bypass negatives. Require all 256 command bytes and adjacent guards,
+pre-shadow INSTALL rejection, exact error text/results, and absent/corrupt
+manager return. Three shadow checks stop before staging; completed calls
+must balance the stack. Keep the separate 53-case contract suite passing.
+The subsequent [Bank-2 board cycle](../LOGS/HIMON_AP_BANK2_2026-09-16.md)
+proves persistent APMAN setup and a new destructive INSTALL cycle, including
+exact onboard package bytes, fresh ASM return, exported entry selection,
+upper-boundary rejection, child return, software warm/cold recovery, and
+complete four-bank isolation. Physical RESET, post-reset rediscovery/run,
+and fresh ASM smoke also pass; NMI and visual LED acceptance remain separate gates.
+
+The [APMAN size slice](../AP/APMAN_SIZE_REDUCTION_2026-09-16.md) requires
+`apman-size-check` in addition to those gates. Compare exact APS/AP D output
+across PACK40 name lengths and successful INSTALL's result card, source,
+full staging image, copied worker, and destination configuration. The host
+runner must forbid flash writes and stop before the programming worker.
+Compare with the preceding binary for this optimization. Board proof must
+include actual ASM INSTALL, exact carrier readback, both inspection selector
+forms, named load/run, and physical-reset rediscovery. Report BODY/envelope
+savings separately from unchanged resident sizes and carrier allocation.
+
 Run the complete supported suite:
 
 ```text
@@ -59,6 +104,7 @@ make -C SRC ap-store-sector-tool-check
 make -C SRC ap-store-chain-tool-check
 make -C SRC ap-store-slice6-tool-check
 make -C SRC himon-banked-ap-check
+make -C SRC himon-ap-contract-check
 make -C SRC himon-str8-record-check
 make -C SRC himon-io-led-check
 make -C SRC himon-size-check

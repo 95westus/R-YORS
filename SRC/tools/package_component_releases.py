@@ -193,6 +193,13 @@ def main(args):
             if role == 'himon':
                 for filename in ['himon.asm', 'himon-disasm.inc', 'himon-shared-eq.inc']:
                     put(ROOT / 'SRC/HIMON' / filename, 'SOURCE/' + filename)
+                # Retain the extracted implementation in future source-reference bundles.
+                for filename in ['himon-ap-adapter.inc', 'himon-ap-resolver.inc',
+                                 'himon-ap-manager-source-error.inc',
+                                 'himon-ap-manager-shadow.inc', 'himon-ap-manager-missing.inc']:
+                    put(ROOT / 'SRC/HIMON' / filename, 'SOURCE/HIMON/' + filename)
+                for path in sorted((ROOT / 'SRC/AP').glob('*.inc')):
+                    put(path, 'SOURCE/AP/' + path.name)
                 for filename in ['HIMON_MAP.md', 'HIMON_DEBUG_TESTING.md']:
                     put(ROOT / 'DOC/GUIDES/HIMON' / filename, 'DOC/GUIDES/HIMON/' + filename)
                 for filename in ['BANK_AUDIT_AP_CARD.md', 'BANK_DUMP_AP_CARD.md', 'PIA_LED_BANKED_AP_CARD.md']:

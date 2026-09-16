@@ -1,0 +1,56 @@
+{
+  "bank3_sha256": "99d80e2e7f98a11a03ff8fff56b260c02c9b18f1cd7d2ca05ba7dbd4789d0234",
+  "bytes": 32768,
+  "matches_bso2_post_install_bank3": true,
+  "components": [
+    {
+      "name": "himon-rom-c000",
+      "board_sha256": "0aee8af70305c51514f86b68b283f649602e5965f738e020e3ce931cc44371d3",
+      "host_dense_sha256": "3abcce014cc167d3f1e0e9c449d64d8de02a22c887c5a64259500bf5b4b835bc",
+      "difference_addresses": [
+        "E9BF",
+        "E9C0",
+        "E9C1",
+        "E9D5",
+        "E9D6",
+        "E9D7"
+      ],
+      "timestamp_only": true,
+      "strings": [
+        {
+          "symbol": "MSG_HIMON_VERSION_TEXT",
+          "address": "E9AE",
+          "host": "HIMON V 00.0915(2324)",
+          "board": "HIMON V 00.0915(2233)"
+        },
+        {
+          "symbol": "MSG_HIMON_VERSION_HASH_TEXT",
+          "address": "E9C3",
+          "host": "HIMON: V 00.0915(2324)",
+          "board": "HIMON: V 00.0915(2233)"
+        }
+      ]
+    },
+    {
+      "name": "asm-v1-flash-8000",
+      "board_sha256": "bebf51cb85890b197a3a29331dbbda0eb5c989c14898f416a965d3b318cd047b",
+      "host_dense_sha256": "748ee6527a68a01c6f84dd02f55e581c9dfcb3f52d9dce1f11d4125b7296e3c3",
+      "difference_addresses": [
+        "B8DE",
+        "B8DF",
+        "B8E0"
+      ],
+      "timestamp_only": true,
+      "strings": [
+        {
+          "symbol": "MSG_TITLE",
+          "address": "B8CE",
+          "host": "ASM-F2 00.0915(2324)",
+          "board": "ASM-F2 00.0915(2243)"
+        }
+      ]
+    }
+  ],
+  "directory_hex": "FFFFFFFF5744435632FEFFFFFCFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF42534F2D32FEFFFFFCFFFFFF5AFFFFFF52594F5253FE00C000FFFFFF",
+  "configuration_hex": "1E1FFFFFFFFFFFFFFFFF"
+}

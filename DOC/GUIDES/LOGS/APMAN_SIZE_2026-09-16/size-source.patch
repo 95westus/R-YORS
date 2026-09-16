@@ -1,0 +1,347 @@
+--- before/SRC/APPS/apman-7000.asm
++++ after/SRC/APPS/apman-7000.asm
+@@ -438,14 +438,7 @@
+                         BCC             APMAN_INSTALL_SCAN
+                         LDA             #APMAN_STATUS_NO_SPACE
+                         JMP             APMAN_FAIL_A
+-APMAN_INSTALL_FOUND:   LDA             BANK
+-                        STA             APMAN_FOUND_BANK
+-                        LDA             SECTOR
+-                        STA             APMAN_FOUND_SECTOR_HI
+-                        LDA             HIM_AP_PKG_LEN_LO
+-                        STA             APMAN_FOUND_PKG_LEN_LO
+-                        LDA             HIM_AP_PKG_LEN_HI
+-                        STA             APMAN_FOUND_PKG_LEN_HI
++APMAN_INSTALL_FOUND:   JSR             APMAN_SET_PACKAGE_FACTS
+                         JSR             APMAN_FILL_STAGE_FF
+                         JSR             APMAN_COPY_INSTALL_PACKAGE
+                         JSR             APMAN_COPY_WORKER
+@@ -859,17 +852,7 @@
+                         BCC             APMAN_STATUS_APS_HEADER
+                         JSR             APMAN_FIND_ENTRY_ROW
+                         BCC             APMAN_STATUS_UNMANAGED
+-                        LDX             #<MSG_APC
+-                        LDY             #>MSG_APC
+-                        JSR             APMAN_PUTS
+-                        JSR             APMAN_PRINT_ENTRY_NAME
+-                        LDX             #<MSG_LEN
+-                        LDY             #>MSG_LEN
+-                        JSR             APMAN_PUTS
+-                        LDA             HIM_AP_PKG_LEN_HI
+-                        JSR             APMAN_HEX
+-                        LDA             HIM_AP_PKG_LEN_LO
+-                        JSR             APMAN_HEX
++                        JSR             APMAN_PRINT_CARRIER_SUMMARY
+                         JMP             APMAN_CRLF
+ APMAN_STATUS_APS_HEADER:
+                         JSR             APMAN_VALIDATE_APS_HEADER
+@@ -955,6 +938,18 @@
+                         JSR             APMAN_PRINT_LOCATION
+                         LDA             #' '
+                         JSR             APMAN_PUTC
++                        JSR             APMAN_PRINT_CARRIER_SUMMARY
++                        LDX             #<MSG_AT
++                        LDY             #>MSG_AT
++                        JSR             APMAN_PUTS
++                        LDA             STAGE_BASE+$0A
++                        JSR             APMAN_HEX
++                        LDA             STAGE_BASE+$09
++                        JSR             APMAN_HEX
++                        JMP             APMAN_CRLF
++
++; Shared APS/AP D heading. ROW identifies the validated entry export.
++APMAN_PRINT_CARRIER_SUMMARY:
+                         LDX             #<MSG_APC
+                         LDY             #>MSG_APC
+                         JSR             APMAN_PUTS
+@@ -966,14 +961,7 @@
+                         JSR             APMAN_HEX
+                         LDA             HIM_AP_PKG_LEN_LO
+                         JSR             APMAN_HEX
+-                        LDX             #<MSG_AT
+-                        LDY             #>MSG_AT
+-                        JSR             APMAN_PUTS
+-                        LDA             STAGE_BASE+$0A
+-                        JSR             APMAN_HEX
+-                        LDA             STAGE_BASE+$09
+-                        JSR             APMAN_HEX
+-                        JMP             APMAN_CRLF
++                        RTS
+ 
+ ; Print the five validated AP-v2 section boundaries as staged RAM addresses,
+ ; then dump only the first $40 envelope bytes. The staged sector is immutable
+--- before/SRC/Makefile
++++ after/SRC/Makefile
+@@ -729,11 +729,14 @@
+ asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show microchess asm-ap-v2-check asm-error-check asm-size-check himon-size-check himon-ap-contract-check
+ 	@echo "ASM v1 smoke checks passed."
+ 
+-.PHONY: himon-ap-contract-check himon-ap-boundary-check
++.PHONY: himon-ap-contract-check himon-ap-boundary-check apman-size-check
++apman-size-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN) tools/check_apman_size.py
++	$(PYTHON) -B tools/check_apman_size.py --output "$(BUILD_DIR)/tmp/apman-size.json"
++
+ himon-ap-boundary-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
+ 	$(PYTHON) -B tools/check_himon_ap_boundary.py --output "$(BUILD_DIR)/tmp/himon-ap-boundary.json"
+ 
+-himon-ap-contract-check: himon-ap-boundary-check $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
++himon-ap-contract-check: himon-ap-boundary-check apman-size-check $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
+ 	$(PYTHON) -B tools/check_himon_ap_contracts.py --output "$(BUILD_DIR)/tmp/himon-ap-contracts.json"
+ 
+ asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(ASM_V1_FLASH_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
+--- before/SRC/tools/check_apman_size.py
++++ after/SRC/tools/check_apman_size.py
+@@ -0,0 +1,253 @@
++"""Exercise APMAN's shared formatting and INSTALL facts from real linked bytes.
++
++Fixtures use the maintained fixed-package builder. Only terminal TX is hooked;
++all flash writes are forbidden, and INSTALL stops before entering its worker.
++An optional frozen build runs the same cases for behavioral comparison.
++"""
++import argparse
++import json
++from pathlib import Path
++import subprocess
++import sys
++
++sys.dont_write_bytecode = True
++from audit_himon_ap_contracts import ROOT, Machine, word
++from report_himon_ap_baseline import sha, srecord
++
++
++def record(kind, address, data=b''):
++    payload = bytes([len(data)+3])+address.to_bytes(2, 'big')+data
++    return 'S'+str(kind)+(payload+bytes([(~sum(payload))&255])).hex().upper()
++
++
++def build_fixtures(directory):
++    """Use production serialization, including FNV and padded PACK40 names."""
++    builder = ROOT/'SRC/tools/build_ap_fixed_package.ps1'
++    fixtures = []
++    specifications = [(name, 37+i) for i, name in enumerate(
++        ('T', 'AA', 'ABC', 'FOUR', 'ABCDE', 'LONG_0123456789?.'))]
++    specifications.append(('FULL', 0x1000-46))
++    for index, (name, length) in enumerate(specifications):
++        stem = directory/f'fixture-{index}'
++        body = b'\xEA'*(length-1)+b'\x60'
++        lines = [record(1, 0x2800+i, body[i:i+32]) for i in range(0, length, 32)]
++        stem.with_suffix('.s19').write_text('\n'.join(lines+[record(9, 0x2800)])+'\n')
++        stem.with_suffix('.map').write_text(f'00002800 START\n{0x2800+length:08X} _END_DATA\n')
++        result = subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass',
++            '-File', str(builder), '-S19Path', str(stem.with_suffix('.s19')),
++            '-MapPath', str(stem.with_suffix('.map')),
++            '-PackagePath', str(stem.with_suffix('.ap')), '-BaseAddress', '10240',
++            '-EntrySymbol', 'START', '-ExportName', name],
++            check=True, capture_output=True, text=True)
++        data = stem.with_suffix('.ap').read_bytes()
++        assert data[:3] == b'AP\x02' and int.from_bytes(data[3:5], 'little') == len(data)
++        assert data[-length:] == body
++        fixtures.append(dict(name=name, data=data, body_length=length,
++                             builder_output=result.stdout))
++    assert len(fixtures[-1]['data']) == 0x1000
++    return fixtures
++
++
++def sections(data):
++    cursor = 5
++    rows = []
++    for expected in b'SREIB':
++        assert data[cursor] == expected
++        end = cursor+3+int.from_bytes(data[cursor+1:cursor+3], 'little')
++        assert end <= len(data)
++        rows.append((chr(expected), cursor, end-1))
++        cursor = end
++    assert cursor == len(data)
++    return rows
++
++
++def detail(prefix, bank, sector, fixture):
++    return (f'{prefix} B{bank} {sector:02X}00 APC {fixture["name"]}'
++            f' L={len(fixture["data"]):04X} @2800\r\n')
++
++
++def dump_detail(bank, sector, fixture):
++    data = fixture['data']
++    output = detail('APD', bank, sector, fixture)
++    output += ''.join(f'{tag} {start:04X}-{end:04X}\r\n' for tag, start, end in sections(data))
++    image = data.ljust(0x1000, b'\xFF')
++    output += ''.join(f'{offset:04X}:'+''.join(f' {b:02X}' for b in image[offset:offset+16])+'\r\n'
++                      for offset in range(0, 0x40, 16))
++    return output
++
++
++def run_suite(build, top, fixtures):
++    carrier = (build/'bin/apman-v1-bank2-8000.bin').read_bytes()
++    manager_package = (build/'bin/apman-v1.ap').read_bytes()
++    linked = srecord(build/'s19/apman-7000.s19')
++    cases = []
++
++    def make():
++        machine = Machine(build, top)
++        machine.m.banks[2][:0x1000] = carrier
++        machine.m.ram[0x7E6A] = 1
++        return machine
++
++    def populate(machine):
++        for index, fixture in enumerate(fixtures[:6]):
++            start = index*0x1000
++            machine.m.banks[1][start:start+len(fixture['data'])] = fixture['data']
++        machine.m.banks[3][0x7FF0:0x7FF2] = b'\x1E\x1F'
++
++    def invoke(machine, command, mode, stop=None):
++        shadow = (command.encode('ascii')+b'\0').ljust(256, b'\0')
++        machine.m.ram[0x7A00:0x7B00] = shadow
++        machine.m.ram[0x7C60] = mode
++        machine.set('HIM_AP_OP', 4)
++        before = [bytes(bank) for bank in machine.m.banks]
++        result = machine.run('HIM_AP_SERVICE', stop=stop)
++        assert [bytes(bank) for bank in machine.m.banks] == before
++        assert machine.m.ram[0x1A00:0x1B00] == shadow
++        assert machine.m.ram[0x7E6A] == 0
++        return result
++
++    def save(name, machine, result, expected=None, **facts):
++        if expected is not None:
++            assert result['output'] == expected, (name, result['output'], expected)
++            assert result['result'] == 'return' and result['carry']
++            assert result['manager_status'] == 0xAC
++        result.update(case=name, bank=machine.m.bank, **facts)
++        cases.append(result)
++        print(name, 'PASS', flush=True)
++
++    machine = make()
++    populate(machine)
++    result = invoke(machine, 'APS B1', 2)
++    expected = ''.join(detail('APS', 1, 0x80+16*i, fixture)
++                       for i, fixture in enumerate(fixtures[:6]))
++    save('aps-bank-list-six-pack40-names', machine, result, expected)
++
++    for index, fixture in enumerate(fixtures[:6]):
++        sector = 0x80+index*16
++        for mode, command, expected in [
++            (2, f'APS B1 {fixture["name"]}', detail('APS', 1, sector, fixture)),
++            (1, f'AP D B1 {fixture["name"]}', dump_detail(1, sector, fixture))]:
++            machine = make()
++            populate(machine)
++            result = invoke(machine, command, mode)
++            assert machine.m.ram[0x0A00:0x1A00] == fixture['data'].ljust(0x1000, b'\xFF')
++            save(command.lower().replace(' ', '-'), machine, result, expected)
++
++    machine = make()
++    populate(machine)
++    result = invoke(machine, 'AP D B1 D000', 1)
++    save('ap-d-sector-address', machine, result, dump_detail(1, 0xD0, fixtures[5]))
++
++    machine = make()
++    populate(machine)
++    result = invoke(machine, 'APS', 2)
++    expected = ''
++    for bank in range(3):
++        for index in range(8):
++            location = bank*16+8+index
++            text = 'HDR ERASED'
++            if bank == 1 and index < 6:
++                fixture = fixtures[index]
++                text = f'APC {fixture["name"]} L={len(fixture["data"]):04X}'
++            elif location == 0x1E:
++                text = '= WORK'
++            elif location == 0x1F:
++                text = '= BKUP B3F'
++            elif location == 0x28:
++                text = f'APC APMAN L={len(manager_package):04X}'
++            expected += f'APS {location:02X} {text}\r\n'
++    expected += 'APS OK\r\n'
++    save('aps-all-carriers-and-reservations', machine, result, expected,
++         manager_package_length=len(manager_package))
++
++    # B1:8 and B1:A are reserved despite being erased; B1:9 is occupied.
++    # The first permissible destination is B1:B. Test short, unaligned, and
++    # completely full envelopes; stop before the unchanged worker executes.
++    for name, source, fixture in [
++        ('short', 0x3000, fixtures[0]),
++        ('unaligned', 0x32F9, fixtures[5]),
++        ('full-sector', 0x3000, fixtures[6])]:
++        machine = make()
++        machine.m.banks[3][0x7FF0:0x7FF2] = b'\x18\x1A'
++        occupied = fixtures[1]['data']
++        machine.m.banks[1][0x1000:0x1000+len(occupied)] = occupied
++        data = fixture['data']
++        machine.m.ram[source:source+len(data)] = data
++        source_before = bytes(machine.m.ram[source-1:source+len(data)+1])
++        machine.m.ram[0x7C62:0x7C66] = word(source)+b'\x01\xA5'
++        result = invoke(machine, f'INSTALL {source:04X} B1', 3, stop=0x0200)
++        assert result['result'] == 'stopped-before-worker'
++        assert result['output'] == ''
++        assert machine.m.ram[0x7C66:0x7C6A] == b'\x01\xB0'+word(len(data))
++        assert machine.m.ram[0x0A00:0x1A00] == data.ljust(0x1000, b'\xFF')
++        assert bytes(machine.m.ram[source-1:source+len(data)+1]) == source_before
++        assert machine.m.ram[0x7DE9] == 0xB0
++        assert machine.m.ram[0x7DEF] == 1 and machine.m.ram[0x7DF0] == 5
++        assert machine.m.ram[0x7DF6] == 0x0A and machine.m.ram[0x7C6E] == 5
++        worker_start = machine.manager['APMAN_WORKER_IMAGE']
++        worker_size = machine.manager['APMAN_WORKER_SIZE']
++        worker = bytes(linked[a] for a in range(worker_start, worker_start+worker_size))
++        assert machine.m.ram[0x0200:0x0200+worker_size] == worker
++        save('install-'+name+'-skips-protected-and-occupied', machine, result,
++             found_card=bytes(machine.m.ram[0x7C66:0x7C6A]).hex(),
++             staged_sha256=sha(bytes(machine.m.ram[0x0A00:0x1A00])),
++             source_sha256=sha(data), worker_sha256=sha(worker), worker_size=worker_size,
++             worker_config=dict(bank=1, sector='B0', buffer='0A00', mode=5))
++    return cases
++
++
++def behavioral_projection(case):
++    keys = ('case', 'result', 'a', 'carry', 'ap_status', 'manager_status', 'bank',
++            'output', 'found_card', 'staged_sha256', 'source_sha256',
++            'worker_sha256', 'worker_size', 'worker_config')
++    result = {key:case[key] for key in keys if key in case}
++    if case['case'] == 'aps-all-carriers-and-reservations':
++        # The complete expected output is checked independently for each build.
++        # Only this known self-description changes when APMAN becomes smaller.
++        own = f'APC APMAN L={case["manager_package_length"]:04X}'
++        assert result['output'].count(own) == 1
++        result['output'] = result['output'].replace(own, 'APC APMAN L=<SELF>')
++    return result
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--build-dir', type=Path, default=ROOT/'SRC/BUILD')
++    parser.add_argument('--baseline-dir', type=Path)
++    parser.add_argument('--output', type=Path, required=True)
++    args = parser.parse_args()
++    top = (ROOT.parent/'STR8-N/BUILD/v1.34/bin/str8n-v1.34-bank3-f000-ffff.bin').read_bytes()
++    lock = json.loads((ROOT/'SRC/INTEGRATION/str8n.lock.json').read_text())
++    assert sha(top).upper() == lock['artifacts']['topSectorSha256']
++    fixture_directory = ROOT/'SRC/BUILD/tmp/apman-size-fixtures'
++    fixture_directory.mkdir(parents=True, exist_ok=True)
++    fixtures = build_fixtures(fixture_directory)
++    cases = run_suite(args.build_dir, top, fixtures)
++    baseline = run_suite(args.baseline_dir, top, fixtures) if args.baseline_dir else None
++    if baseline is not None:
++        assert [behavioral_projection(c) for c in cases] == [behavioral_projection(c) for c in baseline]
++    inputs = ['s19/himon-rom-c000.s19', 's19/himon-rom-c000.map',
++              's19/asm-v1-flash-8000.s19', 's19/asm-v1-flash-8000.map',
++              's19/apman-7000.s19', 's19/apman-7000.map',
++              'bin/apman-v1.ap', 'bin/apman-v1-bank2-8000.bin']
++    evidence = dict(result='PASS', scope='linked host regression; no serial or flash writes',
++        top_sha256=sha(top), build_dir=str(args.build_dir),
++        inputs={name:sha((args.build_dir/name).read_bytes()) for name in inputs},
++        tool_sha256=sha(Path(__file__).read_bytes()),
++        builder_sha256=sha((ROOT/'SRC/tools/build_ap_fixed_package.ps1').read_bytes()),
++        fixtures=[dict(name=f['name'], package_length=len(f['data']),
++                       body_length=f['body_length'], package_sha256=sha(f['data'])) for f in fixtures],
++        stack_scope='Observed fixture peaks include synthetic caller; no interrupt bound.',
++        cases=cases)
++    if baseline is not None:
++        evidence.update(baseline_dir=str(args.baseline_dir),
++            baseline_inputs={name:sha((args.baseline_dir/name).read_bytes()) for name in inputs},
++            baseline_cases=baseline,
++            differential='All behavioral projections match; only independently checked APMAN self-length is normalized.')
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(json.dumps(evidence, indent=2)+'\n')
++    print(f'PASS {len(cases)} APMAN size cases'+(' and frozen-baseline differential' if baseline else ''))
++
++
++if __name__ == '__main__':
++    main()

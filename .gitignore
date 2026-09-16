@@ -70,3 +70,8 @@ DOC/s34
 !/DOC/GUIDES/ASM/SAMPLES/ap-store-v1-cycle-reader-b1-o1-newest-1a00.s19
 !/DOC/GUIDES/ASM/SAMPLES/ap-store-v1-cycle-reader-b1-o3-newest-1a00.s19
 *.code-workspace
+
+# Legacy frozen AP transcript filenames collide with Windows COM4 devices.
+# Identical portable copies are tracked beside the evidence directories.
+/DOC/GUIDES/LOGS/HIMON_AP_BASELINE_2026-09-16/com4.jsonl
+/DOC/GUIDES/LOGS/HIMON_AP_CHANGE_2026-09-16/com4.jsonl

@@ -46,6 +46,11 @@ ASM_ABI_AP_OP_SUGGEST       EQU             $02
 ASM_ABI_AP_OP_LINK          EQU             $03
 ; Foreground extension: discover/load the carrier-resident APMAN dispatcher.
 ASM_ABI_AP_OP_MANAGER       EQU             $04
+; Explicit foreground takeover; BODY may replace ASM UDATA below $7000.
+ASM_ABI_AP_OP_TAKEOVER      EQU             $05
+; Durable SEAL-resume flag, outside application/tool RAM. Previously unused
+; byte in the current high workspace (the retired FNV_TERM0 lives in ZP).
+ASM_ABI_SESSION_RESUME      EQU             $7E6A
 
 ; Shared status values returned in A and stored in ASM_ABI_AP_STATUS.
 ASM_ABI_STATUS_OK           EQU             $00
