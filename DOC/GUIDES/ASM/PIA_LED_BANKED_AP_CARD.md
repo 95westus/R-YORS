@@ -8,16 +8,20 @@ LED correction still needs its focused board rerun.
 This is the small APMAN example:
 
 ```text
-ASM NEW -> PACKAGE -> INSTALL -> RESET -> AP by name
+ASM NEW -> PACKAGE -> INSTALL -> physical RESET -> AP by name
 ```
 
-Install the B2:8 APMAN bootstrap and current Bank-3 image first, using sections
-1 and 2 of [APMAN_V1_BOARD_TEST.md](APMAN_V1_BOARD_TEST.md).
+Provision a compatible APMAN carrier and current Bank-3 firmware first.
+Use [the AP/OIL guide](../AP/AP_OIL_GUIDE.md) and the extracted HIMON
+release's `APPLICATIONS/APMAN/README.md`; the old APMAN board card is evidence,
+not a current installation checklist. The release build does not close the
+pending visual LED proof described above.
 
 ## Exact source
 
 ```text
-C:\SRC\R-YORS\RELEASE\ARTIFACTS\SOURCES\pia-led-show-2000.a
+APPLICATIONS/UTILITIES/pia-led-show-2000.a   (extracted HIMON release)
+DOC/GUIDES/ASM/SAMPLES/pia-led-show-2000.a   (repository source)
 ```
 
 ## Assemble, package, and install
@@ -35,12 +39,14 @@ SEAL
 PACKAGE PIALED $3000
 INSTALL 3000 B1
 .
-RESET
 ```
 
 Require `PKG OK @=$3000 L=$00D0`. `B1` is the install confirmation. APMAN
 selects the first completely erased, unreserved B1 sector and prints it; no
 Bank Maintenance menu, PUT helper, or separate `G` command is used.
+
+Press the board's physical RESET button, then select `C` at the STR8-N
+prompt to return to HIMON before listing and running the installed carrier.
 
 ## List and run after reset
 

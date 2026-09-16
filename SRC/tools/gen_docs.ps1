@@ -1140,7 +1140,7 @@ $cmdFlowNames = @(
     'CMD_HASH_TOKEN_LOOP',
     'CMD_HASH_TOKEN_DONE',
     'FNV1A_INIT',
-    'FNV1A_UPDATE_A',
+    'FNV1A_UPDATE_A_FAST',
     'CMD_SAVE_HASH',
     'CMD_DISPATCH_HASH',
     'CMD_DISPATCH_SCAN_LOOP',
@@ -1213,7 +1213,7 @@ $lines += ('    HAVE --> PREP["set CMDP_PTR to CMD_BUF<br/>skip spaces / peek to
 $lines += ('    PREP --> HASH["{0}"]' -f (Format-CmdFlow-Node 'CMD_HASH_TOKEN' 'hash command token'))
 $lines += ('    HASH --> FNVINIT["{0}"]' -f (Format-CmdFlow-Node 'FNV1A_INIT' 'seed FNV-1a'))
 $lines += ('    HASH --> HASHLOOP["{0}"]' -f (Format-CmdFlow-Node 'CMD_HASH_TOKEN_LOOP' 'walk token bytes'))
-$lines += ('    HASHLOOP --> UPDATE["{0}"]' -f (Format-CmdFlow-Node 'FNV1A_UPDATE_A' 'update hash with byte'))
+$lines += ('    HASHLOOP --> UPDATE["{0}"]' -f (Format-CmdFlow-Node 'FNV1A_UPDATE_A_FAST' 'update hash with byte'))
 $lines += '    UPDATE --> HASHLOOP'
 $lines += ('    HASHLOOP --> DONE["{0}"]' -f (Format-CmdFlow-Node 'CMD_HASH_TOKEN_DONE' 'restore token pointer'))
 $lines += '```'

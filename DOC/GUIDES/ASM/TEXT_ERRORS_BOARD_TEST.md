@@ -5,8 +5,10 @@ RESET and post-reset ASM smoke. The candidate and exhaustive host results are in
 [TEST_PLAN.md](TEST_PLAN.md), and the exact install/readback and test evidence
 is in [the hardware record](../LOGS/ASMF2_TEXT_2026-09-05.md).
 Any future flash update still needs operator authority and a reviewed payload.
-For an existing Bank-3 HIMON entry, use a validated dense ASM-only transfer
-with S9 `$FFFF` (preserve entry), not the generic component's `$8000` S9.
+For an existing Bank-3 HIMON entry, the current release's dense ASM-only
+transfer uses S9 `$FFFF` (preserve entry). Older streams with S9 `$8000` are
+not suitable for that partial update. This card retains the 2026-09-05
+diagnostic proof; the current release identity is in [ASM_USER_GUIDE.md](ASM_USER_GUIDE.md).
 
 ## Source Diagnostics
 

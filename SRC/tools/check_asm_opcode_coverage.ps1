@@ -109,69 +109,6 @@ function Get-AsmLabelBlock {
     $block -join "`n"
 }
 
-function Read-OpcodeForLabel {
-    param([string]$Label)
-
-    $block = Get-AsmLabelBlock $Label
-    $opcodeMatch = [regex]::Match($block, '(?m)^\s*LDA\s+#\$([0-9A-Fa-f]{2})\s*$')
-    if (-not $opcodeMatch.Success) {
-        Fail-OpcodeAudit "missing literal opcode load in $Label"
-    }
-
-    [Convert]::ToInt32($opcodeMatch.Groups[1].Value, 16)
-}
-
-function Assert-ModeRowShardFits {
-    param([string]$Label)
-
-    $start = -1
-    $labelPattern = '^' + [regex]::Escape($Label) + ':'
-    for ($i = 0; $i -lt $script:sectionLines.Count; $i++) {
-        if ($script:sectionLines[$i] -match $labelPattern) {
-            $start = $i
-            break
-        }
-    }
-    if ($start -lt 0) {
-        Fail-OpcodeAudit "missing row shard $Label"
-    }
-
-    $bytes = 0
-    $sawSentinel = $false
-    for ($i = $start + 1; $i -lt $script:sectionLines.Count; $i++) {
-        $line = $script:sectionLines[$i]
-        if ($line -match '^\s*DB\s+\$FF\s*,') {
-            $sawSentinel = $true
-            break
-        }
-        if ([string]::IsNullOrWhiteSpace($line)) {
-            continue
-        }
-        if ($line -match '^\s*;') {
-            continue
-        }
-        if ($line -match '^[A-Z0-9_]+:') {
-            continue
-        }
-        if ($line -match (
-                '^\s*DB\s+ASM_VID_[A-Z0-9_]+\s*,\s*' +
-                'ASM_OPM_[A-Z0-9_]+\s*,\s*\$[0-9A-Fa-f]{2}\s*$'
-            )) {
-            $bytes += 3
-            continue
-        }
-    }
-
-    if (-not $sawSentinel) {
-        Fail-OpcodeAudit "row shard $Label has no `$FF sentinel"
-    }
-    if ($bytes -gt 255) {
-        Fail-OpcodeAudit (
-            "row shard $Label is $bytes bytes; 8-bit scanner limit is 255"
-        )
-    }
-}
-
 Add-ExpectedRow 'RTS' 'NONE' 0x60
 Add-ExpectedRow 'INX' 'NONE' 0xE8
 Add-ExpectedRow 'CLC' 'NONE' 0x18
@@ -386,20 +323,8 @@ Add-ExpectedRow 'BRA' 'REL8' 0x80
 Add-ExpectedRow 'BVC' 'REL8' 0x50
 Add-ExpectedRow 'BVS' 'REL8' 0x70
 
-$branchSet = @{}
-foreach ($mnemonic in @('BCC','BCS','BEQ','BMI','BNE','BPL','BRA','BVC','BVS')) {
-    $branchSet[$mnemonic] = $true
-}
-
-$aluFamilySet = @{}
-foreach ($mnemonic in @('ADC','SBC','AND','ORA','EOR','CMP','LDA','STA')) {
-    $aluFamilySet[$mnemonic] = $true
-}
-
-$expectedHandlers = @{}
 $expectedByKey = @{}
 foreach ($row in $script:expectedRows) {
-    $expectedHandlers[$row.Mnemonic] = $true
     $key = "{0}|{1}" -f $row.Mnemonic, $row.Mode
     if ($expectedByKey.ContainsKey($key)) {
         Fail-OpcodeAudit "duplicate expected row $key"
@@ -407,171 +332,137 @@ foreach ($row in $script:expectedRows) {
     $expectedByKey[$key] = $row
 }
 
-$actualHandlers = @{}
-foreach ($m in [regex]::Matches($script:sectionText, '(?m)^ASM_FIND_OPCODE_([A-Z0-9]+):')) {
-    $actualHandlers[$m.Groups[1].Value] = $true
+$constants = @{}
+foreach ($match in [regex]::Matches(
+        $text, '(?m)^(ASM_VID_[A-Z0-9_]+|ASM_OPM_[A-Z0-9_]+|ASM_VOC_COUNT)\s+EQU\s+\$([0-9A-Fa-f]+)\s*$')) {
+    $constants[$match.Groups[1].Value] = [Convert]::ToInt32($match.Groups[2].Value, 16)
+}
+$vocabularyCount = $constants['ASM_VOC_COUNT']
+if (-not $vocabularyCount) {
+    Fail-OpcodeAudit 'missing ASM_VOC_COUNT'
 }
 
-foreach ($mnemonic in ($expectedHandlers.Keys | Sort-Object)) {
-    if (-not $actualHandlers.ContainsKey($mnemonic)) {
-        Fail-OpcodeAudit "missing handler $mnemonic"
+function Read-DenseOpcodeTable {
+    param([string]$Label)
+
+    $values = New-Object System.Collections.Generic.List[object]
+    foreach ($line in ((Get-AsmLabelBlock $Label) -split "`n")) {
+        if ($line -match '^\s*(;.*)?$') {
+            continue
+        }
+        $match = [regex]::Match($line,
+            '^\s*DB\s+(\$[0-9A-Fa-f]{2}|ASM_OPPAT_[A-Z0-9_]+-ASM_FIND_OPCODE_PATTERN_ROWS)\s*;\s*(ASM_VID_[A-Z0-9_]+)\s*$')
+        if (-not $match.Success) {
+            Fail-OpcodeAudit "unrecognized dense entry in ${Label}: $line"
+        }
+        $id = $match.Groups[2].Value
+        if (-not $constants.ContainsKey($id) -or $constants[$id] -ne $values.Count) {
+            Fail-OpcodeAudit "$Label slot $($values.Count) does not match $id"
+        }
+        [void]$values.Add([pscustomobject]@{
+            Id = $id
+            Value = $match.Groups[1].Value
+        })
     }
-}
-
-foreach ($mnemonic in ($actualHandlers.Keys | Sort-Object)) {
-    if (-not $expectedHandlers.ContainsKey($mnemonic)) {
-        Fail-OpcodeAudit "unexpected handler $mnemonic"
+    if ($values.Count -ne $vocabularyCount) {
+        Fail-OpcodeAudit "$Label has $($values.Count) slots, expected $vocabularyCount"
     }
+    $values.ToArray()
 }
 
-$branchBlock = Get-AsmLabelBlock 'ASM_FIND_OPCODE_BRANCH_A'
-if (-not [regex]::IsMatch(
-        $branchBlock,
-        'CMP\s+#ASM_OPM_REL8\s*\n\s*BEQ\s+ASM_FIND_OPCODE_BRANCH_OK'
-    )) {
-    Fail-OpcodeAudit 'branch common path no longer checks REL8'
+$bases = @(Read-DenseOpcodeTable 'ASM_FIND_OPCODE_BASES')
+$offsets = @(Read-DenseOpcodeTable 'ASM_FIND_OPCODE_PAT_OFFSETS')
+$patterns = @{}
+$patternBytes = 0
+foreach ($match in [regex]::Matches($script:sectionText, '(?m)^(ASM_OPPAT_[A-Z0-9_]+):')) {
+    $label = $match.Groups[1].Value
+    if ($patterns.ContainsKey($label)) {
+        Fail-OpcodeAudit "duplicate pattern $label"
+    }
+    $block = Get-AsmLabelBlock $label
+    $countMatch = [regex]::Match($block, '(?m)^\s*DB\s+\$([0-9A-Fa-f]{2})\s*$')
+    if (-not $countMatch.Success) {
+        Fail-OpcodeAudit "missing row count in $label"
+    }
+    $count = [Convert]::ToInt32($countMatch.Groups[1].Value, 16)
+    $modeRows = @([regex]::Matches($block,
+        '(?m)^\s*DB\s+(ASM_OPM_[A-Z0-9_]+)\s*,\s*\$([0-9A-Fa-f]{2})\s*$'))
+    $dataLines = @([regex]::Matches($block, '(?m)^\s*DB\s+.*$'))
+    if ($count -eq 0 -or $modeRows.Count -ne $count -or
+        $dataLines.Count -ne $count + 1 -or
+        $dataLines[0].Value.Trim() -ne $countMatch.Value.Trim()) {
+        Fail-OpcodeAudit "$label count does not match its mode/offset pairs"
+    }
+    $modes = @{}
+    $rows = New-Object System.Collections.Generic.List[object]
+    foreach ($modeRow in $modeRows) {
+        $modeName = $modeRow.Groups[1].Value
+        if (-not $constants.ContainsKey($modeName) -or $modes.ContainsKey($modeName)) {
+            Fail-OpcodeAudit "unknown or duplicate mode $modeName in $label"
+        }
+        $modes[$modeName] = $true
+        [void]$rows.Add([pscustomobject]@{
+            Mode = $modeName.Substring('ASM_OPM_'.Length)
+            Delta = [Convert]::ToInt32($modeRow.Groups[2].Value, 16)
+        })
+    }
+    if ($patternBytes -ge 255) {
+        Fail-OpcodeAudit "$label offset collides with the invalid-slot marker"
+    }
+    $patterns[$label] = $rows.ToArray()
+    $patternBytes += 1 + 2 * $count
 }
-
-$aluBaseHitBlock = Get-AsmLabelBlock 'ASM_FIND_OPCODE_ALU_BASE_HIT'
-if (-not [regex]::IsMatch(
-        $aluBaseHitBlock,
-        'CMP\s+#ASM_VID_STA\s*\n\s*BNE\s+ASM_FIND_OPCODE_ALU_SCAN_MODE\s*\n' +
-            '\s*LDA\s+ASM_MODE\s*\n\s*CMP\s+#ASM_OPM_IMM8\s*\n' +
-            '\s*BEQ\s+ASM_FIND_OPCODE_ALU_BAD_MODE'
-    )) {
-    Fail-OpcodeAudit 'ALU-family path no longer rejects STA immediate mode'
+if ($patternBytes -gt 256) {
+    Fail-OpcodeAudit "shared patterns use $patternBytes bytes; Y can address only 256"
 }
-$aluModeHitBlock = Get-AsmLabelBlock 'ASM_FIND_OPCODE_ALU_MODE_HIT'
-if (-not [regex]::IsMatch(
-        $aluModeHitBlock,
-        'ADC\s+ASM_TMP0_LO\s*\n\s*JMP\s+ASM_FIND_OPCODE_OK_A'
-    )) {
-    Fail-OpcodeAudit 'ALU-family path no longer adds its base opcode'
-}
-
-Assert-ModeRowShardFits 'ASM_FIND_OPCODE_MODE_ROWS_A'
 
 $actualRows = @{}
+$actualHandlers = @{}
+$usedPatterns = @{}
 function Add-ActualRow {
-    param(
-        [string]$Mnemonic,
-        [string]$Mode,
-        [int]$Opcode,
-        [string]$SourceLabel
-    )
+    param([string]$Mnemonic, [string]$Mode, [int]$Opcode)
 
     $key = "{0}|{1}" -f $Mnemonic, $Mode
     if ($actualRows.ContainsKey($key)) {
         Fail-OpcodeAudit "duplicate active row $key"
     }
     $actualRows[$key] = [pscustomobject]@{
-        Mnemonic = $Mnemonic
-        Mode = $Mode
         Opcode = $Opcode -band 0xFF
-        SourceLabel = $SourceLabel
     }
 }
 
-foreach ($mnemonic in ($actualHandlers.Keys | Sort-Object)) {
-    $handlerLabel = "ASM_FIND_OPCODE_$mnemonic"
-    if ($aluFamilySet.ContainsKey($mnemonic)) {
-        $handlerBlock = Get-AsmLabelBlock $handlerLabel
-        $baseMatch = [regex]::Match(
-            $handlerBlock,
-            '(?m)^\s*DB\s+ASM_VID_' + [regex]::Escape($mnemonic) +
-                '\s*,\s*\$([0-9A-Fa-f]{2})\s*$'
-        )
-        if (-not $baseMatch.Success) {
-            Fail-OpcodeAudit "missing ALU-family base for $mnemonic"
+for ($slot = 0; $slot -lt $vocabularyCount; $slot++) {
+    if ($bases[$slot].Value -notmatch '^\$[0-9A-Fa-f]{2}$') {
+        Fail-OpcodeAudit "slot $slot base is not an opcode byte"
+    }
+    $base = [Convert]::ToInt32($bases[$slot].Value.Substring(1), 16)
+    $descriptor = $offsets[$slot].Value
+    if ($descriptor -eq '$FF') {
+        if ($base -ne 0) {
+            Fail-OpcodeAudit "unused slot $slot has a nonzero base"
         }
-        $baseOpcode = [Convert]::ToInt32($baseMatch.Groups[1].Value, 16)
-        $modeBlock = Get-AsmLabelBlock 'ASM_FIND_OPCODE_ALU_MODE_ROWS'
-        $modeRows = [regex]::Matches(
-            $modeBlock,
-            '(?m)^\s*DB\s+ASM_OPM_([A-Z0-9_]+)\s*,\s*\$([0-9A-Fa-f]{2})\s*$'
-        )
-        if ($modeRows.Count -ne 9) {
-            Fail-OpcodeAudit 'ALU-family mode-offset table must contain nine rows'
-        }
-        foreach ($modeRow in $modeRows) {
-            $mode = $modeRow.Groups[1].Value
-            if ($mnemonic -eq 'STA' -and $mode -eq 'IMM8') {
-                continue
+        continue
+    }
+    $label = $descriptor -replace '-ASM_FIND_OPCODE_PATTERN_ROWS$', ''
+    if (-not $patterns.ContainsKey($label)) {
+        Fail-OpcodeAudit "slot $slot references unknown pattern $label"
+    }
+    $usedPatterns[$label] = $true
+    $mnemonic = $bases[$slot].Id.Substring('ASM_VID_'.Length)
+    $actualHandlers[$mnemonic] = $true
+    foreach ($row in $patterns[$label]) {
+        if ($row.Mode -eq 'BIT_ZP' -or $row.Mode -eq 'BIT_ZP_REL') {
+            $suffix = $row.Mode.Substring('BIT_'.Length)
+            for ($bit = 0; $bit -lt 8; $bit++) {
+                Add-ActualRow $mnemonic ("BIT{0}_{1}" -f $bit, $suffix) ($base + $row.Delta + 16 * $bit)
             }
-            $delta = [Convert]::ToInt32($modeRow.Groups[2].Value, 16)
-            Add-ActualRow $mnemonic $mode (($baseOpcode + $delta) -band 0xFF) `
-                $handlerLabel
+        } else {
+            Add-ActualRow $mnemonic $row.Mode ($base + $row.Delta)
         }
-        continue
     }
-
-    if ($mnemonic -eq 'RMB' -or $mnemonic -eq 'SMB' -or
-            $mnemonic -eq 'BBR' -or $mnemonic -eq 'BBS') {
-        $mode = 'BIT_ZP'
-        $modeSuffix = 'ZP'
-        if ($mnemonic -eq 'BBR' -or $mnemonic -eq 'BBS') {
-            $mode = 'BIT_ZP_REL'
-            $modeSuffix = 'ZP_REL'
-        }
-
-        $handlerBlock = Get-AsmLabelBlock $handlerLabel
-        if (-not [regex]::IsMatch(
-                $handlerBlock,
-                'CMP\s+#ASM_OPM_' + [regex]::Escape($mode) +
-                    '\s*\n\s*BEQ\s+ASM_FIND_OPCODE_' +
-                    [regex]::Escape($mnemonic) + '_' +
-                    [regex]::Escape($mode)
-            )) {
-            Fail-OpcodeAudit "handler $mnemonic no longer checks $mode"
-        }
-
-        $baseOpcode = Read-OpcodeForLabel "ASM_FIND_OPCODE_${mnemonic}_$mode"
-        for ($bit = 0; $bit -lt 8; $bit++) {
-            Add-ActualRow $mnemonic ("BIT{0}_{1}" -f $bit, $modeSuffix) `
-                ($baseOpcode + ($bit * 0x10)) $handlerLabel
-        }
-        continue
-    }
-
-    if ($branchSet.ContainsKey($mnemonic)) {
-        Add-ActualRow $mnemonic 'REL8' (Read-OpcodeForLabel $handlerLabel) $handlerLabel
-        continue
-    }
-
-    $handlerBlock = Get-AsmLabelBlock $handlerLabel
-    $noneTableRow = [regex]::Match(
-        $handlerBlock,
-        '(?m)^\s*DB\s+ASM_VID_' + [regex]::Escape($mnemonic) + '\s*,\s*\$([0-9A-Fa-f]{2})\s*$'
-    )
-    if ($noneTableRow.Success) {
-        Add-ActualRow $mnemonic 'NONE' ([Convert]::ToInt32($noneTableRow.Groups[1].Value, 16)) $handlerLabel
-        continue
-    }
-
-    $modeTableRows = [regex]::Matches(
-        $handlerBlock,
-        '(?m)^\s*DB\s+ASM_VID_' + [regex]::Escape($mnemonic) + '\s*,\s*ASM_OPM_([A-Z0-9_]+)\s*,\s*\$([0-9A-Fa-f]{2})\s*$'
-    )
-    if ($modeTableRows.Count -gt 0) {
-        foreach ($rowMatch in $modeTableRows) {
-            Add-ActualRow $mnemonic $rowMatch.Groups[1].Value ([Convert]::ToInt32($rowMatch.Groups[2].Value, 16)) $handlerLabel
-        }
-        continue
-    }
-
-    $modeMatches = [regex]::Matches(
-        $handlerBlock,
-        'CMP\s+#ASM_OPM_([A-Z0-9_]+)\s*\n\s*BEQ\s+(ASM_FIND_OPCODE_[A-Z0-9_]+)'
-    )
-    if ($modeMatches.Count -eq 0) {
-        Fail-OpcodeAudit "handler $mnemonic has no mode checks"
-    }
-
-    foreach ($modeMatch in $modeMatches) {
-        $mode = $modeMatch.Groups[1].Value
-        $targetLabel = $modeMatch.Groups[2].Value
-        Add-ActualRow $mnemonic $mode (Read-OpcodeForLabel $targetLabel) $targetLabel
-    }
+}
+if ($usedPatterns.Count -ne $patterns.Count) {
+    Fail-OpcodeAudit 'unused shared addressing pattern'
 }
 
 foreach ($key in ($expectedByKey.Keys | Sort-Object)) {
@@ -586,16 +477,14 @@ foreach ($key in ($expectedByKey.Keys | Sort-Object)) {
         Fail-OpcodeAudit "$key opcode $got, expected $want"
     }
 }
-
 foreach ($key in ($actualRows.Keys | Sort-Object)) {
     if (-not $expectedByKey.ContainsKey($key)) {
         Fail-OpcodeAudit "unexpected active opcode row $key"
     }
 }
 
-Write-Host ("ASM opcode coverage OK rows={0} mnemonics={1} source={2}" -f `
-    $actualRows.Count, $actualHandlers.Count, (Split-Path -Leaf $sourceFullPath))
-
+Write-Host ("ASM opcode coverage OK rows={0} mnemonics={1} patterns={2} pattern_bytes={3} source={4}" -f `
+    $actualRows.Count, $actualHandlers.Count, $patterns.Count, $patternBytes, (Split-Path -Leaf $sourceFullPath))
 foreach ($group in ($script:expectedRows | Group-Object Mnemonic | Sort-Object Name)) {
     $cells = New-Object System.Collections.Generic.List[string]
     foreach ($row in $group.Group) {

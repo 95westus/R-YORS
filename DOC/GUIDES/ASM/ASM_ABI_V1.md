@@ -4,6 +4,11 @@ ASM ABI v1 freezes the two binary boundaries shared by ASM-F2, HIMON, and
 stored AP programs. The canonical machine-readable constants are
 `SRC/ASM/asm-abi-v1.inc`; `make -C SRC asm-abi-check` rejects drift.
 
+The 2026-09-15 HIMON/ASM-F2 `00.0915(2324)` release retains ABI v1 and AP v2.
+The size reductions move private code/table addresses without changing these
+published boundaries. Use [the release application catalog](../RELEASE_APPLICATIONS.md)
+for map-matched tools and the distinction between released and installed stamps.
+
 ## HIMON Service Boundary
 
 The resident service header is `RY`, version `$01`, with eleven ordered

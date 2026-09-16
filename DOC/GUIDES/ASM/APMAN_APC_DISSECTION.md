@@ -132,7 +132,7 @@ ASM source
                        -> construct/program/verify full 4K sector
                           -> restore Bank 3
 
-RESET
+Physical RESET button, then C at STR8-N
   -> APS Bn name
      -> rediscover APMAN
         -> validate and describe carrier

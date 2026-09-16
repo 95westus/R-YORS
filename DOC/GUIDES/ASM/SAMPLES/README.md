@@ -1,9 +1,14 @@
 # Maintained ASM Samples
 
-This directory is the current board-facing ASM source surface. Keep maintained
-operator tools here. Historical implementations, smoke programs, negative
-fixtures, proof-only sources, and completed board-test cards belong in
-[`OLD`](OLD/README.md).
+This directory contains maintained operator tools, examples, and named
+regression fixtures for ASM-F2. The release separates application sources
+from deliberate rejection/limit tests; see the
+[release application catalog](../../RELEASE_APPLICATIONS.md). Historical
+implementations and completed board-test cards remain in [`OLD`](OLD/README.md).
+
+The current release is ASM-F2/HIMON `00.0915(2324)` with STR8-N 1.34.
+It is timestamp-only equivalent to the reset-qualified firmware pair;
+individual application board claims retain their original dates and scope.
 
 `ap-store-v1-sector-tool-7000.a` is generated from the host-linked
 `SRC/PROOFS/ap-store-v1-sector-tool.asm` S19. It is an exact ASM-F2 image
@@ -13,7 +18,9 @@ carrier for AP Status at `$7000`, PREPARE at `$7003`, and confirmed EXECUTE at
 ## AP Build, Install, And Reporting
 
 - `asm-session-report-v1.2-ap-2000.a` - current movable, Bank-0-storable ASM
-  session reporter when supplied from a compatible RAM/visible-flash path.
+  session reporter, also storable in another suitable Bank 0-2 carrier.
+  Package at `$3000`, preload at `$4000` before the target session, then run
+  `G 4000` afterward. The generated source must match the ASM release map.
 - `expr-negative-rollback-2000.a` - final-image expression rejection and
   transactional rollback card.
 - `unresolved-addends-2000.a` - forward internal absolute, relative, data,
@@ -24,6 +31,11 @@ carrier for AP Status at `$7000`, PREPARE at `$7003`, and confirmed EXECUTE at
   LEDs, then restores the prior output and direction state.
 - `seal-workflow-2000.a` - small named body for final post-`END` command-flow
   testing.
+- `microchess-2000.a` - fixed `$2000` game AP; keep its complete inline credits
+  and `SRC/APPS/MICROCHESS-LICENSE.txt` with distributed copies.
+- `bank-audit-2000.a`, `bank-dump-2000.a` - maintained utility AP sources with
+  named HIMON imports. Their older direct host images pin obsolete HIMON
+  addresses and are not included in the current release.
 
 The old general Bank-0/Bank-2 AP installation surface is archived. Split-V1
 HIMON's `$F010/$0203` banked AP staging path, invalid-package rejection, and
@@ -38,11 +50,12 @@ fixture.
   to `$F010/$0203` staging.
 - `str8n-v1.2-flash-bank-dump-ap-2000.a` is the fixed-load read-only sector dump migrated
   to `$F010/$0203` staging while preserving its historical fixed addresses.
-- `str8n-v1.2-bank-maint-2000.a` is the supported carried-worker copy/erase/map
-  utility. `P` adds the fixed Bank-0 `$BF00` AP proof carrier; `M` is read-only
-  and marks only structurally valid, body-FNV-matched AP envelopes as `A`.
-  It prints the first AP address and package length in each `A` sector before
-  displaying the V1 directory.
+- The current carried-worker copy/erase/map utility is in the adjacent
+  `STR8-N/tools/bank-maint/str8n-v1.34-bank-maint-menu-2000.a`.
+  Its read-only `M` command marks only structurally valid,
+  body-FNV-matched AP envelopes as `A` and prints the directory. Use APMAN's
+  `INSTALL package Bn` for ordinary named AP carriers; Bank Maintenance `P`
+  retains its narrower legacy package policy.
 
 The two read/dump AP bodies are current. The migrated banked staging path and
 a valid Bank-0 package execution are hardware-accepted.
@@ -59,9 +72,8 @@ sources and an explanation of their former roles are under `OLD`.
 - `ap-store-v1-slice6-stage-b1sb-1a00.s19` - read-only Slice 6 diagnostic that
   reuses the assembled CRC fixture's `$3088` stage routine to copy B1:B into
   `$4000-$4FFF`; it never erases or programs flash.
-- `str8n-v1.2-bank-maint-2000.a` - carried-worker copy/erase/map/fixed-AP-put
-  utility; `M` distinguishes valid AP envelopes from ordinary used bytes and
-  also displays all four Bank-3 directory records.
+- `STR8-N/tools/bank-maint/str8n-v1.34-bank-maint-menu-2000.a` - current
+  maintenance carrier in the adjacent repository and STR8-N release.
 - `terminal-answerback-vt100-3000.a` - read-only Tera Term/VT100 probe using
   the pinned STR8-N 1.29 raw console ABI. It sends ENQ and Primary Device
   Attributes, bounds both reply waits, and prints replies as hex plus safe
@@ -77,15 +89,10 @@ sources and an explanation of their former roles are under `OLD`.
 Both terminal exercisers deliberately use the same transient tray and run one
 at a time. Do not move them back to `$3000/$4000`: those ranges overlap the
 live `$2000`-based ASM-F2 image and can crash after `END` before `SEAL>` exits.
-- `str8n-v1.2-topwr-transient-3000.a` - maintained staged top-sector shop tool; preserve
-  the live V1 directory when overlaying a replacement image.
-
-The current directory-preserving top-sector source is generated as
-`SRC/BUILD/generated/asm-samples/str8n-v1.2-i-refresh-transient-3000.a` by
-`make -C SRC str8-i-refresh-a`. Generated writer names use
-`str8-i-{refresh,migrate,replace-legacy}-transient-3000.a`; only `refresh` is
-the normal installed-V1 path. Exact writers used by completed board proofs are
-frozen under `OLD`.
+For a STR8 top-sector update, use the STR8-N v1.34 release's checked RAM
+updater and its operator guide. The earlier `.a` top writers and generated
+`str8-i-{refresh,migrate,replace-legacy}` experiments are historical; they are
+not the current release installation path.
 
 Routine writer generation targets `SRC/BUILD/generated/asm-samples`. Tracked
 board-facing samples change only when a generated candidate is deliberately

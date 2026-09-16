@@ -53,6 +53,7 @@ DOC/s34
 !/RELEASE/*.[bB][iI][nN]
 !/RELEASE/*.[sS]19
 !/RELEASE/*.json
+!/RELEASE/*.zip
 
 # WDCMONv2 images are local/provenance-only, including under RELEASE. Keep
 # these after the RELEASE allowlist so they cannot be published accidentally.

@@ -9,6 +9,10 @@ The historical Bank-0 assignments are preserved in
 That ledger is not a split-V1 operator path: its installer and banked AP
 staging dependencies were archived on 2026-08-07.
 
+Addresses below match the 2026-09-15 ASM-F2/HIMON `00.0915(2324)` release.
+ASM ends at `$BB83` exclusive; HIMON ends at `$EDEA` exclusive. These are
+private layout measurements, not additional ABI promises.
+
 ## The Short Model
 
 ```text
@@ -56,8 +60,8 @@ $9000        common banked AP package store address for smoke tests
 $0200-$09FF  LRS Symbol Name Lane; later STR8 Worker Code Tray
 $0A00-$19FF  LRS Fixup Name Lane; later STR8 Sector Staging Deck
 $1A00-$1FFF  user-free low RAM; no v1.2 firmware/tool allocation
-$5000-$6D6B  ASM Work Hold in the current map
-$6D6C-$79FF  Safe Output Deck
+$5000-$6D6D  ASM Work Hold in the current map
+$6D6E-$79FF  Safe Output Deck
 $7A00-$7BFF  Volatile Output Deck / record transit
 $7C00-$7DBF  foreground High Tool Overlay
 $7DC0-$7DC7  HIMON AP-link scratch
@@ -140,12 +144,11 @@ APs, or add a future multi-sector/segmented package format. Merely raising the
 `$1000` constant would also require new package-buffer placement, multi-sector
 Bank 0 staging/programming, discovery, loader checks, and board proof.
 
-The next AP design session is planned to generalize selectable AP storage
-across Banks 0-2. Those banks are not presumed to be AP stores: any one may
-hold a foreign/opaque image, which AP tooling must identify and leave alone.
-The initial multi-sector boundary is one bank per capsule; a capsule may span
-sectors within that bank but must not cross into another bank. Compression is
-not a dependency and remains only a possible long-term encoding.
+Current APMAN supports selectable one-sector AP carriers in Banks 0-2.
+Those banks are not presumed empty: any one may hold a foreign/opaque image,
+which AP tooling must identify and leave alone. Multi-sector AP Store objects
+remain a separate tool/media workflow; ordinary `INSTALL package Bn` writes
+one complete envelope in one sector. Compression is not a dependency.
 
 Storage placement and execution placement are separate questions. Moving an
 intact AP envelope to another RAM or flash address does not relocate its BODY;
@@ -241,7 +244,7 @@ ASM BYE
 >STR8
   confirm entry to STR8-N
 STR8-N>L
-  send STR8-N/BUILD/v1.32/s19/str8n-v1.32-bank-maint-menu-2000.s19
+  send STR8-N/BUILD/v1.34/s19/str8n-v1.34-bank-maint-menu-2000.s19
   STR8-N executes its validated S9=$2000 entry
 BM> P
 TYPE PUT BnS000 (n=0-2,S=8-F)> PUT B28000
@@ -270,9 +273,10 @@ managed AP Store objects, use
 
 ## Bank 0 AP Install
 
-Status: historical workflow, blocked on split V1. The source now lives at
-`SAMPLES/OLD/bank0ap-put-transient-2000.a`; a future current installer must
-carry and verify the exact mutation worker.
+Status: historical workflow, invalid on split V1. The source now lives at
+`SAMPLES/OLD/bank0ap-put-transient-2000.a`. For current named carriers, use
+APMAN `INSTALL package B0` with a suitable destination, or the current
+Bank Maintenance path above within its narrower package limits.
 
 The archived source was both a direct `G 2000` RAM tool and a
 fixed-load AP package. It consumes the target AP envelope at `$3000`, stages
@@ -326,7 +330,7 @@ the new target's flash address; the installer asks for that address at its
 `DST` prompt, or chooses the first verified clean append tail when Enter is
 pressed.
 
-The current hand-held board card uses archived fixture
+The archived hand-held board card uses fixture
 `DOC/GUIDES/ASM/SAMPLES/OLD/bank0ap-print-smoke.a`, packages it at `$3000`,
 stores it in bank 0 at `$8000`, and expects the AP body to print `B0 AP RUN`.
 
@@ -335,12 +339,12 @@ stores it in bank 0 at `$8000`, and expects the AP body to print `B0 AP RUN`.
 diagnosing the staged sector or separating the irreversible write from the
 selection pass. They are not the normal operator path.
 
-## Session Reporter From Bank 0
+## Movable Session Reporter
 
-The preferred Bank-0 reporter source is now
-`asm-session-report-v1.2-ap-2000.a`. Its AP identity/entry is `ASMREPORT`, its body is `$0E25`,
-and its expected package is `$0E51`. It accepts AP destinations
-`$2000-$41DB`; `$4000` is recommended and occupies `$4000-$4E24`.
+The preferred reporter source is
+`asm-session-report-v1.2-ap-2000.a`. Its AP identity/entry is `ASMREPORT`, its body is `$0E21`,
+and its expected package is `$0E4D`. It accepts AP destinations
+`$2000-$41DF`; `$4000` is recommended and occupies `$4000-$4E20`.
 
 The reporter has one ordinary AP relocation, then applies its own 238-row
 private table to every remaining internal address. This makes the whole body
@@ -349,14 +353,15 @@ is still ASM-map-matched because it reads current ASM-F2 tables and calls
 current ASM-F2 output helpers. Rebuild and reinstall it after an ASM code or
 map change.
 
-Build its envelope with `PACKAGE ASMREPORT $3000`, then store it with
-the resident `BANK0_AP_PUT`. The printed Bank-0 package address is the first
-operand of the later `AP B0` command; `$4000` is its RAM load/run address.
+Build its envelope with `PACKAGE ASMREPORT $3000`. For RAM use, preload with
+`LOAD 3000 4000` at `SEAL>` before exiting and starting the target session.
+For persistent storage with a provisioned APMAN carrier, use
+`INSTALL 3000 B1`; `$4000` remains its RAM load/run address.
 
 Load the stored reporter before the ASM session you want to inspect:
 
 ```text
->AP B0 $hhhh $4000
+>AP B1 ASMREPORT $4000
 >ASM NEW
 ...assemble the target session...
 SEAL> .
@@ -409,14 +414,14 @@ INSTALL 3200 then assume flash was written
 Wrong: one-argument `INSTALL` is advisory. Use the two-argument form to write.
 
 ```text
-AP B0 $hhhh $4800 for the movable session reporter
+AP B1 ASMREPORT $4800 for the movable session reporter
 ```
 
-Legal for the legacy fixed reporter, but needlessly fixed for the movable
-reporter. Prefer its recommended destination:
+`$4800` was the legacy fixed reporter's address. It is outside the current
+movable reporter's legal destination range; use its recommended destination:
 
 ```text
-AP B0 $hhhh $4000
+AP B1 ASMREPORT $4000
 ```
 
 ```text
@@ -429,7 +434,9 @@ Usually wrong: the package source and body destination overlap.
 ORG $5000
 ```
 
-Wrong under flash ASM: `$5000-$7EFF` is live ASM/HIMON workspace.
+Wrong under flash ASM: `$5000-$6D6D` is protected ASM workspace. The upper
+emission arena begins at `$6D6E`; its availability still depends on other
+active tools and HIMON's documented volatile ranges.
 
 ```text
 Run reporter after reset or flash reinstall

@@ -4,7 +4,7 @@ This is the ordered onboarding runbook for a stock W65C02SXB or
 W65C02SXB/EDU. It covers:
 
 1. preserving the factory WDCMONv2 system in Bank 0;
-2. installing STR8-N 1.29 in protected Bank-3 sector F;
+2. installing STR8-N 1.34 in protected Bank-3 sector F;
 3. using Bank Maintenance to publish the preserved Bank-0 system;
 4. optionally installing HIMON, ASM-F2, or both in Bank 3; and
 5. proving that both the new Bank-3 environment and the preserved factory
@@ -17,6 +17,15 @@ failure handling, and release hashes in the standalone
 or version differs, stop and use the documentation shipped with that exact
 release.
 
+Use the [current release ZIPs](../../RELEASE/README.md). The STR8-N v1.34
+ZIP contains the factory migration kit and Bank Maintenance; the separate
+HIMON and ASM-F2 ZIPs contain their firmware under `FIRMWARE/`, including
+the combined `8-E` S19. Both R-YORS components are stamped
+`00.0915(2324)`. Their host-qualified images differ from the reset-tested
+board only in nine timestamp bytes and have not been reflashed. See
+[qualification](../../RELEASE/QUALIFICATION.json). The complete v1.34
+factory migration has its own physical-board proof in the STR8-N package.
+
 ## Final Intended Layout
 
 ```text
@@ -26,7 +35,7 @@ Bank 1  available according to current role policy; B1:E WORK and B1:F is
 Bank 2  available for qualified guests and AP carriers
 Bank 3  $8000-$BFFF  optional ASM-F2
         $C000-$EFFF  optional HIMON
-        $F000-$FFFF  STR8-N 1.29, directory, configuration, vectors
+        $F000-$FFFF  STR8-N 1.34, directory, configuration, vectors
 ```
 
 The Bank-0 copy remains an opaque 32K guest. `J0` or reset selector `0` hands
@@ -58,8 +67,9 @@ resident and stored RAM worker, empty initial directory, configuration pocket,
 and hardware vectors:
 
 ```text
-B3:$F000-$FD55  STR8-N resident
-B3:$FD5C-$FFAF  stored unified worker
+B3:$F000-$FCF1  STR8-N resident
+B3:$FCF2-$FD77  134-byte resident growth margin
+B3:$FD78-$FFAF  stored unified worker
 B3:$FFB0-$FFEF  directory and install journals
 B3:$FFF0-$FFF9  configuration pocket
 B3:$FFFA-$FFFF  NMI, RESET, and IRQ/BRK vectors
@@ -79,7 +89,7 @@ rewrite, or reset any flash byte: hardware selects Bank 3, reads the vector at
 | Directory refresh | Backs up live B3:F to B1:F, then replaces and verifies the whole sector | Deliberately resets `$FFB0-$FFEF` to erased | Reinstalls canonical `$1E/$1F`; `$FFF2-$FFF9` become `$FF` |
 | Bank Maintenance `D` | Programs a previously erased directory row with START, identity, and COMPLETE in commit-last order | Adopts only the selected empty row | Preserves the configuration bytes |
 | Bank Maintenance `N` or `R` | Uses backup/staging and a guarded whole-sector rewrite when directory bits must return from 0 to 1 | Renames/reclaims only the requested directory state | Preserves the unrelated configuration bytes |
-| STR8-N `I` | Never writes B3:F | Journals B3 installs through protected services | Cannot change these locators or sector-F code |
+| STR8-N `I` | Preserves B3:F code/configuration; programs directory/journal bits through protected services | Journals B3 installs | Cannot change these locators or sector-F code |
 
 The practical meanings of “reset” are therefore different:
 
@@ -106,10 +116,10 @@ and verifies the B1:F backup before erasing B3:F.
 
 ```mermaid
 flowchart TD
-    START[Stock WDCMONv2 in Bank 3] --> KIT[Verify and start the STR8-N v1.32 migration kit]
+    START[Stock WDCMONv2 in Bank 3] --> KIT[Verify and start the STR8-N v1.34 migration kit]
     KIT --> COPY[Copy all 32K B3 to erased B0 and verify exactly]
     COPY --> TOP[Receive 4096-byte STR8-N BIN and install only B3:F]
-    TOP --> BOOT[Physical RESET: require STR8-N 1.32]
+    TOP --> BOOT[Physical RESET: require STR8-N 1.34]
     BOOT --> BMLOAD[Select S; STR8-N L; load Bank Maintenance S19]
     BMLOAD --> ADOPT[Bank Maintenance D: adopt B0 as FF WDCV2]
     ADOPT --> MAP[Bank Maintenance M: require COMPLETE D0]
@@ -118,9 +128,10 @@ flowchart TD
     CHOICE -->|none| DONE1[STR8-N plus preserved WDCMONv2 complete]
     CHOICE -->|HIMON only| HIMON[STR8-N I B3 C-E; install HIMON]
     CHOICE -->|HIMON + ASM recommended| BOTH[STR8-N I B3 8-E; install combined payload]
-    CHOICE -->|separate component updates| BLOCKED[Stop: intended order is HIMON then ASM, but current ASM S9 is incompatible]
+    CHOICE -->|separate components| SEPARATE[HIMON C-E first; ASM 8-B with S9 FFFF second]
     HIMON --> PROVE[Reset and prove installed identities]
     BOTH --> PROVE
+    SEPARATE --> PROVE
     PROVE --> WDCAGAIN[Run J0; prove WDCMONv2; physical RESET]
     WDCAGAIN --> DONE2[Integrated board complete]
 ```
@@ -132,14 +143,14 @@ Use this runbook only when the initial state is understood:
 | Initial state | Starting point |
 | --- | --- |
 | Stock WDCMONv2 in Bank 3, Bank 0 erased | Begin at Phase 1 |
-| STR8-N 1.29 already boots and `D0 FF WDCV2 FFFF FCFFFFFF` exists | Skip to Phase 4 |
-| STR8-N 1.29 boots, B0 contains the verified factory copy, but D0 is erased | Begin at Phase 3 |
+| STR8-N 1.34 already boots and `D0 FF WDCV2 FFFF FCFFFFFF` exists | Skip to Phase 4 |
+| STR8-N 1.34 boots, B0 contains the verified factory copy, but D0 is erased | Begin at Phase 3 |
 | Another STR8-N version or a partly completed install | Stop; use that release's recovery/update guide before this flow |
 | Bank 0 is used and differs from Bank 3 | Stop; archive and identify both banks before authorizing any copy |
 
 Required before a factory migration:
 
-- the extracted STR8-N 1.29 WDCMONv2 migration kit;
+- the extracted STR8-N 1.34 WDCMONv2 migration kit;
 - Windows PowerShell 5.1 for the board-accepted reference path;
 - the correct free COM port at 115200 8N1 after migration;
 - stable board and USB power, and access to physical RESET;
@@ -162,11 +173,11 @@ these artifact roles distinct:
 | Artifact | Used by | Purpose |
 | --- | --- | --- |
 | `STR8-iN65-LOADER.ps1` | Host under stock WDCMONv2 | Drives the binary protocol and entire migration dialogue |
-| `STR8-N-v1-29.bin` | Factory RAM migrator | Exact 4096-byte Bank-3 top sector |
+| `STR8-N-v1-30.bin` | Factory RAM migrator | Kit compatibility filename for the exact 4096-byte v1.34 Bank-3 top sector; verify by manifest, not filename |
 | `STR8-iN65-BANK-MAINT-2000.s19` | STR8-N `L` | Temporary RAM Bank Maintenance tool used to adopt B0 |
 | `ryors-v1.2-himon-asm-bank3-8-e.s19` | STR8-N `I` | Combined HIMON and ASM-F2 Bank-3 payload |
 | `ryors-v1.2-himon-bank3-c-e.s19` | STR8-N `I` | HIMON-only Bank-3 payload |
-| `ryors-v1.2-asm-bank3-8-b.s19` | Do not send in the current release | Intended ASM-F2 component; currently blocked by its S9 mismatch |
+| `ryors-v1.2-asm-bank3-8-b.s19` | STR8-N `I`, after HIMON | ASM-F2 component, S9 `$FFFF` retains the existing Bank-3 entry |
 
 From sibling source checkouts, the current builds are:
 
@@ -195,6 +206,12 @@ The wrapper asks for the COM port when one was not supplied. Keep the same
 host session open: it begins with WDCMONv2 binary traffic and later becomes
 the ASCII terminal and file-transfer path.
 
+The accepted v1.34 run used `-Port COM4 -PhysicalResetArmSeconds 60` to
+capture the stock monitor's short synchronization window. Use the actual
+board port and press RESET when that arm window is reported active. The
+default reset/Enter gate remains available; consult the packaged migration
+guide if synchronization fails before any transfer.
+
 When instructed:
 
 1. Press physical RESET and let the wrapper verify the `SXB2` board identity.
@@ -212,7 +229,7 @@ When instructed:
 7. Type the separate exact confirmation:
 
    ```text
-   INSTALL STR8-N 1.29
+   INSTALL STR8-N 1.34
    ```
 
 Only Bank-3 sector F is replaced. The verified factory Bank-3 image has
@@ -223,8 +240,8 @@ already been copied to Bank 0; Banks 1 and 2 are not migration destinations.
 Require physical RESET to print:
 
 ```text
-RESET
-STR8-N 1.29
+RST H
+STR8-N 1.34
 0-2 C W S:
 ```
 
@@ -246,7 +263,7 @@ second transfer. At `STR8-N>`:
 The equivalent artifact in a STR8-N build tree is:
 
 ```text
-BUILD/v1.32/s19/str8n-v1.32-bank-maint-2000.s19
+BUILD/v1.34/s19/str8n-v1.34-bank-maint-2000.s19
 ```
 
 `L` loads and executes a temporary RAM tool. It does not itself write flash.
@@ -299,7 +316,7 @@ Test both launch paths separately:
 1. At physical RESET, select `0`; require the retained factory identity.
 2. Press physical RESET to return to STR8-N.
 3. Select `S`, enter `J0`, and again require the factory identity.
-4. Press physical RESET and require `STR8-N 1.29` again.
+4. Press physical RESET and require `STR8-N 1.34` again.
 
 The WDCMONv2-to-STR8-N migration is complete here. HIMON and ASM-F2 are
 optional payloads and should be installed only after this recovery baseline
@@ -307,15 +324,17 @@ has passed.
 
 ## Phase 4: Choose The Bank-3 Payload
 
-Obtain the components from either the migration kit's
-`OPTIONAL/HIMON-ASM/` directory or the matching R-YORS release. Verify their
-hashes against the release that supplied them.
+Obtain the components from `FIRMWARE/` in the matching HIMON and ASM-F2
+release ZIPs. The combined S19 is present in both ZIPs and directly on the
+release shelf. The STR8-N migration kit contains no R-YORS payload. Verify
+each extracted package before use; old `OPTIONAL/HIMON-ASM/` and
+`RELEASE/ARTIFACTS/` copies are not these release files.
 
 | Desired Bank-3 environment | File | STR8-N `I` range | New-row identity | Notes |
 | --- | --- | --- | --- | --- |
 | HIMON + ASM-F2 | `ryors-v1.2-himon-asm-bank3-8-e.s19` | `8-E` | TYPE `FF`, DESC `RYORS` | Recommended first R-YORS payload; one transaction |
 | HIMON only | `ryors-v1.2-himon-bank3-c-e.s19` | `C-E` | TYPE `48`, DESC `HIMON` | Establishes S9/entry `$C000` |
-| ASM-F2 added to existing HIMON | `ryors-v1.2-asm-bank3-8-b.s19` | Do not install the current artifact | Existing D3 identity is `$C000` | Intended as a later component update, but the current artifact has incompatible S9 `$8000`; see Option C |
+| ASM-F2 added to existing HIMON | `ryors-v1.2-asm-bank3-8-b.s19` | `8-B` | Retain existing D3 identity and `$C000` entry | Current S9 `$FFFF`; see Option C |
 | No R-YORS payload | none | none | none | STR8-N plus preserved WDCMONv2 remains valid |
 
 Do not send the full Bank-0/1/2 image
@@ -343,8 +362,10 @@ ryors-v1.2-himon-asm-bank3-8-e.s19
 ```
 
 Require seven sector dots, accept `COMMIT? Y` only after the complete stream
-and S9 have been accepted, and require `OK`. Its S9 is `$C000`, so successful
-completion enters HIMON.
+and S9 have been accepted, and require `OK`. Its S9 establishes `$C000` as
+the Bank-3 entry. Enter `C` to start HIMON and require `00.0915(2324)`.
+TYPE/DESC prompts appear only for a new directory row; an enrolled bank
+retains its existing identity.
 
 ### Option B: Install HIMON Only
 
@@ -361,45 +382,44 @@ S19
 ```
 
 Send `ryors-v1.2-himon-bank3-c-e.s19`. Require three sector dots, the final
-commit, `OK`, and the exact `HIMON V` banner.
+commit, and `OK`. Enter `C` and require `HIMON V 00.0915(2324)`.
 
 ### Option C: Install The Components Separately
 
-The intended ordering is HIMON `C-E` first, then ASM-F2 `8-B`. HIMON
-establishes immutable Bank-3 entry `$C000`; a later ASM-only stream must
-therefore end with S9 `$FFFF` (retain the entry) or `$C000` (exact match).
-
-**Do not run the separate ASM step from the current 2026-09-02 artifacts.**
-Direct inspection shows that both copies below end in `S90380007C`, which is
-S9 `$8000`:
+Install HIMON `C-E` first as in Option B. Return with `STR8`, confirm, and
+select `S`, then enter:
 
 ```text
-RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-asm-bank3-8-b.s19
-../STR8-N/BUILD/v1.32/str8n-v1.32-release/OPTIONAL/HIMON-ASM/
-  ryors-v1.2-asm-bank3-8-b.s19
+I
+B0-3: 3
+RANGE: 8-B
+I B3 8-B WRITE? Y: Y
+S19
 ```
 
-That S9 does not equal HIMON's existing `$C000` entry and is not the documented
-`$FFFF` no-change value. The live STR8-N gate must reject it with an entry
-error. The packaged optional-install card and some current prose still call
-this artifact `$FFFF`; the bytes, R-YORS Makefile, and STR8-N release verifier
-currently agree on `$8000` instead.
+Send the current packaged `ryors-v1.2-asm-bank3-8-b.s19`. Require four sector
+dots, `COMMIT? Y:`, confirmation `Y`, and `OK`. This stream ends with S9
+`$FFFF`, which retains HIMON's existing `$C000` entry and D3 identity. It
+does not enroll an empty Bank 3 or execute ASM. Enter `C`, then `ASM NEW`,
+and require `ASM-F2 00.0915(2324)`.
 
-Until the generator, identity check, packaged artifact, and documentation all
-agree on an accepted S9, use the combined `8-E` image for HIMON + ASM-F2. The
-HIMON-only path remains valid. Do not hand-edit the S9 record as an operating
-workaround because that would bypass the release identity and checksum gates.
+The corrected component procedure passed on STR8-N 1.34 with the earlier
+`00.0915(2243)` ASM banner; see the
+[board record](LOGS/ASMF2_SIZE_2026-09-15.md). The release differs only in
+the documented timestamps. Old September 2 component snapshots ended with
+S9 `$8000`, which conflicts with an enrolled HIMON entry. Use the verified
+current ZIP instead of editing or installing those historical files.
 
 ## Phase 5: Final Acceptance Sequence
 
 After installing the chosen payload:
 
-1. Press physical RESET and require `STR8-N 1.29`.
+1. Press physical RESET and require `RST H` and `STR8-N 1.34`.
 2. Select `C`; require the expected HIMON version and prompt.
 3. Enter `ASM`; require the expected ASM-F2 identity if ASM was installed.
 4. Exit ASM with `.` and return to STR8-N with `STR8`.
 5. Enter `J0`; require the preserved WDCMONv2 identity and normal board face.
-6. Press physical RESET; require Bank-3 `STR8-N 1.29` again.
+6. Press physical RESET; require Bank-3 `STR8-N 1.34` again.
 7. Optionally select `W` or allow the selector timeout; require warm HIMON
    entry and preserved RAM behavior.
 
@@ -421,7 +441,7 @@ stock WDCMONv2
   -> J0/selector-0/physical-RESET proof
   -> STR8-N I installs Bank-3 payload:
        combined 8-E, or
-       HIMON C-E only; separate ASM 8-B is blocked until its S9 is corrected
+       HIMON C-E only, or HIMON C-E followed by current ASM 8-B (S9 FFFF)
   -> physical RESET / HIMON / ASM / J0 / physical RESET proof
 ```
 
@@ -446,8 +466,8 @@ used to install HIMON or ASM-F2.
 - Do not use historical HIMON `L F`, HIMON `L G`, ASM TopWriter, or old Bank
   Maintenance `P` procedures as substitutes for the current owner-specific
   paths.
-- Do not attempt the current separate ASM-only `8-B` artifact after a HIMON
-  install; its S9 `$8000` conflicts with the established D3 entry `$C000`.
+- Reject any old ASM-only `8-B` stream ending with S9 `$8000`; the current
+  release uses `$FFFF` to retain the enrolled HIMON entry.
 
 ## Current Authorities
 

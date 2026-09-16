@@ -50,6 +50,7 @@ make -C SRC asm-abi-check
 make -C SRC asm-opcode-coverage
 make -C SRC asm-dc-check
 make -C SRC asm-error-check
+make -C SRC asm-size-check
 make -C SRC asm-ap-v2-check
 make -C SRC apman
 make -C SRC ap-store-v1-check
@@ -60,6 +61,7 @@ make -C SRC ap-store-slice6-tool-check
 make -C SRC himon-banked-ap-check
 make -C SRC himon-str8-record-check
 make -C SRC himon-io-led-check
+make -C SRC himon-size-check
 make -C SRC microchess
 make -C SRC str8-readonly-bank-tools-check
 ```
@@ -80,6 +82,87 @@ and identical HIMON S19 SHA-256
 ASM remains `_END_DATA=$BD95`; HIMON remains `_END_DATA=$EEF6`. Because no
 emitted byte, RAM allocation, command behavior, or bank behavior changed, the
 existing hardware evidence remains applicable and no new board gate is opened.
+
+## ASM-F2 Size Reduction Qualification
+
+The 2026-09-15 qualified image saves 530 ROM bytes with no UDATA or published ABI
+change. Initialization cleanup, state-clearing loops, and redundant AP-writer
+reload removal save 176 bytes; the shared opcode-pattern implementation saves
+another 354. ASM-F2 occupies 15,235 bytes, ends at `$BB83`, and leaves 1,149
+bytes below `$C000`. Its visible stamp is `00.0915(2243)`.
+
+`asm-size-check`, included in `asm-test`, runs the linked 65C02 code against
+independent expectations: 65,536 opcode ID/mode pairs, 1,024 bit-number byte
+cases, six exact state-clear memory checks, 105 unhooked cold/warm service
+initialization cases, 78 AP export/import records, and six complete AP-v2
+packages. The same expectations pass the original image. Mutation checks
+exercise the oracles. Existing diagnostic and source-workflow tests remain
+required, including the optional CHECK build and every nonflash core profile.
+
+See [size qualification](SIZE_REDUCTION_2026-09-15.md) for exact image identity,
+full-suite results and timing tradeoffs. The image is installed in COM4
+Bank-3 sectors 8-B. The [board record](../LOGS/ASMF2_SIZE_2026-09-15.md)
+retains exact flash verification, all 217 instruction forms, nine rejected
+source cases, NEW clearing, SEAL/RELOCATE/PACKAGE/LOAD, eight exports and
+three imports, runtime/debugger checks, and physical RESET followed by fresh
+assembly/run and unchanged full-bank readback. Prior board transcripts apply
+to their original images; Bank 0-2 carriers were not requalified.
+
+The full `asm-test` suite and all nine `board-s19-check` payload comparisons
+pass with stamp `0915(2243)`. Generated routine documents and session-report
+samples are current. The ASM-only component now uses S9 `$FFFF`; the identity
+gate rejects the old `$8000` entry, and a corrected 8-B install passed on the
+board. Host, documentation, and board gates agree; the feature queue is accepted.
+
+The separate release ZIPs use `0915(2324)`. The full suite and nine canonical
+image comparisons passed again for that stamp; exact comparison with the
+reset-qualified COM4 bank permits only nine changed bytes in three timestamp
+fields. The combined 8-E S19 is included identically in both component ZIPs.
+This release qualification does not claim a new board flash operation.
+Package checks also cover manuals/offline links, licenses, exact inventory,
+S19/BIN agreement, and rejection of altered or incomplete distributions.
+
+## HIMON Size Reduction Qualification
+
+The 2026-09-15 candidate removes the unused non-FAST FNV update path (51
+bytes), redundant AP seal-verifier pointer/count setup (37 bytes), and repeated
+mnemonic name bytes (180 bytes net). The linked image with frozen visible stamp
+`0914(1200)` shrinks from 12,022 to 11,754 bytes: `_END_DATA=$EEF6` becomes
+`$EDEA`, leaving 534 bytes below `$F000`. The published FNV records, active
+hash implementation, AP format, and mnemonic output remain unchanged.
+
+`himon-size-check` executes the linked image with the same pinned py65 used by
+the diagnostic gate. It covers all 256 opcode displays, FNV service results,
+and AP parsing/seal validation across BODY page boundaries and malformed
+packages. It is included in `asm-test`.
+
+The focused linked checks pass on both the original and candidate images:
+256 opcode step displays, 262 FNV vectors, and 77 AP parse/load cases. In-memory
+mutation checks confirm rejection of corrupted mnemonic data, a damaged FNV
+basis, and bypassed seal comparison. The banked-AP, STR8 client, and I/O LED
+checks and full `make -C SRC asm-test` pass with the same frozen stamp.
+Candidate HIMON S19 SHA-256 is
+`F71AF701304AA7653A392DDACF6282BCBD1B2F4FED6FC18AC7A23BA23530795A`.
+
+COM4 accepted this image on 2026-09-15: exact Bank-3 readback, resident hash
+lookup, all 256 mnemonic displays, 34 actual debugger steps, and 13 direct AP
+cases (six valid loads and seven corruption rejections). Physical RESET
+reported `RST H`, returned through STR8-N 1.34 to HIMON `00.0914(1200)`, and
+retained an identical full-bank readback. WDCMONV2 in sectors 8-B and STR8-N
+code/configuration/vectors were preserved; only C-E and the installer-owned
+D3 enrollment changed. See the [qualification record](../LOGS/HIMON_SIZE_2026-09-15.md)
+and its retained raw serial transcript. ASM-F2 was absent on this board, so
+this run does not claim an onboard ASM regression or requalify unrelated AP
+carriers. Earlier hardware logs retain their original image scope.
+
+The final timestamp correction was installed on COM4 as `00.0915(2233)`.
+Comparison proved that only the two ROM timestamp strings changed; size
+and layout are identical. The linked 256/262/77 checks passed again, and
+full-bank readback verified the new C-E bytes plus the expected installer
+journal advance. Cold entry, help, and hash lookup passed. Physical RESET
+above applies to the preceding, otherwise byte-identical image; it was not
+repeated for the timestamp correction. The qualification record includes
+the new image hashes and separate serial transcript.
 
 ## APMAN Bank/Sector LED Host Qualification
 

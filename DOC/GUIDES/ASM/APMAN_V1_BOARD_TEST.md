@@ -3,8 +3,10 @@
 > [!NOTE]
 > Accepted development record for the original STR8-N 1.23/APMAN bring-up.
 > Preserve its exact artifacts and transcript as evidence; use
-> [the capability matrix](../CAPABILITIES.md) and current operator guides for
-> STR8-N 1.29/HIMON `00.0902(1707)` operation.
+> [the capability matrix](../CAPABILITIES.md), [AP/OIL guide](../AP/AP_OIL_GUIDE.md),
+> and the current HIMON release's `APPLICATIONS/APMAN/README.md` for operation.
+> The candidate status, exact files, and commands below retain their original
+> scope and must not be read as the current component-version declaration.
 
 Status: host candidate. This card is destructive to all of Bank 2 and D2.
 Do not mark APMAN hardware-proven until every required checkpoint below passes.

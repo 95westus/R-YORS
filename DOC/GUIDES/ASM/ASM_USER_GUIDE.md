@@ -4,10 +4,14 @@ The stable HIMON service-vector/RAM-card and AP v2 package interfaces are
 defined in [ASM_ABI_V1.md](ASM_ABI_V1.md). Internal ASM addresses are not part
 of that ABI.
 
-Status: current operator guide for ASM v1 as of 2026-09-05. ASM-F2
-`00.0905(2321)` text diagnostics and physical-reset recovery are accepted.
-ASM is a young onboard W65C02
-workbench, not a hosted toolchain. The hardware proof source of truth remains
+Status: current operator guide for the 2026-09-15 release, ASM-F2
+`00.0915(2324)` with HIMON `00.0915(2324)` and STR8-N 1.34. The release
+differs only in timestamp strings from the physical-reset-qualified board
+pair ASM-F2 `00.0915(2243)` / HIMON `00.0915(2233)`; the new stamp was not
+reflashed. ASM occupies 15,235 bytes at `$8000-$BB82`, with end `$BB83`
+exclusive and 1,149 bytes free below `$C000`. Application qualification is
+separate; see [the release application catalog](../RELEASE_APPLICATIONS.md).
+ASM is an onboard W65C02 workbench. The hardware proof source of truth remains
 [TEST_PLAN.md](TEST_PLAN.md). For WDC, ca65, and vasm translation, including
 the non-equivalent AP metadata model, see
 [ASM_DIALECT_CROSSWALK.md](ASM_DIALECT_CROSSWALK.md).
@@ -42,11 +46,10 @@ LINK     future import binding in the loaded overlay/temp-RAM image
 ```
 
 Current flash ASM implements `SPIL`: `SEAL`, `PACKAGE`, `INSTALL`, and `LOAD`.
-`LINK` is parked until imported packages can bind resident/package symbols
-without growing the default flash image too much. Future `LINK` should patch
-import relocation rows in the already loaded RAM image; it should make that
-overlay/temp-RAM body runnable, but execution remains a separate HIMON `G` or
-future run command.
+`LOAD` already binds supported resident imports through HIMON. There is no
+separate interactive `LINK` command. A loaded BODY runs through HIMON `G`;
+HIMON `AP` combines package load/link/entry execution, and `AP L` stops after
+load/link.
 
 Build the current board artifacts on the host:
 
@@ -55,13 +58,15 @@ make -C SRC all
 make -C SRC asm-session-report
 ```
 
-`make -C SRC all` creates the current 32K onboard image with ASM-F2 already in
-low flash. Bank 3 does not carry the ASM session reporter AP; build or install
-that reporter separately and keep it as a Bank 0 AP. The preferred movable
-form uses `$4000` as its conventional RAM destination:
+`make -C SRC all` creates a development image with ASM-F2 in low flash.
+For the reviewed release, use the versioned archives in `RELEASE/`, their
+manifests and `QUALIFICATION.json`; rebuilding can change the visible stamp.
+Bank 3 does not carry the ASM session reporter AP. Build/load that reporter
+separately, or store it with APMAN in a deliberately selected Bank 0-2 sector.
+The preferred movable form uses `$4000` as its conventional RAM destination:
 
 ```text
-AP B0 $hhhh $4000
+AP B1 ASMREPORT $4000
 ```
 
 Some current board-ingested files still live under
@@ -69,17 +74,16 @@ Some current board-ingested files still live under
 packages them directly. Treat the paths named in this guide as current until a
 replacement is documented; retired samples and proof-only sources move by the
 plan in [../PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md](../PLANNING/HISTORICAL_CODE_MIGRATION_PLAN.md).
-For the short Life bank-2 bench sequence, see
-[LIFE16_QUICK_CARD.md](LIFE16_QUICK_CARD.md). For the complete method and the
-reason behind each step, see [LIFE16_BANK2_EXAMPLE.md](LIFE16_BANK2_EXAMPLE.md).
+The Life16 bank-2 cards are historical pre-split-worker evidence, not current
+installation instructions. The HIMON release includes the independent
+standalone Life program and its notice; see the release application catalog.
 
-On a board burned with the `make all` image, update/install the full image and
-then return to HIMON with `G HIMON`; ASM-F2 is already present at `$8000`. If
+After STR8-N installation, use `C` to cold-enter HIMON; ASM-F2 is at `$8000`. If
 you will need a session report, load the reporter AP before starting that ASM
 session. Exit the session with `.`, then rerun the RAM copy with `G 4000`:
 
 ```text
-AP B0 $hhhh $4000
+AP B1 ASMREPORT $4000
 ASM NEW
 ...target source...
 .
@@ -98,51 +102,50 @@ Install flash-resident ASM into an already-enrolled Bank 3 through STR8-N:
 
 ```text
 >STR8          confirm entry
+               select S at the boot selector
 STR8-N>I
 B0-3: 3
 RANGE: 8-B
 I B3 8-B WRITE? Y: Y
-S19            send RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-asm-bank3-8-b.s19
+S19            send FIRMWARE/ryors-v1.2-asm-bank3-8-b.s19 from the ASM-F2 ZIP
 ...COMMIT? Y: Y
 OK
-STR8-N>W
+STR8-N>C
 ```
 
-The ASM-only S9 `$FFFF` preserves the Bank-3 directory entry, so it is not a
-first-install image. Use the combined `8-E` payload for first enrollment. A useful service
-sanity check after updating HIMON is:
-
-```text
-D 7E25 2C      expect F1 D6 00 00 00 00 00 00 on current Overlay Integration Layer (OIL) image
-```
+The ASM-only stream covers exactly `$8000-$BFFF`; its S9 `$FFFF` preserves
+the existing Bank-3 HIMON entry, so it is not a first-install image. Use
+`FIRMWARE/ryors-v1.2-himon-asm-bank3-8-e.s19` with range `8-E` and S9 `$C000`
+for first enrollment or an interrupted Bank-3 transaction. Both archives
+include that recovery stream. Sector F remains owned by STR8-N.
+The public service-vector addresses remain fixed, but their pointed-to
+routine addresses are map-dependent; do not reuse an old raw pointer dump
+as a compatibility test.
 
 The prompt text below shows where each line is typed; do not paste the prompt
 characters. A normal assemble, package, install, load, and run session looks
-like this:
+like this RAM-only example:
 
 ```text
 >ASM NEW
 ASM>$2000: ORG $2000
-ASM>$2000: LDA #$5A
+ASM>$2000: START LDA #$5A
 ASM>$2002: RTS
+ASM>$2003: ENTRY START
 ASM>$2003: END
-SEAL> PACKAGE 3200
-SEAL> INSTALL 3200
-SEAL> INSTALL 3200 hhhh
-SEAL> LOAD hhhh 3000
+SEAL> PACKAGE START 3200
+SEAL> LOAD 3200 3000
 SEAL> .
 >D 3000 3002
 >G 3000
 ```
 
-Use the address printed by `INSTALL 3200`; `hhhh` is an example placeholder,
-not a fixed address. `INSTALL pkg` is advisory and
-does not write. `INSTALL pkg flash_addr` writes the unchanged AP envelope to an
-erased visible low-flash hole. In a memory dump, the installed package begins
-at the `AP` signature, not at an earlier row boundary such
-as `$BD10`. If that hole is already occupied, `INSTALL pkg` suggests the next
-erased hole, and an explicit install to the occupied address reports
-`INST RANGE`.
+For persistent named storage with a provisioned APMAN carrier, use
+`INSTALL 3200 B1` before leaving `SEAL>`, then `AP B1 START` from HIMON.
+Choose the bank deliberately: the bank token confirms the write. APMAN
+selects an erased, unreserved carrier sector. `INSTALL pkg` alone remains
+advisory; the visible-flash form `INSTALL pkg flash_addr` is a separate
+operation described below and consumes space in Bank-3 low flash.
 
 ## Return Status
 
@@ -447,7 +450,7 @@ numbers, counts, and data, but not as memory-address operands:
 
 ```asm
 LDA #13       ; OK
-LDA 13        ; BAD WIDTH
+LDA 13        ; ERR SIZE
 ```
 
 Do not assume hosted-assembler behavior here. ASM-F2 width follows spelling,
@@ -612,7 +615,7 @@ for each patched address use.
 ## END Versus SEAL
 
 `END` finalizes assembly. It resolves required fixups, freezes the body facts,
-prints tables, and switches to:
+prints the assembly result, and switches to:
 
 ```text
 SEAL>
@@ -644,8 +647,9 @@ The default flash image omits the older interactive `RESOLVE` command. Import
 metadata can still be packaged. In the combined HIMON/STR8 image, `LOAD` and
 HIMON `AP` resolve declared imports that name resident RJOIN symbols through
 HIMON's resident AP linker; missing or non-resident imports still fail with
-`BAD FIX`. STR8 keeps `$F006` only as a compatibility doorway into that HIMON
-service.
+`LOAD FIXUP` (status `$09`). The current AP service doorway is HIMON's published pointer at
+`$7E2D-$7E2E`. STR8-N `$F006` queries its raw console ABI; it is not an AP
+linker entry.
 
 `RELOCATE address` copies the frozen body to a RAM destination and applies
 internal relocation rows there:
@@ -803,7 +807,7 @@ recovery form.
 
 That path copies the banked AP envelope into the sector staging buffer, loads
 and links BODY bytes into a manager-approved destination in `$2000-$6FFF`,
-and runs from the requested load address. APMAN itself owns `$7000-$7B11`. It
+and runs from the requested load address. APMAN itself owns `$7000-$7BFB`. It
 never executes a carrier directly from banked flash.
 
 A parent AP can use published direct LOAD operation `$01` through the service
@@ -821,7 +825,7 @@ reuses that low RAM, so run `asm-session-report` before staging if symbol and
 fixup names from the current session are required.
 
 For a current STR8-N top-sector update, load the standalone repository's
-`BUILD/v1.32/s19/str8n-v1.32-top-update-2000.s19` through STR8-N `L`. It embeds
+`BUILD/v1.34/s19/str8n-v1.34-top-update-2000.s19` through STR8-N `L`. It embeds
 the exact manifest-checked top image, verifies a full B1:F backup, preserves
 the live directory/configuration pocket, and requires exact confirmations
 before B3:F erase. The former ASM transient writers are archived under
@@ -844,12 +848,13 @@ make -C SRC asm-session-report
 The current `make all` image does not store a reporter after ASM-F2. The
 preferred generated source is `asm-session-report-v1.2-ap-2000.a`: its
 identity/entry is `ASMREPORT`, it packages at `$3000`, can load anywhere from
-`$2000-$41DB`, and conventionally uses
-`$4000`. If it is stored in Bank 0, load it before the session to inspect,
+`$2000-$41DF`, and conventionally uses
+`$4000`. Its BODY is `$0E21` bytes and its AP envelope is `$0E4D` bytes.
+If it is stored in Bank 1, load it before the session to inspect,
 then exit that session with `.` and run the resident copy:
 
 ```text
-AP B0 $hhhh $4000
+AP B1 ASMREPORT $4000
 ASM NEW
 ...target source...
 .
@@ -861,7 +866,9 @@ The host-built RAM reporter is `SRC/BUILD/s19/asm-session-report-v1.2-7000.s19`;
 the matching fixed AP proof package is
 `SRC/BUILD/bin/asm-session-report-v1.2-7000.ap.bin`.
 Load it before the ASM session to inspect, then after `END` and `.` run
-`G 7000`.
+`G 7000`. This fixed `$7000` product is different from the movable `$4000`
+reporter; do not load the fixed AP at `$4000`. Reserve the selected reporter's
+RAM span while assembling the target session.
 For flash ASM itself, `DOC/GUIDES/ASM/SAMPLES/asm-session-report-v1.2-ap-2000.a`
 is a compact, pasteable `.a` source. It prints the split low-RAM pools, the
 `$2000/$3000/$4000` islands, high UDATA, safe output, and volatile regions.
@@ -871,16 +878,17 @@ remain map-matched. The legacy
 `SAMPLES/OLD/asm-session-report-transient-7000.a` non-flash/runtime-paste
 source are retained in the archive.
 
-To manually store the reporter as an AP package in Bank 0, use the
-`bank0ap-put-transient-2000.a` flow in
-[SAMPLES/OLD/bank0ap-put-2000-test.md](SAMPLES/OLD/bank0ap-put-2000-test.md). Rebuild,
-repackage, and reinstall either reporter after ASM-F2 code or map changes. A
+For a RAM session, assemble the movable reporter, `PACKAGE ASMREPORT 3000`,
+then `LOAD 3000 4000` before leaving ASM. For optional persistent storage with
+a provisioned APMAN carrier and suitable Bank-1 destination, use
+`INSTALL 3000 B1` at `SEAL>`. Rebuild, repackage, and reinstall either reporter
+after ASM-F2 code or map changes. A
 version-stamp-only rebuild with unchanged addresses does not invalidate it.
 Load the matching reporter before the session to inspect, because a banked
 load reuses low RAM:
 
 ```text
-AP B0 $hhhh $4000
+AP B1 ASMREPORT $4000
 ASM NEW
 ...target source...
 .
@@ -987,7 +995,8 @@ PACKAGE 3200
 The body contains placeholder bytes for `EXT`, and the package contains an
 import record. The current HIMON/STR8 AP loader can resolve imported names that
 exist as resident RJOIN symbols, such as `BIO_FTDI_PUT_CSTR`. A made-up name
-like `EXT` still fails at load/run time with `BAD FIX`.
+like `EXT` still fails at load/run time with status `$09` (`LOAD FIXUP` at
+the ASM prompt).
 
 ## Memory Use
 
@@ -1006,13 +1015,13 @@ $2000-$2FFF  packageable ASM body/helper emission island
 $3000-$3FFF  Bank 0 AP envelope, then AP load/run space
 $4000-$4FFF  lower RAM output/load space
 $5000-$6D6D  protected flash ASM UDATA in the current map
-$6D6C-$7CFF  upper ASM output/scratch arena
+$6D6E-$7CFF  upper ASM output/scratch arena
 $7E00-$7EFF  HIMON service and monitor workspace
 $7F00-$7FFF  I/O, do not use
 ```
 
 The flash wrapper rejects output into its protected UDATA span. `ORG $5000`
-is `BAD RANGE`; the current map permits `ORG $6D6C` through `$7CFF`.
+reports `ERR RANGE`; the current map permits `ORG $6D6E` through `$7CFF`.
 Runtime code may still use ordinary RAM after leaving ASM if it does not depend
 on returning to the same live ASM workspace. HIMON retains `$2000-$4FFF` for
 general AP destinations and reserves `$7000-$7BFF` for terminal transient
@@ -1043,7 +1052,7 @@ name in every table may leave little or no room for BODY bytes.
 Fixups and relocations are separate budgets. Each unresolved emitted use
 consumes one of the 128 fixup rows, even when many rows name the same target.
 Putting data and helpers before their fixed-load uses can therefore prevent
-`BAD FIX`. It does not reduce the relocation rows required to move internal
+`ERR FIXUP`. It does not reduce the relocation rows required to move internal
 absolute address sites. Relocation overflow leaves ordinary fixed-address ASM
 valid but seal-ineligible; it does not become packageable when later AP work
 is finished. See the worked distinction in

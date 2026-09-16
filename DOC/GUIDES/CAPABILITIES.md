@@ -1,14 +1,28 @@
 # Current Capability Matrix
 
-This is the short authority for the live STR8-N, HIMON, and ASM-F2 command
-surfaces. The board currently has these accepted identities; HIMON was updated
-and its MicroChess launcher checked on COM4 on 2026-09-10:
+This is the short authority for the supported STR8-N, HIMON, and ASM-F2 command
+surfaces. The latest COM4 observation, after the ASM-F2 size qualification
+and installation on 2026-09-15, is:
 
 ```text
-STR8-N 1.33
-HIMON   00.0910(2121)
-ASM-F2  00.0910(1709)
+STR8-N 1.34
+HIMON   00.0915(2233)
+ASM-F2  00.0915(2243) in Bank-3 sectors 8-B
 ```
+
+The [qualification record](LOGS/ASMF2_SIZE_2026-09-15.md) identifies the exact
+installed image and checks. The capability tables below describe supported
+components; their commands require those components and any named carriers
+to be installed. ASM-F2 replaced the Bank-3 WDCMONV2 copy. Bank 0-2 carriers
+were not requalified in this run.
+
+The published local release ZIPs contain HIMON and ASM-F2 `00.0915(2324)`.
+Their combined 8-E stream passes the complete host regression and differs
+from the reset-qualified board image only in nine timestamp bytes. It has
+not been reflashed. See [release packages](../../RELEASE/README.md),
+[qualification](../../RELEASE/QUALIFICATION.json), and the
+[application catalog](RELEASE_APPLICATIONS.md) for distribution contents and
+the distinction between firmware proof and optional application proof.
 
 Historical plans, accepted test cards, transcripts, and story documents may
 show commands that existed on an earlier image. In particular, HIMON `L G`
@@ -26,7 +40,7 @@ This document answers three different questions:
 
 | Status | Meaning |
 | --- | --- |
-| Current | Present in the live image and documented for operator use |
+| Current | Supported by the current component and documented for operator use; availability depends on the installed components noted above |
 | Hardware-accepted | Exercised on the physical board with retained transcript evidence |
 | Host-verified | Checked by the build/regression suite, but not by itself a board claim |
 | Proven tooling | The mechanism has host and board evidence, but still uses focused transient tools or test cards rather than one supported everyday interface |
@@ -59,7 +73,8 @@ that transcript.
 | Inventory carrier/store/media roles without mutation | `APS`, BANKAUDIT, BANKDUMP | Current; hardware-accepted | Some deeper inspection is supplied by installed APC utilities, not a resident HIMON dump command |
 | Append, chain, reconstruct, validate, load, and tombstone AP Store objects | AP Store V1 tools | Proven tooling | Focused transient tools and cards are accepted; a consolidated operator manager is not current |
 
-The current operator path is therefore complete for a small program lifecycle:
+With ASM-F2 and the required carrier support installed, the operator path is
+complete for a small program lifecycle:
 enter source in ASM-F2, `END`, `PACKAGE`, `INSTALL ... Bn`, reset, discover it
 with `APS`, and load/run it with `AP`. AP Store is the more capable storage
 mechanism, but its management experience has not yet been consolidated.
@@ -227,7 +242,7 @@ with STR8-N `I`; do not use a historical HIMON `L F` procedure.
 
 ```text
 Bank 3 C-E  ryors-v1.2-himon-bank3-c-e.s19
-Bank 3 8-B  ryors-v1.2-asm-bank3-8-b.s19 (current S9 mismatch; do not install)
+Bank 3 8-B  ryors-v1.2-asm-bank3-8-b.s19 (current ASM-F2 ZIP; S9 $FFFF)
 Bank 3 8-E  ryors-v1.2-himon-asm-bank3-8-e.s19
 Banks 0-2 8-F  STR8-N-owned composed full-bank image
 ```
@@ -236,12 +251,14 @@ All Bank-3 payload files are sent only after STR8-N `I` has selected the same
 range and printed `S19`. Sector F is STR8-N-owned and protected from Bank-3
 `I`.
 
-The current ASM-only `8-B` artifact ends with S9 `$8000`, while an existing
-HIMON Bank-3 identity has immutable entry `$C000` and accepts only S9 `$FFFF`
-or `$C000`. Do not use the separate ASM component until its generator, release
-check, packaged bytes, and install documentation agree. Use the combined
-`8-E` image when both HIMON and ASM-F2 are required. The
-[installation flow](INSTALLATION_FLOW.md) records the exact boundary.
+The current release ASM-only `8-B` artifact ends with S9 `$FFFF`, retaining
+the existing HIMON Bank-3 entry `$C000`. Its exact range and S9 now pass
+`board-s19-check` and the STR8-N 1.34 installer on COM4. The ZIPs listed in
+`RELEASE/README.md` contain the corrected files under `FIRMWARE/`. Older
+`RELEASE/ARTIFACTS/` snapshots can still contain incompatible S9 `$8000` and
+are not part of the current release. Use the combined `8-E` image
+for a new HIMON + ASM-F2 installation. The
+[installation flow](INSTALLATION_FLOW.md) records this distinction.
 
 ## Possible Next Capabilities
 

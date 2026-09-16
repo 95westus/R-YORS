@@ -29,8 +29,10 @@ from several records.
 
 APMAN is itself an APC. HIMON discovers it in Bank 2, then Bank 1, then Bank 0,
 loads it at `$7000`, and gives it the command line. The initial release places
-APMAN at B2:`$8000`. Bank 0 has no hard-coded special status; current WDCMONV2
-contents are simply occupied media and are never selected as an erased hole.
+APMAN at B2:`$8000`. Bank 0 has no hard-coded special status; any existing
+foreign/opaque image is occupied media and is never selected as an erased
+hole. The HIMON release supplies the optional bootstrap carrier; packaging
+alone does not provision or requalify a board installation.
 
 At `SEAL>`, a named package can be installed with one command:
 
@@ -107,7 +109,7 @@ final `RTS` can in principle unwind back to the parent.
 
 There are important ownership rules:
 
-- the parent cannot live in APMAN's `$7000-$7B11` body;
+- the parent cannot live in APMAN's current `$7000-$7BFB` body;
 - the parent must survive the `$0A00-$19FF` sector staging area and shared
   service/card/zero-page scratch;
 - the child destination must not overwrite the surviving parent;

@@ -695,11 +695,13 @@ A [addr] [label[:]] MMM [operand] .
   bit operand: `RMB 3,$12`, `SMB 7,$12`, `BBR 3,$12,TARGET`, and
   `BBS 7,$12,TARGET`. Do not create `RMB3`/`BBS7` as first-class mnemonic
   tokens in v1.
-- ASM opcode selection uses a mnemonic row table keyed by canonical FNV-1a hash,
-  plus an operand classifier. Rows may generate opcodes from W65C02S
-  `aaa bbb cc` bit-pattern families where the family is regular, but fixed and
-  special opcodes remain explicit table/special-handler cases. The bit-pattern
-  scheme is a compact emitter aid, not the sole correctness model.
+- ASM vocabulary lookup maps canonical FNV-1a hashes to stable mnemonic IDs.
+  Opcode selection indexes a base byte and shared addressing pattern by that
+  ID, then checks the classified operand mode. Each pattern stores explicit
+  mode/opcode-offset pairs; accepted bit-operation modes add the bit number.
+  Independent instruction expectations and exhaustive linked-code checks
+  verify accepted and rejected combinations. The compact representation is an
+  emitter aid, not the sole correctness model.
 - The operand classifier is mnemonic-aware: `ASM_CLASS_OPERAND(mnemonic,
   operand_text)`. It returns mode, flags, width, value/care, unresolved hash,
   symbol slot, aux byte, fixup count, and status. The classifier rejects

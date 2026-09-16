@@ -45,6 +45,14 @@ however, define the current command surface.
 
 ## Evidence
 
+- [HIMON size qualification and timestamp correction](LOGS/HIMON_SIZE_2026-09-15.md)
+  retain the 268-byte reduction and its exact installation/debugger/AP proof.
+- [ASM-F2 size qualification](LOGS/ASMF2_SIZE_2026-09-15.md) retains the
+  530-byte reduction, installer recovery and corrected S9 proof, all 217
+  instruction forms, AP workflows, and physical-reset/readback evidence.
+- [Release qualification](../../RELEASE/QUALIFICATION.json) records the
+  `0915(2324)` timestamp-only comparison with that board image and host tests;
+  it is not a new board run. Dated evidence below remains unchanged.
 - `LOGS/HARDWARE_TEST_LOG.md` is the hardware transcript ledger.
 - `ASM/TEST_HISTORY.md` is the completed cumulative ASM development and test
   chronology formerly stored in `ASM/TEST_PLAN.md`.

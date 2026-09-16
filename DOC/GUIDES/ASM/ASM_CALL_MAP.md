@@ -9,6 +9,8 @@ show where a change lands. For the design contract, read
 Current proof shape:
 
 ```text
+released flash image      $8000-$BB82; end $BB83 exclusive
+initial flash source PC   $2000
 runtime paste entry       $2000
 smoke output target       $7000
 protected ASM/RJOIN seed  $7E00-$7E01
@@ -177,15 +179,21 @@ flowchart TD
 
 ### Compact Opcode Selection
 
+The September 2026 size reduction indexes both arrays by the unchanged
+vocabulary ID. A `$FF` pattern offset rejects register/directive holes.
+Twenty shared mode/delta patterns replace the former per-family scanner.
+
 ```mermaid
 flowchart LR
-    FIND["ASM_FIND_OPCODE"] --> ALU["8-family ALU scanner<br/>ADC SBC AND ORA EOR CMP LDA STA"]
-    ALU --> BASE["virtual immediate base per mnemonic"]
-    ALU --> OFF["shared 9-row mode-offset table"]
-    FIND --> SHIFT["ASL LSR ROL ROR<br/>shared regular mode rows"]
-    FIND --> OTHER["remaining mnemonic handlers and mode rows"]
+    FIND["ASM_FIND_OPCODE"] --> INDEX["83-slot base and pattern-offset arrays"]
+    INDEX --> ROWS["20 shared mode/delta patterns"]
+    ROWS --> HIT["matching mode: base plus delta"]
+    ROWS --> BAD["absent mode or non-mnemonic: BAD MODE"]
+    HIT --> BIT["bit families: add bit number shifted left four"]
     AUDIT["check_asm_opcode_coverage.ps1"] --> FIND
     AUDIT --> PROOF["217 rows / 70 mnemonics"]
+    ORACLE["check_asm_size.py"] --> FULL["65,536 ID/mode pairs and 1,024 bit inputs"]
+    FULL --> FIND
 ```
 
 ### Fixup Storage And Resolution

@@ -1,5 +1,11 @@
 # AP Linker Current-Image Gates
 
+> [!NOTE]
+> Historical 2026-07-19 linker proof. The title's "current image" and literal
+> routine addresses refer to that captured image. Preserve the tests below as
+> evidence; use [ASM ABI v1](ASM_ABI_V1.md) and the [AP/OIL guide](../AP/AP_OIL_GUIDE.md)
+> for the released interface and operating procedure.
+
 This is the pasteable board procedure that closes the two remaining regression
 gates after moving AP import linking from STR8 into HIMON. It applies to the
 current map in which resident `BIO_FTDI_PUT_CSTR` resolves to `$E705`.

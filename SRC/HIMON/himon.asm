@@ -3106,14 +3106,8 @@ HIM_AP_VERIFY_SEAL_BODY:
                         LDA             (CMDP_ADDR_LO),Y
                         CMP             HIM_AP_BODY_LEN_HI
                         BNE             HIM_AP_VERIFY_SEAL_BAD
-                        LDA             HIM_AP_BODY_LO
-                        STA             CMDP_PTR_LO
-                        LDA             HIM_AP_BODY_HI
-                        STA             CMDP_PTR_HI
-                        LDA             HIM_AP_BODY_LEN_LO
-                        STA             LOAD_LEN_LO
-                        LDA             HIM_AP_BODY_LEN_HI
-                        STA             LOAD_LEN_HI
+; HIM_AP_PARSE_BODY_NONZERO leaves CMDP_PTR at BODY and LOAD_LEN equal to its
+; checked length. This private verifier consumes that pointer/count directly.
                         JSR             FNV1A_INIT
 HIM_AP_VERIFY_SEAL_LOOP:
                         LDA             LOAD_LEN_LO
@@ -3133,13 +3127,8 @@ HIM_AP_VERIFY_SEAL_COUNT:
                         DEC             LOAD_LEN_HI
                         BRA             HIM_AP_VERIFY_SEAL_LOOP
 HIM_AP_VERIFY_SEAL_HASH:
-                        LDA             HIM_AP_SRC_LO
-                        CLC
-                        ADC             #(HIM_AP_HDR_BYTES+$03)
-                        STA             CMDP_ADDR_LO
-                        LDA             HIM_AP_SRC_HI
-                        ADC             #$00
-                        STA             CMDP_ADDR_HI
+; FNV init/update use only their hash/term scratch and preserve the seal pointer
+; in CMDP_ADDR throughout the BODY hash loop.
                         LDY             #HIM_AP_SEAL_OFF_FNV
                         LDX             #$00
 HIM_AP_VERIFY_SEAL_HASH_LOOP:
@@ -4694,23 +4683,6 @@ FNV1A_INIT_LOOP:
 FNV1A_OFFSET_BASIS:
                         DB              $C5,$9D,$1C,$81
 
-FNV1A_UPDATE_A:
-                        EOR             FNV_HASH0
-                        STA             FNV_HASH0
-                        JMP             FNV1A_MUL_PRIME
-
-FNV1A_MUL_PRIME:
-                        JSR             MATH_COPY_HASH_TO_TERM
-                        LDX             #$01
-                        JSR             MATH_SHLADD_TERM_N
-                        LDX             #$03
-                        JSR             MATH_SHLADD_TERM_N
-                        LDX             #$03
-                        JSR             MATH_SHLADD_TERM_N
-                        LDX             #$01
-                        JSR             MATH_SHLADD_TERM_N
-                        JMP             MATH_ADD_TERM1_TO_HASH3
-
 MATH_COPY_HASH_TO_TERM:
                         LDX             #$03
 MATH_COPY_HASH_LOOP:
@@ -4718,19 +4690,6 @@ MATH_COPY_HASH_LOOP:
                         STA             FNV_TERM0,X
                         DEX
                         BPL             MATH_COPY_HASH_LOOP
-                        RTS
-
-MATH_SHLADD_TERM_N:
-                        JSR             MATH_SHL_TERM_N
-                        JMP             MATH_ADD_TERM_TO_HASH
-
-MATH_SHL_TERM_N:
-                        ASL             FNV_TERM0
-                        ROL             FNV_TERM1
-                        ROL             FNV_TERM2
-                        ROL             FNV_TERM3
-                        DEX
-                        BNE             MATH_SHL_TERM_N
                         RTS
 
 MATH_ADD_TERM_TO_HASH:
@@ -4756,9 +4715,8 @@ MATH_ADD_TERM1_TO_HASH3:
                         STA             FNV_HASH3
                         RTS
 
-; Fast drop-in FNV-1a byte update. The original update/multiply path above
-; stays resident; this one only expands the fixed 1,3,3,1 shift pattern.
-; Tradeoff: spend a few ROM bytes to reduce software multiply loop overhead.
+; Resident FNV-1a byte update expands the fixed 1,3,3,1 shift pattern to avoid
+; software multiply loop overhead. The published FAST entry remains unchanged.
 FNV1A_UPDATE_A_FAST_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$14,$23,$80,$A8,CMD_HASH_KIND_EXEC_TEXT ; FNV1A_UPDATE_A_FAST $A8802314 EXEC+TEXT
                         DW              FNV1A_UPDATE_A_FAST
@@ -5096,54 +5054,54 @@ MSG_STEP_LEN:            DB              " LEN",('='+$80)
 MSG_STEP_NEXT:           DB              " NEXT",('='+$80)
 MSG_STEP_BP:             DB              " B",('P'+$80)
 
+; Private debug IDs: zero suppresses output; 1..66 selects a three-byte name.
+; IDs 67..70 select RMB/BBR/SMB/BBS; the printer appends the opcode bit number.
+; Names are plain ASCII triples, not high-bit-terminated strings.
+ASM_MNEM_NORMAL_COUNT   EQU             66
 ASM_MNEM_NAMES:
-                        DB              'B','R',('K'+$80),$80,'O','R',('A'+$80),$80,'T','S',('B'+$80),$80,'A','S',('L'+$80),$80,'R','M','B',('0'+$80),'P','H',('P'+$80),$80,'B','B','R',('0'+$80),'B','P',('L'+$80),$80
-                        DB              'T','R',('B'+$80),$80,'R','M','B',('1'+$80),'C','L',('C'+$80),$80,'I','N',('C'+$80),$80,'B','B','R',('1'+$80),'J','S',('R'+$80),$80,'A','N',('D'+$80),$80,'B','I',('T'+$80),$80
-                        DB              'R','O',('L'+$80),$80,'R','M','B',('2'+$80),'P','L',('P'+$80),$80,'B','B','R',('2'+$80),'B','M',('I'+$80),$80,'R','M','B',('3'+$80),'S','E',('C'+$80),$80,'D','E',('C'+$80),$80
-                        DB              'B','B','R',('3'+$80),'R','T',('I'+$80),$80,'E','O',('R'+$80),$80,'L','S',('R'+$80),$80,'R','M','B',('4'+$80),'P','H',('A'+$80),$80,'J','M',('P'+$80),$80,'B','B','R',('4'+$80)
-                        DB              'B','V',('C'+$80),$80,'R','M','B',('5'+$80),'C','L',('I'+$80),$80,'P','H',('Y'+$80),$80,'B','B','R',('5'+$80),'R','T',('S'+$80),$80,'A','D',('C'+$80),$80,'S','T',('Z'+$80),$80
-                        DB              'R','O',('R'+$80),$80,'R','M','B',('6'+$80),'P','L',('A'+$80),$80,'B','B','R',('6'+$80),'B','V',('S'+$80),$80,'R','M','B',('7'+$80),'S','E',('I'+$80),$80,'P','L',('Y'+$80),$80
-                        DB              'B','B','R',('7'+$80),'B','R',('A'+$80),$80,'S','T',('A'+$80),$80,'S','T',('Y'+$80),$80,'S','T',('X'+$80),$80,'S','M','B',('0'+$80),'D','E',('Y'+$80),$80,'T','X',('A'+$80),$80
-                        DB              'B','B','S',('0'+$80),'B','C',('C'+$80),$80,'S','M','B',('1'+$80),'T','Y',('A'+$80),$80,'T','X',('S'+$80),$80,'B','B','S',('1'+$80),'L','D',('Y'+$80),$80,'L','D',('A'+$80),$80
-                        DB              'L','D',('X'+$80),$80,'S','M','B',('2'+$80),'T','A',('Y'+$80),$80,'T','A',('X'+$80),$80,'B','B','S',('2'+$80),'B','C',('S'+$80),$80,'S','M','B',('3'+$80),'C','L',('V'+$80),$80
-                        DB              'T','S',('X'+$80),$80,'B','B','S',('3'+$80),'C','P',('Y'+$80),$80,'C','M',('P'+$80),$80,'S','M','B',('4'+$80),'I','N',('Y'+$80),$80,'D','E',('X'+$80),$80,'W','A',('I'+$80),$80
-                        DB              'B','B','S',('4'+$80),'B','N',('E'+$80),$80,'S','M','B',('5'+$80),'C','L',('D'+$80),$80,'P','H',('X'+$80),$80,'S','T',('P'+$80),$80,'B','B','S',('5'+$80),'C','P',('X'+$80),$80
-                        DB              'S','B',('C'+$80),$80,'S','M','B',('6'+$80),'I','N',('X'+$80),$80,'N','O',('P'+$80),$80,'B','B','S',('6'+$80),'B','E',('Q'+$80),$80,'S','M','B',('7'+$80),'S','E',('D'+$80),$80
-                        DB              'P','L',('X'+$80),$80,'B','B','S',('7'+$80)
+                        DB              "BRK","ORA","TSB","ASL","PHP","BPL","TRB","CLC"
+                        DB              "INC","JSR","AND","BIT","ROL","PLP","BMI","SEC"
+                        DB              "DEC","RTI","EOR","LSR","PHA","JMP","BVC","CLI"
+                        DB              "PHY","RTS","ADC","STZ","ROR","PLA","BVS","SEI"
+                        DB              "PLY","BRA","STA","STY","STX","DEY","TXA","BCC"
+                        DB              "TYA","TXS","LDY","LDA","LDX","TAY","TAX","BCS"
+                        DB              "CLV","TSX","CPY","CMP","INY","DEX","WAI","BNE"
+                        DB              "CLD","PHX","STP","CPX","SBC","INX","NOP","BEQ"
+                        DB              "SED","PLX","RMB","BBR","SMB","BBS"
 
 ASM_OP_MNEM_ID:
-                        DB              $01,$02,$00,$00,$03,$02,$04,$05
-                        DB              $06,$02,$04,$00,$03,$02,$04,$07
-                        DB              $08,$02,$02,$00,$09,$02,$04,$0A
-                        DB              $0B,$02,$0C,$00,$09,$02,$04,$0D
-                        DB              $0E,$0F,$00,$00,$10,$0F,$11,$12
-                        DB              $13,$0F,$11,$00,$10,$0F,$11,$14
-                        DB              $15,$0F,$0F,$00,$10,$0F,$11,$16
-                        DB              $17,$0F,$18,$00,$10,$0F,$11,$19
-                        DB              $1A,$1B,$00,$00,$00,$1B,$1C,$1D
-                        DB              $1E,$1B,$1C,$00,$1F,$1B,$1C,$20
-                        DB              $21,$1B,$1B,$00,$00,$1B,$1C,$22
-                        DB              $23,$1B,$24,$00,$00,$1B,$1C,$25
-                        DB              $26,$27,$00,$00,$28,$27,$29,$2A
-                        DB              $2B,$27,$29,$00,$1F,$27,$29,$2C
-                        DB              $2D,$27,$27,$00,$28,$27,$29,$2E
-                        DB              $2F,$27,$30,$00,$1F,$27,$29,$31
-                        DB              $32,$33,$00,$00,$34,$33,$35,$36
-                        DB              $37,$10,$38,$00,$34,$33,$35,$39
-                        DB              $3A,$33,$33,$00,$34,$33,$35,$3B
-                        DB              $3C,$33,$3D,$00,$28,$33,$28,$3E
-                        DB              $3F,$40,$41,$00,$3F,$40,$41,$42
-                        DB              $43,$40,$44,$00,$3F,$40,$41,$45
-                        DB              $46,$40,$40,$00,$3F,$40,$41,$47
-                        DB              $48,$40,$49,$00,$3F,$40,$41,$4A
-                        DB              $4B,$4C,$00,$00,$4B,$4C,$18,$4D
-                        DB              $4E,$4C,$4F,$50,$4B,$4C,$18,$51
-                        DB              $52,$4C,$4C,$00,$00,$4C,$18,$53
-                        DB              $54,$4C,$55,$56,$00,$4C,$18,$57
-                        DB              $58,$59,$00,$00,$58,$59,$0C,$5A
-                        DB              $5B,$59,$5C,$00,$58,$59,$0C,$5D
-                        DB              $5E,$59,$59,$00,$00,$59,$0C,$5F
-                        DB              $60,$59,$61,$00,$00,$59,$0C,$62
+                        DB              $01,$02,$00,$00,$03,$02,$04,$43
+                        DB              $05,$02,$04,$00,$03,$02,$04,$44
+                        DB              $06,$02,$02,$00,$07,$02,$04,$43
+                        DB              $08,$02,$09,$00,$07,$02,$04,$44
+                        DB              $0A,$0B,$00,$00,$0C,$0B,$0D,$43
+                        DB              $0E,$0B,$0D,$00,$0C,$0B,$0D,$44
+                        DB              $0F,$0B,$0B,$00,$0C,$0B,$0D,$43
+                        DB              $10,$0B,$11,$00,$0C,$0B,$0D,$44
+                        DB              $12,$13,$00,$00,$00,$13,$14,$43
+                        DB              $15,$13,$14,$00,$16,$13,$14,$44
+                        DB              $17,$13,$13,$00,$00,$13,$14,$43
+                        DB              $18,$13,$19,$00,$00,$13,$14,$44
+                        DB              $1A,$1B,$00,$00,$1C,$1B,$1D,$43
+                        DB              $1E,$1B,$1D,$00,$16,$1B,$1D,$44
+                        DB              $1F,$1B,$1B,$00,$1C,$1B,$1D,$43
+                        DB              $20,$1B,$21,$00,$16,$1B,$1D,$44
+                        DB              $22,$23,$00,$00,$24,$23,$25,$45
+                        DB              $26,$0C,$27,$00,$24,$23,$25,$46
+                        DB              $28,$23,$23,$00,$24,$23,$25,$45
+                        DB              $29,$23,$2A,$00,$1C,$23,$1C,$46
+                        DB              $2B,$2C,$2D,$00,$2B,$2C,$2D,$45
+                        DB              $2E,$2C,$2F,$00,$2B,$2C,$2D,$46
+                        DB              $30,$2C,$2C,$00,$2B,$2C,$2D,$45
+                        DB              $31,$2C,$32,$00,$2B,$2C,$2D,$46
+                        DB              $33,$34,$00,$00,$33,$34,$11,$45
+                        DB              $35,$34,$36,$37,$33,$34,$11,$46
+                        DB              $38,$34,$34,$00,$00,$34,$11,$45
+                        DB              $39,$34,$3A,$3B,$00,$34,$11,$46
+                        DB              $3C,$3D,$00,$00,$3C,$3D,$09,$45
+                        DB              $3E,$3D,$3F,$00,$3C,$3D,$09,$46
+                        DB              $40,$3D,$3D,$00,$00,$3D,$09,$45
+                        DB              $41,$3D,$42,$00,$00,$3D,$09,$46
 
 ASM_OP_LEN_PACK:
                         DB              $5A,$AA,$59,$FF,$6A,$AA,$5D,$FF

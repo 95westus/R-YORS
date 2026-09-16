@@ -4,6 +4,14 @@ This is the human map for current HIMON. The generated raw edge list lives in
 [HIMON_EDGE_DUMP.md](../../GENERATED/HIMON_EDGE_DUMP.md); this file groups those
 edges into readable subsystems and capability surfaces.
 
+Current release: HIMON `00.0915(2324)`, 11,754 resident bytes, end `$EDEA`
+exclusive, with 534 bytes below STR8-N. Its 268-byte size reduction was
+board-qualified as described in the [qualification record](../LOGS/HIMON_SIZE_2026-09-15.md).
+The release changes only the stamp relative to the installed `00.0915(2233)`
+build. Dated size tables later in this file preserve earlier measurements;
+they are not the current link map. Use the [release index](../../../RELEASE/README.md)
+and [operator guide](../OPERATORS_GUIDE.md) for current artifacts and commands.
+
 Scope is the current HIMON build path:
 
 ```text
@@ -116,14 +124,12 @@ flowchart TD
     HASH --> TOKENLOOP[CMD_HASH_TOKEN_LOOP]
     TOKENLOOP --> PEEK[CMD_PEEK]
     TOKENLOOP --> DELIM[CMD_IS_DELIM_OR_NUL]
-    TOKENLOOP --> UPDATE[FNV1A_UPDATE_A]
+    TOKENLOOP --> UPDATE[FNV1A_UPDATE_A_FAST]
     TOKENLOOP --> ADV[CMD_ADV_PTR]
     HASH --> SAVEHASH[CMD_SAVE_HASH]
-    UPDATE --> MUL[FNV1A_MUL_PRIME]
+    UPDATE --> MUL[FNV1A_MUL_PRIME_FAST]
     MUL --> COPY[MATH_COPY_HASH_TO_TERM]
-    MUL --> SHLADD[MATH_SHLADD_TERM_N]
-    SHLADD --> SHL[MATH_SHL_TERM_N]
-    SHLADD --> ADD[MATH_ADD_TERM_TO_HASH]
+    MUL --> ADD[MATH_ADD_TERM_TO_HASH]
     MUL --> ADD1[MATH_ADD_TERM1_TO_HASH3]
 ```
 

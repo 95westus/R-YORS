@@ -29,14 +29,26 @@ make all
 R-YORS verifies the locked STR8-N manifest and public ABI, then builds:
 
 ```text
-RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-asm-bank3-8-b.s19
-RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-himon-bank3-c-e.s19
-RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19
-RELEASE/ARTIFACTS/COMPONENT-IMAGES/himon-apv2-bank3-c-e.s19
+SRC/BUILD/s19/ryors-v1.2-asm-bank3-8-b.s19
+SRC/BUILD/s19/ryors-v1.2-himon-bank3-c-e.s19
+SRC/BUILD/s19/ryors-v1.2-himon-asm-bank3-8-e.s19
 ```
 
-The last file is the dense 28K `$8000-$EFFF` payload. To compose a complete
-32K Bank-0/1/2 payload, use the product that owns sector F:
+The last file is the dense 28K `$8000-$EFFF` payload. Published copies are in
+the [current release packages](../../RELEASE/README.md): STR8-N v1.34,
+HIMON `00.0915(2324)`, and ASM-F2 `00.0915(2324)`. HIMON and ASM-F2 ZIPs
+put firmware under `FIRMWARE/` and include the combined `8-E` stream. The
+loose `RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19` matches those copies.
+Each package includes relevant manuals, applications, notices, and its own
+verifier; run that verifier before installation. Older `RELEASE/ARTIFACTS/`
+files are historical snapshots.
+
+The restamped release has full host regression and exact timestamp-only
+equivalence to the reset-tested board, with nine differing bytes. It has not
+been reflashed. Actual board banners remain HIMON `00.0915(2233)` and
+ASM-F2 `00.0915(2243)` until a release install is performed.
+
+To compose a complete 32K Bank-0/1/2 payload, use the product that owns sector F:
 
 ```text
 make -C ../STR8-N ryors-full-bank
@@ -45,13 +57,19 @@ make -C ../STR8-N ryors-full-bank
 This writes:
 
 ```text
-RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
+../STR8-N/BUILD/v1.34/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
 ```
 
 STR8-N validates the 28K S19, appends its current checked 4K top image, and
 verifies the final RESET vector. For Bank 3, install `$8000-$EFFF` through the
 guarded `I` path and update sector F only with the standalone programmer BIN
 or guarded top updater.
+
+The packaged HIMON BIN covers only `$C000-$EFFF` (12 KiB); the ASM-F2 BIN
+covers only `$8000-$BFFF` (16 KiB). Neither is a whole-bank bootable image.
+Install HIMON first when applying separate components. Its S9 `$C000`
+establishes the Bank-3 entry; the current ASM-only S9 `$FFFF` retains it.
+After COMMIT and `OK`, enter `C` for HIMON, then `ASM NEW` for ASM-F2.
 
 For a HIMON-only APv2 update, build `make -C SRC himon-apv2-install-s19`.
 At the STR8-N prompt choose `I`, Bank 3, range `C-E`, confirm the displayed
@@ -65,13 +83,13 @@ also requires the locked standalone STR8-N checkout to be clean.
 ## Current Integrated Layout
 
 ```text
-$8000-$BD2A   ASM-F2, entry $800C
-$BD2B-$BFFF   low-flash growth margin
-$C000-$EE11   HIMON
-$EE12-$EFFF   HIMON growth margin
-$F000-$FD41   standalone STR8-N v1.32 resident
-$FD42-$FD4F   available 14-byte growth margin
-$FD50-$FFAF   stored unified STR8-N worker, runs at $0200-$045F
+$8000-$BB82   ASM-F2, entry $800C
+$BB83-$BFFF   low-flash growth margin, 1,149 bytes
+$C000-$EDE9   HIMON
+$EDEA-$EFFF   HIMON growth margin, 534 bytes
+$F000-$FCF1   standalone STR8-N v1.34 resident
+$FCF2-$FD77   available 134-byte growth margin
+$FD78-$FFAF   stored unified STR8-N worker, runs at $0200-$0437
 $FFB0-$FFEF   bank directory
 $FFF0-$FFF9   configuration pocket
 $FFFA-$FFFF   STR8-N-owned hardware vectors
@@ -167,7 +185,7 @@ ASM>$2003: END
 SEAL> PACKAGE MAIN $3000
 SEAL> INSTALL 3000 B2
 SEAL> .
->RESET
+[press physical RESET and select C]
 >APS B2 MAIN
 >AP B2 MAIN
 ```
@@ -178,17 +196,20 @@ sector in Bank 0, 1, or 2, program the envelope, and restore Bank 3. `APS`
 checks discovery after reset; `AP` loads, links, and runs it. `AP L` performs
 the same named load/link without transferring control.
 
-APMAN itself is installed at B2:8 and runs transiently at `$7000`. You do not
-preload APMAN; HIMON loads the installed APMAN carrier automatically when an
-APMAN-backed command is entered. BANKDUMP is installed at B2:9 and supplies
-read-only header/page/all-sector inspection and the full `E/U/A/W/B/P` map.
+The earlier carrier qualification installed APMAN at B2:8; it runs transiently
+at `$7000`. You do not preload APMAN; HIMON loads the installed APMAN carrier
+automatically when an APMAN-backed command is entered. BANKDUMP at B2:9 supplied
+read-only header/page/all-sector inspection and the full `E/U/A/W/B/P` map
+in that historical configuration. The 2026-09-15 firmware tests did not
+requalify these persistent carriers; inspect the current media before using
+this workflow.
 See the [APMAN card](ASM/APMAN_V1_BOARD_TEST.md) and
 [BANKDUMP card](ASM/BANK_DUMP_AP_CARD.md).
 
-An optional checked ASM build spends 651 additional bytes on full AP checking
-and leaves only `$0108` flash headroom. The normal compact build leaves
-`$0393`; use the checked variant for integrity-focused sessions, not as the
-default Bank-3 image.
+An optional checked ASM build includes full AP checking and consumes extra
+flash space. The released compact build leaves `$047D` (1,149 bytes) of
+headroom. The checked variant is a separate diagnostic build; its size and
+identity are not the released image's values.
 
 ## RAM Debug Loop
 

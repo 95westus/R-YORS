@@ -323,10 +323,10 @@ hash:        $E1A112AE
 kind:        R
 class:       MONITOR_ONLY
 tokens:      HIMON, CMD, HASH, TOKEN, FNV
-source:      HIMON/himon.asm:1854
+source:      HIMON/himon.asm:4174
 abi_in:      command pointer state
 abi_out:     command hash state
-calls:       FNV1A_INIT, CMD_PEEK, FNV1A_UPDATE_A, CMD_ADV_PTR
+calls:       FNV1A_INIT, CMD_PEEK, FNV1A_UPDATE_A_FAST, CMD_ADV_PTR
 notes:       Runtime command token hashing path.
 ```
 
@@ -437,13 +437,12 @@ flowchart TD
 flowchart TD
     CMD_HASH_TOKEN --> FNV1A_INIT
     CMD_HASH_TOKEN --> CMD_PEEK
-    CMD_HASH_TOKEN --> FNV1A_UPDATE_A
+    CMD_HASH_TOKEN --> FNV1A_UPDATE_A_FAST
     CMD_HASH_TOKEN --> CMD_ADV_PTR
-    FNV1A_UPDATE_A --> FNV1A_MUL_PRIME
-    FNV1A_MUL_PRIME --> MATH_COPY_HASH_TO_TERM
-    FNV1A_MUL_PRIME --> MATH_SHLADD_TERM_N
-    FNV1A_MUL_PRIME --> MATH_ADD_TERM_TO_RES
-    FNV1A_MUL_PRIME --> MATH_COPY_RES_TO_HASH
+    FNV1A_UPDATE_A_FAST --> FNV1A_MUL_PRIME_FAST
+    FNV1A_MUL_PRIME_FAST --> MATH_COPY_HASH_TO_TERM
+    FNV1A_MUL_PRIME_FAST --> MATH_ADD_TERM_TO_HASH
+    FNV1A_MUL_PRIME_FAST --> MATH_ADD_TERM1_TO_HASH3
 ```
 
 ### Catalog Dispatch

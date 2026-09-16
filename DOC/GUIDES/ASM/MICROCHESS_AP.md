@@ -1,11 +1,18 @@
 # Microchess AP
 
-Status: the help-enabled `$06A6` build is installed at `B1:9000` and is
-board-qualified for onboard assembly, AP-v2 packaging, RAM and carrier
+Release status: the help-enabled `$06A6` AP is included with HIMON
+`00.0915(2324)`, with source, onboard `.a`, and its complete redistribution
+notice. Packaging does not install it or requalify a board carrier.
+
+The retained 2026-09-10 board proof installed the build at `B1:9000` and
+qualified onboard assembly, AP-v2 packaging, RAM and carrier
 load/link/entry, named discovery, board rendering, exact `H` output, and `Q`
 return. HIMON `00.0910(2121)` also provides a hardware-proven bare
 `MICROCHESS` launcher. A physical-reset persistence run remains the final
-acceptance gate for this exact carrier/launcher combination.
+acceptance gate for that carrier/launcher combination. Later HIMON/ASM
+firmware-reset proofs did not repeat the MicroChess carrier test. Discover
+the board's present carrier with `APS B1 MICROCHESS` rather than assuming
+the historical sector remains installed.
 
 This is the complete implementation and routine guide for the R-YORS port of
 Peter Jennings' Microchess. The application is a fixed-load AP-v2 package: its
@@ -228,7 +235,8 @@ HIMON's command page, and a tail entry into the ordinary `AP` parser. It is
 deliberately pinned to Bank 1 and inherits APMAN's normal missing, malformed,
 import, and load failures; it is not a second package loader or registry.
 Bare `#` lists `MICROCHESS`, while `# MICROCHESS` resolves its exact entry.
-The linked HIMON end is `$EEF6`, leaving `$010A` (266) bytes below `$F000`.
+The optimized release HIMON end is `$EDEA`, leaving `$0216` (534) bytes
+below `$F000`. Its AP launcher contract is unchanged.
 
 The current alias remains deliberately dedicated. Before adding another AP
 command alias, use the proposed shared K05 launcher contract in the

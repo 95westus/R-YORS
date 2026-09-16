@@ -4,6 +4,17 @@ This is the current guide to Application Packages (AP), AP Capsules (APC),
 the Overlay Integration Layer (OIL), APMAN, and AP Store. For the exact live
 command surface, the [capability matrix](../CAPABILITIES.md) wins.
 
+Release baseline: STR8-N 1.34 and HIMON/ASM-F2 `00.0915(2324)`. The firmware
+stamp differs from the reset-qualified board's `2233`/`2243` stamps, with
+timestamp-only payload equivalence recorded in `QUALIFICATION.json`.
+The release did not reinstall or newly qualify Bank 0-2 application carriers.
+
+The HIMON ZIP supplies `APPLICATIONS/APMAN/README.md`, the optional dense
+Bank-2 sector-8 bootstrap, and the historical board record. Consult that
+README before provisioning APMAN; do not apply the old record's assumed
+bank inventory or erase sequence to another board. Existing carrier users
+can check discovery with `APS B2 APMAN` before attempting a new installation.
+
 ## Roles
 
 | Part | Role |
@@ -144,7 +155,7 @@ carrier installation for Bank 3.
 - Current command and ABI authority: [Capabilities](../CAPABILITIES.md)
 - Current operator sequence: [Operator's Guide](../OPERATORS_GUIDE.md)
 - Current ASM production workflow: [ASM User Guide](../ASM/ASM_USER_GUIDE.md)
-- Current carrier manager proof: [APMAN Board Test](../ASM/APMAN_V1_BOARD_TEST.md)
+- Original carrier manager proof: [APMAN Board Test](../ASM/APMAN_V1_BOARD_TEST.md)
 - Current read-only carrier inspection proof: [APMAN Inspection](../LOGS/APMAN_INSPECT_2026-09-10.md)
 - Current physical inspector proof: [BANKDUMP Card](../ASM/BANK_DUMP_AP_CARD.md)
 - Board transcripts: [Hardware Test Log](../LOGS/HARDWARE_TEST_LOG.md)

@@ -45,15 +45,14 @@ make -C SRC all STR8N_HOME="C:/path/to/STR8-N"
 
 ## Artifacts
 
-The `RELEASE/` root publishes only board-facing products. Component images are
-moved under `RELEASE/ARTIFACTS/COMPONENT-IMAGES/`:
+The [current release shelf](../../RELEASE/README.md) publishes three verified
+packages and the combined image:
 
 ```text
-RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-asm-bank3-8-b.s19
-RELEASE/ARTIFACTS/COMPONENT-IMAGES/ryors-v1.2-himon-bank3-c-e.s19
+RELEASE/str8n-v1.34-release.zip
+RELEASE/himon-00.0915-2324.zip
+RELEASE/asm-f2-00.0915-2324.zip
 RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19
-RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
-RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin
 ```
 
 The adjacent STR8-N repository owns its 4K programmer BIN, resident/worker
@@ -64,8 +63,22 @@ and final 32K composition. Run there:
 make ryors-full-bank
 ```
 
-AP transit tools are under `RELEASE/ARTIFACTS/AP-STORE/`; source and onboard
-carriers are under `RELEASE/ARTIFACTS/SOURCES/`.
+HIMON and ASM-F2 packages include component S19/BIN images and the combined
+`8-E` S19 under `FIRMWARE/`, source references, manuals, applications, and
+qualification records. Component BINs are address-labelled 12 KiB or 16 KiB
+slices, not complete bootable banks. The STR8-N package contains its canonical
+4 KiB top BIN, maintenance tools, `.a` sources, migration kit, and owner
+manuals. The nested migration kit contains no HIMON/ASM payload. See the
+[application guide](RELEASE_APPLICATIONS.md) for per-application limits.
+
+The full-bank composer writes below `../STR8-N/BUILD/v1.34/`. Old loose
+full-bank products and `RELEASE/ARTIFACTS/` are historical snapshots, not
+members of the current release. The released HIMON/ASM stamp is
+`00.0915(2324)`; host regression and a byte-exact comparison qualify it
+against board-tested HIMON `00.0915(2233)` / ASM-F2 `00.0915(2243)`, with
+only nine timestamp bytes changed. The new stamped stream has not been
+reflashed. [QUALIFICATION.json](../../RELEASE/QUALIFICATION.json) records
+the comparison and its limits.
 
 The composer validates every R-YORS S-record/checksum and range, appends the
 current checked top image, and verifies RESET before writing the Bank-0/1/2
@@ -73,12 +86,17 @@ current checked top image, and verifies RESET before writing the Bank-0/1/2
 
 `himon-apv2-bank3-c-e.s19` is the explicitly named HIMON-only APv2 update:
 12 KiB of dense S1 payload from `$C000` through `$EFFF`, followed by S9
-`$C000`. It is accepted by STR8-N `I` with Bank 3 and range `C-E`, including
+`$C000`. The packaged `ryors-v1.2-himon-bank3-c-e.s19` has the same component
+range and entry. It is accepted by STR8-N `I` with Bank 3 and range `C-E`, including
 first enrollment or replacement of the normal `$C000` Bank-3 entry.
+
+The ASM-only `ryors-v1.2-asm-bank3-8-b.s19` ends with S9 `$FFFF`. It retains
+the existing HIMON entry and therefore requires an enrolled Bank 3. Use the
+combined `8-E` image for first installation or incomplete-install recovery.
 
 ## Runtime Public Interface
 
-HIMON includes only the generated external contract. The fixed v1.32 services
+HIMON includes only the generated external contract. The fixed v1.34 services
 used or checked by R-YORS are:
 
 ```text
@@ -94,8 +112,8 @@ $7DE7-$7DE8   one-shot software-reset record, "RS"
 $7DFD-$7DFF   Bank Jump Record, "BJ" plus bank/FF
 ```
 
-The full unified STR8-N worker runs at `$0200-$045F`; the selector needed by
-HIMON ends at `$0228`. HIMON's banked-AP helper starts at `$0500`, and the
+The full unified STR8-N worker runs at `$0200-$0437`; the selector needed by
+HIMON ends at `$0226`. HIMON's banked-AP helper starts at `$0500`, and the
 build rejects overlap if the external contract moves.
 
 Before its confirmed `STR8` command enters `$F000`, HIMON disables interrupts,
@@ -177,9 +195,14 @@ APMAN stages banked media at `$0A00-$19FF`; managed child bodies may occupy
 `$2000-$6FFF`. It rejects itself as a child and restores Bank 3 on every bank
 operation path.
 
-The current flash ASM occupies `$8000-$BD2A`; `_END_DATA=$BD2B` leaves `$02D5`
+The current flash ASM occupies `$8000-$BB82`; `_END_DATA=$BB83` leaves `$047D`
 bytes through `$BFFF`. Its UDATA ends at `$6D6E` (exclusive). The resident
 wrapper keeps AP-v2 package/load and APMAN-backed install support.
+
+The size pass saved 530 bytes of ASM code/data with unchanged UDATA. HIMON
+ends at `$EDEA` (exclusive), leaving 534 bytes through `$EFFF` after its
+268-byte reduction. STR8-N v1.34 occupies `$F000-$FCF1` before its 134-byte
+margin and stored worker at `$FD78-$FFAF`.
 
 ### Can one AP load another AP?
 

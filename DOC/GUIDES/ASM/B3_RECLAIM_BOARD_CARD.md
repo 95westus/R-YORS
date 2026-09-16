@@ -8,8 +8,13 @@ B3:F, and erases the scratch afterward.
 ## Exact source
 
 ```text
-C:\SRC\STR8-N\tools\bank-maint\str8n-v1.32-bank-maint-menu-2000.a
+C:\SRC\STR8-N\tools\bank-maint\str8n-v1.34-bank-maint-menu-2000.a
 ```
+
+The STR8-N v1.34 release includes the same `.a` carrier. This journal reclaim
+procedure is distinct from STR8-N's resident `J3` bank-jump command. Retain
+the v1.34 qualification limits listed in the STR8 release; do not infer a new
+reclaim proof from a successful firmware build or ordinary reset.
 
 ## Load and run
 

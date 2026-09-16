@@ -1,5 +1,39 @@
 # BANKDUMP Banked APC Utility
 
+## Current release workflow
+
+The HIMON `00.0915(2324)` release ships
+`APPLICATIONS/UTILITIES/bank-dump-2000.a`. Its three named console imports
+are resolved when HIMON loads the AP. The older host `.asm`/direct S19 pins
+obsolete HIMON routine addresses and is not a current release product.
+Assemble/package the source and link it through HIMON before execution:
+
+```text
+ASM NEW
+  send APPLICATIONS/UTILITIES/bank-dump-2000.a
+SEAL> PACKAGE BANKDUMP 3000
+SEAL> .
+AP 3000 2000
+```
+
+Do not run the unlinked assembled BODY with `G 2000`. Keep this fixed-load
+program at `$2000`. With APMAN provisioned, `INSTALL 3000 B2` at `SEAL>`
+can create a persistent carrier; later use `AP B2 BANKDUMP`. Inspect the
+present inventory before replacing a carrier and record APMAN's selected
+sector. Do not assume the historical B2:9 placement is still installed, or
+erase B2:9 merely because it appears in the old test below.
+
+The 2026-08-26 board evidence covers assembly, packaging, installation,
+reset, named execution, and read-only inspection. The September firmware
+release did not rerun that carrier proof. For current prerequisites, see
+[AP/OIL](../AP/AP_OIL_GUIDE.md) and [release applications](../RELEASE_APPLICATIONS.md).
+
+## Retained original board card
+
+The following identities, paths, inventories, corrections, and literal
+addresses belong to the accepted August test. Preserve them as evidence;
+they are not current board inventory or replacement instructions.
+
 Status: accepted on board. The symbol-lean `$09AD` read-only bank-map
 extension assembled, packaged, installed at B2:9, survived reset, resolved by
 name, printed the complete map, and restored Bank 3.

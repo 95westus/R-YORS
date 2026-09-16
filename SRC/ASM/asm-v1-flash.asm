@@ -553,7 +553,7 @@ ASMF_MSG_XY:
                         LDY             #>MSG_TITLE
                         CMP             #<MSG_TITLE
                         BCS             ASMF_MSG_XY_READY
-                        LDY             #>MSG_STATUS_BAD_LINE
+                        LDY             #>(MSG_TITLE+$0100)
 ASMF_MSG_XY_READY:
                         RTS
 

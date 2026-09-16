@@ -60,7 +60,6 @@ if ($pcLo -ne 0x80 -or $pcHi -ne 0x81 -or
 # low-byte ranges around MSG_TITLE's low byte so ASMF_MSG_XY can recover the
 # page without alignment padding.
 $messageFirst = Get-Symbol 'MSG_TITLE'
-$messageSplit = Get-Symbol 'MSG_STATUS_BAD_LINE'
 $messageEnd = (Get-Symbol 'ASMF_CMD_RELOCATE') - 1
 if (($messageEnd - $messageFirst + 1) -gt 256) {
     throw 'ASM flash compact message span exceeds 256 bytes'
@@ -72,18 +71,11 @@ foreach ($name in @($symbols.Keys | Where-Object { $_ -like 'MSG_*' })) {
     $page = if ($low -ge ($messageFirst -band 255)) {
         $messageFirst -band 0xFF00
     } else {
-        $messageSplit -band 0xFF00
+        ($messageFirst -band 0xFF00) + 0x0100
     }
     if (($page + $low) -ne $address) {
         throw ('ASM flash compact pointer aliases {0}={1:X4}' -f $name, $address)
     }
-}
-if (($messageSplit -band 0x00FF) -ge ($messageFirst -band 0x00FF) -or
-    ($messageSplit -band 0xFF00) -ne (($messageFirst -band 0xFF00) + 0x0100) -or
-    ($messageEnd -band 0xFF00) -ne ($messageSplit -band 0xFF00) -or
-    ($messageEnd -band 0x00FF) -ge ($messageFirst -band 0x00FF)) {
-    throw ('ASM flash message-page split invalid: {0:X4}/{1:X4}-{2:X4}' -f
-        $messageFirst, $messageSplit, $messageEnd)
 }
 
 Write-Host ('asm-v1-flash RAM map low=0200-19FF user=1A00-1FFF udata=5000-{0:X4} upper={0:X4}-7CFF' -f $endUdata)

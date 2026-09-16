@@ -52,7 +52,9 @@ Import-S19 $HimonS19Path 0xC000 0xEFFF 'HIMON'
 if ($RangeStart -lt 0x8000 -or $RangeEnd -gt 0xEFFF -or $RangeEnd -lt $RangeStart) {
     Fail ('requested range ${0:X4}-${1:X4} is outside R-YORS $8000-$EFFF' -f $RangeStart, $RangeEnd)
 }
-if ($StartAddress -lt $RangeStart -or $StartAddress -gt $RangeEnd) {
+# An ASM-only refresh retains the immutable HIMON entry in an existing Bank 3.
+$retainEntry = $StartAddress -eq 0xFFFF -and $RangeStart -eq 0x8000 -and $RangeEnd -eq 0xBFFF
+if (-not $retainEntry -and ($StartAddress -lt $RangeStart -or $StartAddress -gt $RangeEnd)) {
     Fail ('S9 start ${0:X4} is outside output range' -f $StartAddress)
 }
 if (-not $present[0x8000] -or -not $present[0xC000]) { Fail 'ASM or HIMON entry byte is absent' }

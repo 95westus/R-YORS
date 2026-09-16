@@ -1,11 +1,13 @@
 # Bank Maintenance Directory Rename
 
-Status: host-built; board proof pending.
+Status: current v1.34 procedure; a fresh proof of this exact rename operation
+is not implied by the 2026-09-15 firmware release. Preserve the selected
+directory identity and use the current STR8 release's qualification limits.
 
 Use this exact onboard source:
 
 ```text
-C:\SRC\STR8-N\tools\bank-maint\str8n-v1.32-bank-maint-menu-2000.a
+C:\SRC\STR8-N\tools\bank-maint\str8n-v1.34-bank-maint-menu-2000.a
 ```
 
 At HIMON:

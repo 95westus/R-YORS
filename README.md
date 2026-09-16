@@ -57,6 +57,21 @@ evidence boundary are maintained in the
 [Current Capability Matrix](DOC/GUIDES/CAPABILITIES.md). Dated cards and
 transcripts may show commands belonging to older images.
 
+## Current Releases
+
+The [release shelf](RELEASE/README.md) contains separate **STR8-N v1.34**,
+**HIMON `00.0915(2324)`**, and **ASM-F2 `00.0915(2324)`** ZIPs, plus the
+combined Bank-3 `8-E` S19. Each ZIP includes its relevant guides, applications,
+license notices, artifact manifest, checksums, and a verifier. Start with the
+[installation flow](DOC/GUIDES/INSTALLATION_FLOW.md); the STR8-N package
+includes the WDCMONv2 migration kit and Bank Maintenance `.a` source.
+
+The release firmware passed the full host checks and differs from the
+physical-reset-qualified board firmware only in nine timestamp bytes. The
+restamped images have not been reflashed; the board retains HIMON
+`00.0915(2233)` and ASM-F2 `00.0915(2243)`. See
+[qualification](RELEASE/QUALIFICATION.json) for the exact evidence boundary.
+
 ## Start Here
 
 - [Documentation Front Door](DOC/INDEX.md) — the single current reading path
@@ -90,7 +105,7 @@ SRC/PROOFS/      current proof scaffolds
 SRC/TESTS/       host test harnesses
 SRC/ARCHIVE/     retired sample, test, proof, demo, and one-off code/data
 SRC/tools/       host bootstrap, checking, and documentation tools
-RELEASE/         current release sources, images, and checksums
+RELEASE/         current release ZIPs, combined image, checksums, and prior snapshots
 ```
 
 STR8-N is built and released from the adjacent standalone STR8-N repository.

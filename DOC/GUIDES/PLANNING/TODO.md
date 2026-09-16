@@ -6,6 +6,23 @@ Review this checklist before starting any ASM feature implementation. An item
 stays unchecked until its source, regression tests, documentation, resident
 size measurement, and required hardware proof are complete.
 
+### Accepted: ASM-F2 size reduction
+
+- [x] Accept the reduced ASM-F2 image on hardware. Initialization cleanup,
+  indexed state clearing, redundant AP-writer reload removal, and shared
+  opcode patterns save 530 ROM bytes: `_END_DATA=$BB83`, with 1,149 bytes
+  free below HIMON and no RAM-layout growth. Focused linked-code checks cover
+  all opcode ID/mode combinations, state-clear boundaries, cold/warm service
+  initialization, and exact AP record/package bytes; the full `asm-test`
+  suite passes. See
+  [size qualification](../ASM/SIZE_REDUCTION_2026-09-15.md) for build and test
+  evidence. COM4 now has ASM-F2 `00.0915(2243)` in Bank-3 sectors 8-B.
+  Assembly/package/debugger workflow, exact flash readback, and physical
+  RESET plus fresh assembly/run passed. The corrected S9 `$FFFF` component
+  passed the installer and host identity gate. See the
+  [board record](../LOGS/ASMF2_SIZE_2026-09-15.md), including the initial
+  S9 mismatch and recovery. HIMON and STR8 remain preserved.
+
 ### Candidate: APMAN bank/sector LED activity
 
 - [ ] Accept APMAN's banked-media activity display on hardware. The common

@@ -510,6 +510,9 @@ himon-str8-record-check: $(HIMON_ROM_S19) $(HIMON_STR8_RECORD_CHECK) $(STR8N_IMP
 himon-io-led-check: $(HIMON_ROM_S19) $(HIMON_IO_LED_CHECK) $(HIM_SUBDIR)/himon-led-eq.inc
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_IO_LED_CHECK) -HimonSourcePath "$(HIMON_SRC)" -LedContractPath "$(HIM_SUBDIR)/himon-led-eq.inc" -HimonS19Path "$(HIMON_ROM_S19)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map"
 
+himon-size-check: $(HIMON_ROM_S19) tools/check_himon_size.py
+	$(PYTHON) -B tools/check_himon_size.py
+
 himon-rom-bin: $(HIMON_ROM_BIN)
 	@echo "Built $(HIMON_ROM_BIN)."
 
@@ -717,10 +720,10 @@ board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(
 	@make -C "$(STR8N_HOME)" ryors-full-bank RYORS_28K_S19="$(abspath $(RYORS_V12_28K_S19))"
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.34/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
 
-release-files: board-s19-check apman bank-audit bank-dump life pia-led-show rom-append-calc fnv1a-hbstr $(PUBLISH_RELEASE_TOOL)
+release-files: $(PUBLISH_RELEASE_TOOL) tools/package_component_releases.py tools/verify_component_release.py
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
 
-asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show microchess asm-ap-v2-check asm-error-check
+asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show microchess asm-ap-v2-check asm-error-check asm-size-check himon-size-check
 	@echo "ASM v1 smoke checks passed."
 
 asm-abi-check: $(ASM_ABI_CHECK) $(ASM_ABI_INC) $(ASM_V1_CORE_SRC) $(ASM_V1_FLASH_SRC) $(HIMON_SRC) $(HIMON_DIR)/himon-shared-eq.inc $(ASM_SESSION_REPORT_AP_BIN)
@@ -732,7 +735,11 @@ asm-terminal-check: $(ASM_TERMINAL_CHECK) ../DOC/GUIDES/ASM/SAMPLES/terminal-ans
 asm-error-check: $(ASM_ERROR_CHECK) tools/check_asm_errors.py $(ASM_V1_FLASH_S19) $(HIMON_ROM_S19)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ASM_ERROR_CHECK) -Python "$(PYTHON)"
 
-.PHONY: asm-error-check
+asm-size-check: tools/check_asm_size.py tools/check_asm_package_writers.py tools/check_asm_errors.py $(ASM_V1_FLASH_S19) $(HIMON_ROM_S19)
+	$(PYTHON) -B tools/check_asm_size.py
+	$(PYTHON) -B tools/check_asm_package_writers.py
+
+.PHONY: asm-error-check asm-size-check
 
 ap-store-v1-check: $(AP_STORE_V1_CHECK) $(AP_STORE_V1_INC) $(AP_STORE_SECTOR_TOOL_INC)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(AP_STORE_V1_CHECK) -WorkerContractPath "$(AP_STORE_SECTOR_TOOL_INC)"
@@ -1382,7 +1389,7 @@ $(HIMON_APV2_INSTALL_S19): $(HIMON_ROM_BIN) $(ROM_INSTALL_S19_GEN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(ROM_INSTALL_S19_GEN) -BinPath "$(HIMON_ROM_BIN)" -S19Path "$(HIMON_APV2_INSTALL_S19)" -BaseAddress 32768 -RangeStart 49152 -RangeEnd 61439 -StartAddress 49152
 
 $(RYORS_V12_ASM_S19): $(ASM_V1_FLASH_S19) $(HIMON_ROM_S19) $(RYORS_FLASH_S19_GEN)
-	@powershell -NoProfile -ExecutionPolicy Bypass -File $(RYORS_FLASH_S19_GEN) -AsmS19Path "$(ASM_V1_FLASH_S19)" -HimonS19Path "$(HIMON_ROM_S19)" -S19Path "$@" -RangeStart 32768 -RangeEnd 49151 -StartAddress 32768
+	@powershell -NoProfile -ExecutionPolicy Bypass -File $(RYORS_FLASH_S19_GEN) -AsmS19Path "$(ASM_V1_FLASH_S19)" -HimonS19Path "$(HIMON_ROM_S19)" -S19Path "$@" -RangeStart 32768 -RangeEnd 49151 -StartAddress 65535
 
 $(RYORS_V12_HIMON_S19): $(ASM_V1_FLASH_S19) $(HIMON_ROM_S19) $(RYORS_FLASH_S19_GEN)
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(RYORS_FLASH_S19_GEN) -AsmS19Path "$(ASM_V1_FLASH_S19)" -HimonS19Path "$(HIMON_ROM_S19)" -S19Path "$@" -RangeStart 49152 -RangeEnd 61439 -StartAddress 49152
@@ -1530,7 +1537,7 @@ endif
 
 .PHONY: \
 	all firmware lab everything proofs apps tests help release release-local release-files \
-	himon himon-rom himon-rom-bin himon-banked-ap-check himon-str8-record-check himon-io-led-check \
+	himon himon-rom himon-rom-bin himon-banked-ap-check himon-str8-record-check himon-io-led-check himon-size-check \
 	str8n-external-artifacts str8n-external-check str8n-external-release-check ryors-v1.2 \
 	str8-readonly-bank-tools-check himon-rom-install-s19 himon-apv2-install-s19 rom-install-s19 \
 	basic-himon-rom-bin basic-forth-himon-rom-bin fnv1a-hbstr \

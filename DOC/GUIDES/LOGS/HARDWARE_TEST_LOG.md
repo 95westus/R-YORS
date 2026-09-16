@@ -26472,3 +26472,76 @@ An ASM entry check reports the still-installed `ASM-F2 00.0910(1709)` and
 returns through `ASM BYE`. These runs prove the current carrier and resident
 alias after software restart/cold entry. They do not claim physical-reset
 persistence; that is the remaining MicroChess board gate.
+
+## 2026-09-15 HIMON Size Reduction On COM4
+
+The reduced HIMON `00.0914(1200)` passed focused hardware qualification:
+268 bytes saved, 11,754 bytes used, `_END_DATA=$EDEA`, and 534 bytes free
+below `$F000`. Savings are 51 bytes of unreachable FNV code, 37 bytes of
+redundant AP seal setup, and 180 net bytes from mnemonic compression.
+
+This run initially found STR8-N 1.34, WDCMONV2 in Bank-3 sectors 8-B, and
+zero-filled C-E with no HIMON marker. STR8-N's guarded installer enrolled D3
+as `5A` / `RYORS` and installed the exact candidate into C-E. Full-bank
+readback proved that WDCMONV2, STR8-N code/configuration/vectors, and D0-D2
+were preserved; sector F changed only in the installer-owned D3 descriptor.
+
+Accepted checks include resident hash lookup, all 256 mnemonic displays,
+34 actual debugger steps, six valid direct AP loads with full body/guard
+readback, and seven corrupt AP rejections with untouched destinations.
+Physical RESET reported `RST H`, returned through STR8-N 1.34 to HIMON,
+and retained a byte-identical 32 KB bank readback. Host `asm-test` and the
+linked-image size regression passed. ASM-F2 was absent on this board;
+this run does not requalify onboard assembly or Bank 0-2 carriers.
+
+The [qualification record](HIMON_SIZE_2026-09-15.md) contains image hashes,
+before/after sector CRCs, installation details, and test scope. The retained
+[raw serial transcript](HIMON_SIZE_2026-09-15.jsonl) is 1,058,696 bytes,
+SHA-256 `404819EED1642EE8A6E1BAD30CB33501C96F4750F5BE776B5429F02F4056BC85`.
+
+## 2026-09-15 HIMON Timestamp Correction And Reinstall
+
+The user requested correction of the frozen comparison stamp. HIMON was
+rebuilt as `00.0915(2233)` and reinstalled into Bank-3 C-E on COM4. Exact
+comparison proved that only the two timestamp strings changed; the
+268-byte saving and 534-byte margin remain. Linked-image checks passed
+again (256 displays, 262 FNV vectors, 77 AP cases).
+
+The installer returned `OK`; cold entry displayed the new banner. Full-bank
+readback verified the new C-E image, unchanged surrounding code/data, and
+the expected installer journal advance at `$FFEC` from `FC` to `F0`.
+Help and hash lookup passed. Physical RESET was not repeated for this
+timestamp-only update. See the appended correction section in the
+[qualification record](HIMON_SIZE_2026-09-15.md) for exact hashes.
+
+The separate [reinstall transcript](HIMON_RESTAMP_2026-09-15.jsonl) is
+731,162 bytes, SHA-256
+`948A1FA60C191F9FDD55AE8F362E714AA6E972EF7C06162C1F82A2879425EA3A`.
+
+## 2026-09-15 ASM-F2 Size Reduction, Installation, And Board Qualification
+
+ASM-F2 `00.0915(2243)` is installed in Bank-3 sectors 8-B on COM4, replacing
+that bank's WDCMONV2 copy. ROM size is 15,235 bytes, end `$BB83`, 1,149 bytes
+free below HIMON: 530 bytes saved with unchanged UDATA layout and ABI.
+HIMON `00.0915(2233)` and STR8-N 1.34 remain byte-exact.
+
+The initial component had incompatible S9 `$8000`; STR8 rejected it after
+receiving the stream. Recovery with 8-E used the exact preserved HIMON bytes.
+The generator now emits S9 `$FFFF` for the ASM-only component, and the
+identity gate rejects the old entry. The corrected `I / 3 / 8-B` install
+returned `OK`. Full-bank readback proved exact ASM bytes, padding, preserved
+surroundings, and only the expected directory journal change at `$FFEC`.
+Older packaged releases were not republished.
+
+The board passed all 217 legal instruction forms, nine error/rollback cases,
+NEW clearing, direct and AP-relocated runtime execution,
+SEAL/RELOCATE/PACKAGE/LOAD with wrong-identity destination preservation,
+an exact package with eight exports and three imports, and BRK/step/resume.
+Physical RESET reported `RST H`, then returned through STR8-N to HIMON.
+Fresh ASM entry, assembly/run, and an unchanged full-bank readback passed.
+Bank 0-2 carriers were not requalified.
+
+See the [qualification record](ASMF2_SIZE_2026-09-15.md) for image hashes,
+sector CRCs, recovery details, test scope, and corrected harness assumptions.
+The [raw serial transcript](ASMF2_SIZE_2026-09-15.jsonl) is 2,031,006 bytes,
+SHA-256 `313AB768D70F8653A2B00017A64B01B8D15F7CB096D8779F561A26E9088D61F3`.

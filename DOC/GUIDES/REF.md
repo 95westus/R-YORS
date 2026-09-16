@@ -37,7 +37,7 @@ D start [end]  dump one byte or inclusive range
 M start [end|+count]  modify protected-range-checked RAM
 G addr         execute address
 L              load S0/S1/S9 into RAM; report S9, do not execute
-STR8           confirmed jump to $F000
+STR8           confirmed software reset through STR8-N; reports RST S
 ASM            enter ASM-F2
 AP pkg dst                 direct RAM/visible-package recovery form
 AP Bn name|s000 [dst]      load/link/run installed carrier through APMAN
@@ -65,10 +65,14 @@ STR8-N `L` and HIMON `L` deliberately have different execution semantics.
 HIMON delegates record parsing to STR8-N `$F009` `SR/02` and fails closed if
 that service is absent or incompatible.
 
-## Accepted AP Carrier Inventory
+## Carrier Layout And Build Identity
+
+Carrier placement is installation-dependent. Use `APS` to inspect the
+current board. The 2026-09-15 HIMON/ASM size qualification did not requalify
+Banks 0-2. The current APMAN build and previously used carrier locations are:
 
 ```text
-B2:8  APMAN     package L=$0B40, transient body $7000-$7B11
+B2:8  APMAN     current build L=$0C2A, transient body $7000-$7BFB
 B2:9  BANKDUMP  package L=$09AD, default body $2000-$292B
 B1:E  WORK      configured application work sector
 B1:F  BKUP      protected B3:F backup
@@ -109,6 +113,7 @@ make -C SRC himon-banked-ap-check   verify selector and AP staging boundary
 make -C SRC asm-test                build/run ASM smoke checks
 make -C SRC life                    build standalone Life S19/BIN
 make -C SRC docs                    regenerate source-derived R-YORS docs
+make -C SRC release-files           verify/build the separate release ZIPs
 make -C SRC help Q=<term>           search targets
 make -C ../STR8-N ryors-full-bank   compose complete Bank-0/1/2 payload
 ```
@@ -124,3 +129,5 @@ the lock.
 - [ASM User Guide](ASM/ASM_USER_GUIDE.md)
 - [STR8-N Boundary](STR8/PRODUCT_BOUNDARIES.md)
 - [Hardware Test Log](LOGS/HARDWARE_TEST_LOG.md)
+- [Current Release Packages](../../RELEASE/README.md)
+- [Release Application Catalog](RELEASE_APPLICATIONS.md)

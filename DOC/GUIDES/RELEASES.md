@@ -1,141 +1,99 @@
-# R-YORS Release Guide
+# Separate STR8-N, HIMON, and ASM-F2 releases
 
-This guide describes the GitHub release lane for R-YORS. The release artifact
-is the bench-built firmware image and its matching S19 streams. Git retains
-all current operator-facing files together under `RELEASE/`; generated build
-products elsewhere remain ignored.
+The current release lane produces three independent ZIPs and a qualified
+combined Bank-3 8-E S19 under `RELEASE/`. See `RELEASE/README.md` for current
+identities and hashes. Older loose images and `RELEASE/ARTIFACTS/` remain
+historical snapshots; they are not inputs to this release lane.
 
-## Release Meaning
+## Package boundaries
 
-A GitHub Release should mark a source revision whose release artifacts were
-built from tracked source and whose board proof status is clear.
+- STR8-N v1.34 contains the canonical 4 KiB BIN, resident/update/maintenance
+  S19 tools, the matching Bank Maintenance `.a`, public ABI, current guides,
+  qualification reports, and WDC-to-STR8 migration kit. It contains no WDC
+  firmware or owner backup. Its executable migration artifacts retain the
+  identities of the 2026-09-15 factory-qualified kit.
+- HIMON contains the dense C-E component S19 and 12 KiB address-labelled BIN,
+  monitor documentation, application source and runnable products, Life and
+  MicroChess with their exact notices, and the combined 8-E S19.
+- ASM-F2 contains the dense 8-B component S19 and 16 KiB address-labelled BIN,
+  the assembler guide, current map-matched reporter `.a`, terminal/bank
+  inspection tools, language examples, separate validation fixtures, and
+  the identical combined 8-E S19.
 
-The primary `himon-str8-rom.*` artifacts use the accepted split-V1.02 layout.
-The `himon-str8-v1.*` names remain compatibility outputs for frozen board
-cards, not a second firmware baseline.
+The component BINs are CPU-range images, not complete bootable ROMs. The
+ASM-only S9 is `$FFFF` (retain HIMON's existing entry); HIMON and combined
+streams use `$C000`. The 8-E stream excludes protected STR8 sector F.
 
-Use releases for:
+Each ZIP has an exact inventory and SHA-256 checksums. The component
+packages include operator, technical, installation, memory-map, AP/OIL,
+and product-specific manuals under `DOC/GUIDES/`, with an entry point at
+`MANUALS.md`. Included-file links work offline; references to unbundled
+source and historical material are explicit links to the source revision.
+Raw historical transcripts are not copied into the release ZIPs.
 
-- the current STR8-N/HIMON/ASM-F2 onboard image;
-- first-install and update S19 streams;
-- release notes that say what is host-built, board-proven, or still
-  bench-caution material.
+The component
+`VERIFY.py` validates inventory, notices, S19 checksums/ranges/entries,
+BIN/S19 equivalence, and the combined payload identity. It rejects optimized
+Python execution rather than silently dropping validation. The STR8 package
+has its own PowerShell verifier, including its nested migration ZIP.
 
-Do not publish `make release-local` artifacts unless the release is explicitly
-for local/private composite images.
+## Qualification and version stamps
 
-## Preflight
+The release uses one timestamp captured at build start for both HIMON and
+ASM-F2. The 2026-09-15 release stamp is `0915(2324)`. The complete `asm-test`
+regression passes on that stamp; all nine board-image delivery comparisons
+pass. The dense 28 KiB combined image must match the known reset-qualified
+COM4 bank exactly outside three explicitly matched timestamp strings.
+`QUALIFICATION.json` records the baseline hash, old/new stamps, changed-byte
+count, current payload hash, host log identities, and qualification scope.
 
-From the repository root:
+This proves timestamp-only equivalence to the hardware-qualified firmware;
+it does not claim that the new stamped combined stream was reflashed or
+that every optional application was requalified. Current board identities
+remain in `CAPABILITIES.md`. A future functional firmware change must obtain
+new hardware proof and update the qualification baseline before this
+packager can accept it. Application status is listed in
+[RELEASE_APPLICATIONS.md](RELEASE_APPLICATIONS.md).
 
-```text
-git status --short
-make -C SRC release
-git diff --check
+## Reproduction
+
+Use Python 3.10+ and the existing local WDC build tools. Do not bundle those
+tools or vendor libraries. In the STR8-N repository build/verify the standalone
+package using `tools/make_release_package.ps1`; its input migration ZIP is
+created with `tools/wdcmonv2/make_wdcmonv2_migration_package.ps1`.
+Then, from `R-YORS/SRC`:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/publish_release.ps1 -Stamp '0915(2324)'
 ```
 
-`make -C SRC release` regenerates source-derived docs and produces the release
-artifacts under `SRC/BUILD/`.
+Omit `-Stamp` for a new build-time timestamp. Keep the retained qualified
+bank readback at `SRC/BUILD/tmp/asmf2-size-board/final-b3.bin`, or supply its
+path with `-QualifiedBankPath`. It remains local and is never copied into
+an archive. The expected qualified-bank hash is fixed by the documented
+board record. `make -C SRC release-files` invokes this packaging lane.
+The older `make release` additionally requires the STR8 repository to be
+clean; it is intended for the final source-revision publication workflow.
 
-If generated docs change only by timestamp, include them in the release commit
-or rebuild from a clean tree before tagging. Do not hand-edit files under
-`DOC/GENERATED/`.
+Commit source, tools, and manuals first. Rebuild the archives from that
+revision, then commit the R-YORS release products and create annotated tags:
+`v1.34` in STR8-N, and `himon-v00.0915-2324` plus `asm-f2-v00.0915-2324`
+in R-YORS. Both component tags name the commit containing the corresponding
+ZIPs and identical combined 8-E S19. A source manifest's dirty flag excludes
+generated `RELEASE/` products so artifact-only changes do not falsely mark
+the source build dirty. Tagging locally does not push or publish a release.
 
-## Assets
+The script runs host checks before packaging. `-SkipBuild` is only for the
+same already-completed build and requires matching final success markers
+and the exact image qualification. No source files are glob-copied into
+release ZIPs. A local archive is not a GitHub release: commit/tag/push or
+remote publication are separate actions.
 
-Attach these primary files to the GitHub Release:
+## Exclusions and retained notices
 
-```text
-RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin
-RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
-RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19
-```
-
-The separately installable ASM and HIMON slices are moved under
-`RELEASE/ARTIFACTS/COMPONENT-IMAGES/` as
-`ryors-v1.2-asm-bank3-8-b.s19` and `ryors-v1.2-himon-bank3-c-e.s19`.
-The standalone/install S19 variants are
-also retained because `board-s19-check` verifies that all delivery forms carry
-the same current bytes.
-
-Optional but recommended checksum commands:
-
-```text
-Get-FileHash RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin -Algorithm SHA256
-Get-FileHash RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19 -Algorithm SHA256
-Get-FileHash RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19 -Algorithm SHA256
-```
-
-## Tagging
-
-Use a tag that names the release meaning, not just the build time.
-
-For the OIL .710 release:
-
-```text
-v0.710
-```
-
-If a release is only a dated bench snapshot, use:
-
-```text
-rYYYY-MM-DD
-```
-
-Create the tag only after the source tree, generated docs, and release notes
-match the artifacts being uploaded.
-
-## Release Notes Template
-
-````markdown
-## R-YORS v0.710
-
-### Build
-- Command: `make -C SRC release`
-- Complete BIN: `RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin`
-- Complete S19: `RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19`
-- Bank-3 payload: `RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19`
-
-### Proven
-- STR8-N recovery/update path:
-- HIMON monitor/debug/catalog path:
-- ASM-F2 package/load/install/AP path:
-- Banked AP or Life path:
-
-### Caution
-Bench-proven firmware. Keep an external programmer and known-good image nearby.
-
-### Checksums
-```text
-ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin  SHA256:
-ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19  SHA256:
-ryors-v1.2-himon-asm-bank3-8-e.s19          SHA256:
-```
-````
-
-## Publish Steps
-
-1. Build with `make -C SRC release`.
-2. Confirm `git status --short`.
-3. Commit tracked release docs or source changes.
-4. Tag the release commit.
-5. Push the commit and tag.
-6. Open `https://github.com/95westus/R-YORS/releases/new`.
-7. Choose the tag.
-8. Mark the release as a prerelease if it is bench-proven but not field-ready.
-9. Attach the three release assets and publish.
-
-## Optional Self-Hosted Workflow
-
-`.github/workflows/release-self-hosted.yml` defines a manual GitHub Actions
-workflow for a self-hosted Windows runner. Use it only on a runner with the WDC
-toolchain, `make`, and PowerShell available.
-
-The workflow runs `make -C SRC release`, writes `SRC/BUILD/release-sha256.txt`,
-and uploads the release assets as a workflow artifact. It does not publish a
-GitHub Release by itself.
-
-## After Publishing
-
-Create or update a board-proof issue using the GitHub issue template. Link the
-release, the relevant hardware transcript, and any follow-up recovery notes.
+Exclude WDCMON firmware, owner bank dumps, proprietary tools, BASIC/Forth
+products, obsolete Life `.a` code, and old flash proof programs. Project
+code carries the repository MIT license. Life carries its independent
+implementation attribution and full MIT notice. MicroChess retains its
+source copyright/credits, three redistribution conditions, disclaimer, and
+R-YORS adaptation notice; its own terms are not replaced by the MIT license.

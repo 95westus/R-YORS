@@ -7,7 +7,7 @@ For the bench-facing names and layered diagrams of the active control areas,
 see [Control Deck Map](../../GENERATED/CONTROL_DECK_MAP.md). The formal ranges
 in this file remain authoritative.
 
-The standalone HIMON map and the split STR8-N v1.32 integration map are listed
+The HIMON component map and the split STR8-N v1.34 integration map are listed
 separately below. R-YORS builds `$8000-$EFFF`; the adjacent STR8-N repository
 owns `$F000-$FFFF` and composes the optional full-bank payload.
 
@@ -16,11 +16,11 @@ owns `$F000-$FFFF` and composes the optional full-bank payload.
 Ranges are listed as inclusive. Linker `_END_*` symbols are exclusive.
 
 ```text
-$8000-$BFFF   current image gap
-$C000-$E8C7   HIMON CODE, START/standalone RESET entry at $C000
-$E8C8-$EE11   HIMON DATA
-$EE12-$FFF9   current image gap and external STR8-N/high-ROM space
-$FFFA-$FFFF   hardware vectors
+$8000-$BFFF   outside the HIMON component; ASM-F2 in the combined image
+$C000-$E953   HIMON CODE, START entry at $C000
+$E954-$EDE9   HIMON DATA
+$EDEA-$EFFF   534-byte HIMON component growth margin, padded FF
+$F000-$FFFF   outside the HIMON component; STR8-N owns the top and vectors
 ```
 
 The HIMON entry face has a fixed warm-entry identity contract independent of
@@ -31,7 +31,7 @@ $C000-$C002   JMP to the current HIMON start body
 $C003-$C006   HIMON warm ABI marker: A5 5A C3 3C
 ```
 
-STR8 `H` matches all four marker bytes before it writes the same four-byte
+STR8-N `W` and its warm timeout match all four marker bytes before writing the same four-byte
 warm signature at `$7EE6-$7EE9` and enters `$C000`. An absent or damaged
 marker is not a generic `$C000` launch: STR8 prints `NO HIMON` and stays active.
 
@@ -40,18 +40,18 @@ removed. They were useful as a proof, but not a practical permanent ABI. Local
 language bridges should patch against the current HIMON map or use a future
 explicit handoff contract; STR8 must not reserve those addresses.
 
-Current ROM hardware vectors:
+The release HIMON BIN is exactly 12 KiB (`$C000-$EFFF`); the ASM-F2 BIN is
+exactly 16 KiB (`$8000-$BFFF`). Neither component includes hardware vectors
+or forms a complete bootable bank. The canonical STR8-N BIN is 4 KiB
+(`$F000-$FFFF`), including vectors and initial metadata. A complete 32 KiB
+bank is a separate STR8-N composition product, not any of these component
+BINs. On the integrated board RESET is `$F000`; NMI and IRQ/BRK entry stubs
+are owned and checked by STR8-N.
 
-```text
-$FFFA-$FFFB   NMI   = $E5AC
-$FFFC-$FFFD   RESET = $C000
-$FFFE-$FFFF   IRQ   = $E5AF
-```
-
-Generated burnable ROM `.bin` files are exactly one 32K `$8000-$FFFF` bank
-image for the programmer workflow. The file does not encode a bank number;
-bank 0-3 placement is managed through the T48 programmer or through
-R-YORS/STR8.
+The [current releases](../../../RELEASE/README.md) use HIMON and ASM-F2
+`00.0915(2324)` with STR8-N v1.34. The restamped firmware has full host
+checks and timestamp-only equivalence to the reset-tested board. It has not
+been reflashed; the board retains HIMON `2233` and ASM-F2 `2243` stamps.
 
 ## Target Live-Bank Budget
 
@@ -70,21 +70,22 @@ should be an intentional design decision because it eats the lower 16K user
 space.
 
 R-YORS publishes `RELEASE/ryors-v1.2-himon-asm-bank3-8-e.s19`, a dense 28K
-`$8000-$EFFF` payload. STR8-N validates that input and the release lane
-publishes `RELEASE/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19`. RESET points
+`$8000-$EFFF` payload. STR8-N validates that input and its optional composer
+writes `BUILD/v1.34/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19` in the
+standalone checkout. RESET points
 to STR8-N at `$F000`; the exact NMI and IRQ/BRK vector
 targets are owned and checked by the standalone STR8-N build.
 
 Combined image layout:
 
 ```text
-$8000-$BD2A   ASM-F2 low-flash image, entry $800C
-$BD2B-$BFFF   current low-flash growth margin; no carrier storage in Bank 3
-$C000-$EE11   HIMON body, including resident AP-v2 linker/APMAN bootstrap
-$EE12-$EFFF   current image gap inside the E sector
-$F000-$FD41   STR8-N v1.32 resident supervisor, installer, loader, and services
-$FD42-$FD4F   currently available resident growth, 14 bytes
-$FD50-$FFAF   stored unified STR8-N RAM worker, copied to $0200-$045F
+$8000-$BB82   ASM-F2 low-flash image, entry $800C
+$BB83-$BFFF   1,149-byte low-flash growth margin; no carrier storage in Bank 3
+$C000-$EDE9   HIMON body, including resident AP-v2 linker/APMAN bootstrap
+$EDEA-$EFFF   534-byte image gap inside the E sector
+$F000-$FCF1   STR8-N v1.34 resident supervisor, installer, loader, and services
+$FCF2-$FD77   currently available resident growth, 134 bytes
+$FD78-$FFAF   stored unified STR8-N RAM worker, copied to $0200-$0437
 $FFB0-$FFEF   fixed V1 directory, erased in a new primary image
 $FFF0-$FFF9   STR8 config pocket
 $FFFA-$FFFF   hardware vectors
@@ -132,10 +133,13 @@ B3 U U U U U U U P
 `A` is a fully validated AP-v2 carrier including body FNV. `W`, `B`, and `P`
 are configured roles: B1:E WORK, B1:F B3:F backup, and live B3:F protected.
 
-Known accepted carriers are APMAN at B2:8 (`L=$0B40`, body
+The carriers accepted in that capture were APMAN at B2:8 (`L=$0B40`, body
 `$7000-$7B11`) and BANKDUMP at B2:9 (`L=$09AD`, body `$2000-$292B`). B1:C
-currently reports `U`; the map classifies live bytes and does not trust a
+reported `U`; the map classifies live bytes and does not trust a
 former package name or directory description.
+
+This dated inventory is not the current board's sector map. The 2026-09-15
+firmware proof covered Bank 3 and did not requalify these carrier placements.
 
 ## OIL Address Boundary
 
@@ -155,7 +159,8 @@ uses the ordinary `$2000-$4FFF` lane. APMAN occupies `$7000-$7B11`, so its
 managed child destination must begin at or above `$2000` and end at or below
 `$7000`.
 
-Local language images are built to sit below the protected HIMON/STR8 region:
+Historical owner-local language images were built to sit below the protected
+HIMON/STR8 region:
 
 ```text
 $8000-$9FFF   OSI MS BASIC 8K slot, FNV header at $8000
@@ -163,14 +168,15 @@ $A000-$BFFF   fig-Forth slot, FNV header at $A000
 $C000-$FFFF   protected live HIMON/STR8 region
 ```
 
-These are proof/load artifacts. HIMON `L` cannot write flash; package them as
-a dense STR8-N `I` payload before installing them.
+These are historical proof/load artifacts and are excluded from the current
+release ZIPs. The released `$8000-$BFFF` component is ASM-F2. HIMON `L`
+cannot write flash.
 
 Historical STR8 bench tests temporarily placed fig-Forth at `$C000-$EFFF` with
 `BUILD/s19/fig-forth-str8-update.s19`. That was a deliberate V0 `U`
-replacement of HIMON, not a current v1.32 installation procedure.
+replacement of HIMON, not a current v1.34 installation procedure.
 
-The matching OSI MS BASIC artifact is likewise historical. Current v1.32 flash
+The matching OSI MS BASIC artifact is likewise historical. Current v1.34 flash
 installation uses standalone STR8-N dense range payloads.
 
 ## Flash Window Mapping
@@ -224,7 +230,7 @@ session. HIMON retains the first failure, suppresses all later S1 writes, and
 continues consuming non-echoed input until a valid S9 or Ctrl-C. Accepted S1
 records from before the error remain in RAM.
 
-There is no user-facing sector erase/condense path in HIMON. STR8-N v1.32 owns
+There is no user-facing sector erase/condense path in HIMON. STR8-N v1.34 owns
 selected-bank erase, program, verify, and journal flows through its `I`
 transaction and standalone RAM maintenance tools.
 
@@ -241,8 +247,10 @@ $8000-$FFFF   flash
 Current RAM ownership:
 
 ```text
-$0000-$00AF   zero page user/free while running; STR8 I transiently owns $0090-$00A0
-$00B0-$00CA   reserved R-YORS/HIMON/THE/ASM ZP expansion
+$0000-$00AF   zero page user/free while running; STR8 I/L transient fields lie in $0090-$00A2
+$00B0-$00B3   shared FNV32 hash state
+$00B4-$00C6   reserved shared service expansion/scratch
+$00C7-$00CA   shared FNV32 multiply term
 $00CB-$00CC   CRC16 no-table state, low/high; allocated from high end downward
 $00CD-$00D9   flash helper workspace, active during flash operations
 $00DA-$00DC   reserved expansion bytes inside flash/extended ZP window
@@ -334,22 +342,23 @@ $7FC0-$7FDF   VIA
 $7FE0-$7FFF   FTDI VIA
 ```
 
-During destructive STR8 `B`, `0`, `1`, and `2` operations, STR8 owns the WCT
-at `$0200-$09FF` and the current AIR Run/Tray Bay `$4000-$4FFF` sector buffer
-used by those implemented paths. The current worker copy is exact-length inside
-the WCT, but normal HIMON/user code should treat the whole tray as volatile
-while STR8 is performing flash work. During `U`, STR8 also uses
-`$5000-$6FFF` so it can stage all three HIMON sectors before the first erase.
-The SSD is `$0A00-$19FF`; consolidating older high-RAM staging into that deck
-is future implementation work.
+During current STR8-N `I` operations, the resident owns the copied worker at
+`$0200-$0437`, the sector tray at `$0A00-$19FF`, and its recovery state.
+HIMON/user code must treat those phase-owned areas as volatile. RAM Bank
+Maintenance and top-update tools have their own documented staging ranges;
+consult the STR8-N manual before loading another tool. The former resident
+`B`/`U`/numbered copy commands and `$4000-$6FFF` staging descriptions belong
+to historical STR8 images.
 
 STR8 uses the RSC at `$7DE9-$7DFF` for bank/sector copy state, failure address
 reporting, startup flags, and update state. `J0`-`J3` use `$7DF2-$7DF5` for
 target bank, reset-vector low/high, and handoff status.
 
-During a foreground STR8 `I` recovery transaction, `$0090-$00A0` is a
-17-byte persistent installer frame. It survives RAM-worker calls because the
-worker owns only `$00CD-$00D6`. Outside `I`, the frame returns to the normal
+During a foreground STR8-N `I` transaction, the persistent installer fields
+occupy `$0090-$009C`, `$009E-$009F`, and `$00A1-$00A2` (17 bytes total).
+`$009D` is unused and `$00A0` is the separate `L` nonempty-data flag. The
+installer fields survive RAM-worker calls because the worker owns only
+`$00CD-$00D6`. Outside recovery, those cells return to the normal
 `$0000-$00AF` user/free policy.
 
 The published Bank Jump Record occupies the RSC tail:
@@ -367,10 +376,11 @@ when no valid target is available. Thus `D 7DFD 7DFF` reports the bank selected
 for the preceding successful STR8 handoff rather than the Bank 3 selection
 that is live after returning to HIMON.
 
-`$1A00-$1FFF` is free for user code and data in v1.32. HIMON cold start still
-clears it as part of the general RAM clear, but STR8-N, HIMON, ASM-F2, Bank
-Maintenance, and the maintained RAM tools do not reserve any byte in the
-range. The `$7C00-$7DBF` High Tool Overlay replaces the former low-RAM tool
+STR8-N v1.34 itself reserves no byte in `$1A00-$1FFF`, but HIMON's APMAN
+delegation owns `$1A00-$1AFF` as a command shadow while AP/APS/INSTALL is
+active. `$1B00-$1FFF` is free outside another phase owner. HIMON cold start
+clears both as part of general RAM clearing. The `$7C00-$7DBF` High Tool
+Overlay replaces the former low-RAM tool
 cards. It is volatile and single-owner. ASM may emit through `$7CFF`; every
 write at or crossing `$7D00` is rejected.
 
@@ -391,7 +401,7 @@ $00-$7F   user/free while running
 $80-$81   ASM current PC while ASM-F2 is active
 $82-$83   flash ASM wrapper command pointer while ASM-F2 is active
 $84-$AF   ASM core parser/emitter frame while ASM-F2 is active;
-          $90-$A0 may instead hold transient STR8 I installer recovery state
+          $90-$A2 also contains transient STR8 I/L state during recovery
 $B0-$B3   shared FNV32 hash state; volatile across hash/catalog services
 $B4-$C6   reserved shared service expansion/scratch
 $C7-$CA   shared FNV32 multiply term; volatile across hash/catalog services
@@ -456,20 +466,20 @@ Zero-page rule of thumb:
 
 ```text
 $00-$AF   user/free from HIMON's point of view, 176 bytes
-$B0-$CA   reserved future R-YORS workspace, 27 bytes; user code should not rely on it
+$B0-$CA   shared FNV state/term and reserved expansion, 27 bytes
 $CB-$CC   CRC16 no-table state, low/high; grows down from the high end
 $CD-$EF   shared low-level service scratch, 35 bytes; volatile across monitor/SYS/BIO calls
 $F0-$FF   HIMON command/parser scratch, 16 bytes; volatile across monitor commands
 ```
 
 User programs can use `$00-$AF` while running. Entering STR8 recovery permits
-STR8 to consume that user state; specifically, `I` owns `$90-$A0` until the
-transaction returns. `$B0-$FF` is reserved or volatile across
+STR8 to consume that user state; specifically, `I` uses the 17 fields listed
+above within `$90-$A2` until the transaction returns. `$B0-$FF` is reserved or volatile across
 monitor/fixed-entry services unless the called routine contract says
 otherwise. That leaves 80 bytes reserved-or-volatile above the user ZP line.
-The current live HIMON service/parser scratch is `$CD-$FF`; `$CB-$CC` is held
-for CRC16 state, and `$B0-$CA` is being held back for future pointer lanes and
-addressing-mode helpers.
+The live HIMON service/parser scratch includes `$CD-$FF`, FNV state at
+`$B0-$B3`, and the multiply term at `$C7-$CA`; `$CB-$CC` is held for CRC16
+state, with `$B4-$C6` reserved for shared expansion.
 
 There is no runtime zero-page allocator in HIMON. For native monitor code,
 allocation is static: add named `EQU` entries, keep them in this map, and treat
@@ -493,7 +503,7 @@ HIMON/himon-shared-eq.inc
 
 The standalone STR8-N image owns Bank 3's `$F000-$FFFF` top sector and hardware
 vectors. HIMON starts at `$C000`. The fixed directory remains `$FFB0-$FFEF`,
-and the unified worker is stored at `$FD50-$FFAF` and runs at `$0200-$045F`.
+and the unified worker is stored at `$FD78-$FFAF` and runs at `$0200-$0437`.
 
 The physical erase unit and protected STR8-N allocation are both 4K:
 
@@ -514,7 +524,7 @@ This split is enforced by the external manifest and R-YORS content lock.
 
 ## Future Partitioned Bank Planning
 
-The current V1.02 installer writes explicit 4K-sector ranges and does not expose
+The current v1.34 installer writes explicit 4K-sector ranges and does not expose
 resident backup/restore commands. A separate planning direction would treat
 banks 0 and 1 together as a 64K managed backup arena:
 

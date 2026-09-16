@@ -24,6 +24,21 @@ alternate description of the live board.
 The capability matrix wins when a dated plan, card, transcript, or story page
 shows an older command or image.
 
+## Release Packages
+
+Use the [current release shelf](../RELEASE/README.md) for STR8-N v1.34,
+HIMON `00.0915(2324)`, ASM-F2 `00.0915(2324)`, and the combined Bank-3
+`8-E` S19. The ZIPs include relevant operating/build references,
+applications, licensing notices, manifests, and verification tools. The
+[application guide](GUIDES/RELEASE_APPLICATIONS.md) records each included
+program's source form, loading path, and qualification limits.
+
+The restamped firmware is qualified by host regression and exact
+timestamp-only comparison with the reset-tested board. It has not been
+reflashed. The [release qualification record](../RELEASE/QUALIFICATION.json)
+keeps those identities distinct. Older `RELEASE/ARTIFACTS/` snapshots are
+historical and are not the current package source.
+
 ## Compact Authorities
 
 - [Quick Reference](GUIDES/REF.md)

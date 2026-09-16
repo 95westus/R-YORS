@@ -60,8 +60,8 @@ function Assert-Canonical([object]$Canonical, [object]$Target, [string]$Role) {
 
 $asm = Read-S19 (Join-Path $S19Dir 'asm-v1-flash-8000.s19')
 $himon = Read-S19 (Join-Path $S19Dir 'himon-rom-c000.s19')
-if ($asm.Memory.Count -ne 0x3D95) { Fail ('canonical ASM byte count is ${0:X4}, expected $3D95' -f $asm.Memory.Count) }
-if ($himon.Memory.Count -ne 0x2E72) { Fail ('canonical HIMON byte count is ${0:X4}, expected $2E72' -f $himon.Memory.Count) }
+if ($asm.Memory.Count -ne 0x3B83) { Fail ('canonical ASM byte count is ${0:X4}, expected $3B83' -f $asm.Memory.Count) }
+if ($himon.Memory.Count -ne 0x2DEA) { Fail ('canonical HIMON byte count is ${0:X4}, expected $2DEA' -f $himon.Memory.Count) }
 
 $himonTargets = @(
     'himon-c000.s19',
@@ -81,6 +81,12 @@ $asmTargets = @(
 $asmTargets += $full
 foreach ($target in $asmTargets) { Assert-Canonical $asm $target ('ASM ' + $target.Path) }
 
+$component = Read-S19 (Join-Path $S19Dir 'ryors-v1.2-asm-bank3-8-b.s19')
+if ($component.Memory.Count -ne 0x4000 -or $component.Start -ne 0xFFFF -or
+    ($component.Memory.Keys | Measure-Object -Minimum -Maximum).Minimum -ne 0x8000 -or
+    ($component.Memory.Keys | Measure-Object -Minimum -Maximum).Maximum -ne 0xBFFF) {
+    Fail 'ASM component must cover $8000-$BFFF with S9 $FFFF to retain the existing HIMON entry'
+}
 $dense = Read-S19 (Join-Path $S19Dir 'ryors-v1.2-himon-asm-bank3-8-e.s19')
 if ($dense.Memory.Count -ne 0x7000 -or $dense.Start -ne 0xC000) {
     Fail 'dense Bank-3 stream is not $8000-$EFFF with S9 $C000'

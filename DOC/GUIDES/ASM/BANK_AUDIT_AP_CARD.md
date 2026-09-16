@@ -1,5 +1,36 @@
 # BANKAUDIT Banked AP Utility
 
+## Current release workflow
+
+The HIMON `00.0915(2324)` release ships
+`APPLICATIONS/UTILITIES/bank-audit-2000.a`. Its named console import is
+resolved by HIMON when its AP is loaded. The older host `.asm`/direct S19
+pins an obsolete HIMON routine address and is not a current release product.
+Use the onboard source and package workflow:
+
+```text
+ASM NEW
+  send APPLICATIONS/UTILITIES/bank-audit-2000.a
+SEAL> PACKAGE BANKAUDIT 3000
+SEAL> .
+AP 3000 2000
+```
+
+With a provisioned APMAN carrier and a deliberately selected destination,
+`INSTALL 3000 B1` at `SEAL>` stores it persistently; later use
+`AP B1 BANKAUDIT`. Record the actual sector selected by APMAN. The historical
+ASM/package/install/reset/named-run lifecycle was accepted on 2026-08-26 in
+the [hardware log](../LOGS/HARDWARE_TEST_LOG.md); the September firmware
+release did not repeat this carrier test. See the [AP/OIL guide](../AP/AP_OIL_GUIDE.md)
+for prerequisites and [release applications](../RELEASE_APPLICATIONS.md) for
+the packaged file list.
+
+## Retained original board card
+
+The preparation status, host-body identity, paths, and sample sector addresses
+below are the original card. They are historical evidence; use the current
+workflow above rather than its old host-image or bootstrap instructions.
+
 Status: host-built and structurally checked. APMAN provides the simple
 bank-aware `INSTALL`; the complete board proof remains pending.
 

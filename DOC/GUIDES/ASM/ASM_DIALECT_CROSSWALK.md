@@ -1,7 +1,8 @@
 # ASM-F2 Hosted-Assembler Crosswalk
 
-Status: current for the repository and board-accepted ASM-F2
-`00.0902(1707)` build on 2026-09-02.
+Status: current for ASM-F2 release `00.0915(2324)`. The release is
+timestamp-only equivalent to board-qualified `00.0915(2243)`; its stamp has
+not been reflashed. The size optimizations preserve the language and AP ABI.
 The bounded-table observation below is also reproduced in the supplied board
 transcript from ASM-F2 `00.0821(0132)`.
 
@@ -128,7 +129,8 @@ two independently patched bytes and therefore cost two rows.
 
 The failure modes are deliberately different:
 
-- exhausting 128 forward-fixup rows is an assembly-time `ERR=$09 BAD FIX`;
+- exhausting 128 forward-fixup rows is an assembly-time `ERR FIXUP`
+  (numeric return status `$09`);
 - exceeding 64 relocation rows can leave ordinary fixed-address assembly
   valid, but marks the session seal-ineligible (`FLAGS=$09` for relocation
   overflow alone), so `SEAL` and `PACKAGE` must be rejected;
