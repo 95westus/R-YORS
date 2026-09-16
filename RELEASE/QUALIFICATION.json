@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "created": "2026-09-15T23:44:41.933217-05:00",
+  "release_stamp": "0915(2324)",
+  "basis": "Complete host regression plus exact timestamp-only equivalence to physical-reset-qualified COM4 firmware.",
+  "board_record": "DOC/GUIDES/LOGS/ASMF2_SIZE_2026-09-15.md",
+  "baseline_full_bank_sha256": "26134784D88C41F8EB7F2C303A68E616993A8424A62D005D73CF338632A27F96",
+  "board_versions": {
+    "STR8-N": "1.34",
+    "HIMON": "00.0915(2233)",
+    "ASM-F2": "00.0915(2243)"
+  },
+  "timestamp_fields": [
+    {
+      "address": "B8D8",
+      "before": "0915(2243)",
+      "after": "0915(2324)"
+    },
+    {
+      "address": "E9B9",
+      "before": "0915(2233)",
+      "after": "0915(2324)"
+    },
+    {
+      "address": "E9CF",
+      "before": "0915(2233)",
+      "after": "0915(2324)"
+    }
+  ],
+  "changed_byte_count": 9,
+  "combined_s19_sha256": "8D0D240C7CF908B6E626B8E24AC0B8E75040F2CB91FE4287C64755E64F420131",
+  "combined_payload_sha256": "5992A6EA6445141A5AC2B261605DCCB764947456CCE942A07DE46D2AF0BE71FD",
+  "host_checks": {
+    "asm-test": {
+      "file": "release-asm-test.log",
+      "sha256": "DE7EB17B3220D93B1422EA619C3094154D096B403A7E2367137DD32DBBCBEA34"
+    },
+    "board-s19-check": {
+      "file": "release-images.log",
+      "sha256": "D40D1FCC8AAF805B2553474A430CB49E7BF031CF56536CF1252E4D0E6D0905C2"
+    }
+  },
+  "scope": "The newly stamped combined file has not been reflashed. Its firmware differs from the qualified board solely in the three documented timestamp fields. Application qualification remains per application; no new Bank 0-2 or game board proof is claimed."
+}

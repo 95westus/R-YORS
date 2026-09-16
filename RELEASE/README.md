@@ -1,50 +1,43 @@
-﻿# Current R-YORS Release Files
+# Current release packages
 
-The root of this directory contains only board-facing update products.
-Supporting images, transient tools, and source carriers are under
-`ARTIFACTS/` so they cannot be mistaken for the normal board update.
+HIMON and ASM-F2 build identity: **00.0915(2324)**. STR8-N: **v1.34**.
 
-Complete 32K Bank-0/1/2 product:
+| Package | Contents |
+| --- | --- |
+| [STR8-N v1.34](str8n-v1.34-release.zip) | Canonical 4 KiB BIN, S19/update tools, Bank Maintenance `.a`, WDC-to-STR8 migration kit, guides, MIT license, manifests and verification |
+| [HIMON](himon-00.0915-2324.zip) | C-E S19 and BIN, combined 8-E S19, monitor docs, maintenance/LED/RTC apps, Life and MicroChess with their notices and available `.a` source |
+| [ASM-F2](asm-f2-00.0915-2324.zip) | 8-B S19 and BIN, combined 8-E S19, current reporter `.a`, assembler examples, terminal/bank tools, and separate validation fixtures |
 
-- ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19
-- ryors-v1.2-str8n-himon-asm-bank0-2-8-f.bin
+All three ZIPs include relevant operator, technical, installation, and
+application guides. Start with `MANUALS.md` in HIMON/ASM-F2, or
+`README.md` in STR8-N. Links between included manuals work
+offline; source and historical references outside the ZIP require the
+corresponding repository revision.
 
-Bank-3 sectors 8-E update, without protected sector F:
+The [combined 8-E S19](ryors-v1.2-himon-asm-bank3-8-e.s19) is also available
+directly. It covers exactly `$8000-$EFFF`, includes HIMON and ASM-F2, and
+ends with S9 `$C000`. Install using STR8-N `I / 3 / 8-E`; send only after
+`S19`, confirm COMMIT, require `OK`, then enter `C`. It excludes protected
+sector F. Read the package instructions before using a component image.
 
-- ryors-v1.2-himon-asm-bank3-8-e.s19
+The complete host regression and nine image identity comparisons passed.
+The combined image differs from the physical-reset-qualified COM4 firmware
+only in 9 bytes within its three timestamp fields.
+The newly stamped stream has not been reflashed. Application qualification
+is documented individually. See [QUALIFICATION.json](QUALIFICATION.json)
+for the exact baseline, comparisons, and limits.
 
-Guarded Bank-3 sector-F update, retaining a verified B1:F backup:
+The migration kit's 12 firmware/source/host-loader artifacts match the
+factory-board-tested kit; only documentation, metadata, and verification
+were refreshed. No WDC firmware, owner bank dumps, proprietary toolchain,
+BASIC, or Forth products are included in these ZIPs. Life carries its MIT
+notice/attribution; MicroChess carries its full upstream terms and credits.
 
-- str8n-v1.32-top-update-2000.s19
+Extract each ZIP and run its included verifier. HIMON/ASM-F2 use
+`python -B VERIFY.py`; STR8 uses its `VERIFY-PACKAGE.ps1`.
+[SHA256SUMS.txt](SHA256SUMS.txt) covers the current products and index files.
+[release-index.json](release-index.json) lists their lengths and hashes.
 
-Board-use artifacts:
-
-- ARTIFACTS/COMPONENT-IMAGES/apman-v1-bank2-8000.s19 - initial Bank-2
-  dense 4K bootstrap carrier for the APMAN manager
-- ARTIFACTS/COMPONENT-IMAGES/apman-v1-bank2-8000.bin - the same dense 4K
-  sector for programmer/readback use
-- ARTIFACTS/COMPONENT-IMAGES/apman-v1.ap - exact AP v2 APMAN envelope
-- ARTIFACTS/AP-STORE/ap-store-v1-chain-install-tool-package-4000.s19
-- ARTIFACTS/AP-STORE/ap-store-v1-slice6-catalog-tool-package-4000.s19
-- ARTIFACTS/SOURCES/str8n-v1.32-bank-maint-menu-2000.a - onboard `ASM NEW`
-  source for banked AP put, guarded directory rename, and directory reclaim
-- ARTIFACTS/COMPONENT-IMAGES/str8n-v1.32-bank-maint-menu-2000.s19 - direct
-  loader form of the same maintenance menu
-- ARTIFACTS/COMPONENT-IMAGES - component, diagnostic, and recovery images
-- ARTIFACTS/SOURCES - source snapshots and onboard sample sources
-- BOARD-CARDS/APMAN_V1_BOARD_TEST.md - exact destructive B2/D2 preparation,
-  candidate update, and first persistent carrier test
-- BOARD-CARDS/BANK_AUDIT_AP_CARD.md - BANKAUDIT utility reference
-- BOARD-CARDS/BANK_DUMP_AP_CARD.md - BANKDUMP install and inspection tests
-
-Archived artifacts:
-
-- ARTIFACTS/ARCHIVE/AP-STORE - superseded AP Store transit variants
-- ARTIFACTS/ARCHIVE/COMPONENT-IMAGES - superseded and proof/test component images,
-  including retained historical STR8-N images, `fnv1a-hbstr-6000.s19`,
-  the current console ABI test, and `rom-append-calc-b804.s19`
-- ARTIFACTS/ARCHIVE/SOURCES - historical STR8-N sources and AP v1/v2 proof
-  fixtures retained for regression
-
-The canonical source remains under `SRC/` and the adjacent `STR8-N`
-repository. `SHA256SUMS.txt` covers every file recursively.
+Older loose images and `ARTIFACTS/` are retained historical snapshots and
+are not members of these releases. They may contain old versions or obsolete
+instructions. Use the files linked above for this release.

@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "created": "2026-09-15T23:44:41.933217-05:00",
+  "firmware_stamp": "0915(2324)",
+  "products": {
+    "himon-00.0915-2324.zip": {
+      "bytes": 286543,
+      "sha256": "F9581A6D9CA661B31FDD45CB7E7F872771919D2A561146C2F9075F3EC57FF82D"
+    },
+    "asm-f2-00.0915-2324.zip": {
+      "bytes": 283059,
+      "sha256": "A9A4246BE0DD84C065DC360AA4A438E3688E4D759931080F40E3AB000195C0E0"
+    },
+    "str8n-v1.34-release.zip": {
+      "bytes": 278366,
+      "sha256": "0FB433150984380EB8307BE4FEB8FAFA89D669E5057B976EAA6674C521616AA4"
+    },
+    "ryors-v1.2-himon-asm-bank3-8-e.s19": {
+      "bytes": 68108,
+      "sha256": "8D0D240C7CF908B6E626B8E24AC0B8E75040F2CB91FE4287C64755E64F420131"
+    },
+    "QUALIFICATION.json": {
+      "bytes": 1651,
+      "sha256": "7E28A633CA3E313A3FD2F894025CD8B6B74495047E3D357D8743B6E097A044E5"
+    }
+  }
+}
