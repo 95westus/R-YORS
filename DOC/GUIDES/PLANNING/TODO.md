@@ -416,6 +416,19 @@ SPI SRAM WORK is not yet allocated.
   stays unchecked.
   SPI SRAM is not installed; defer SPI support and
   WORK allocation until the operator confirms installation.
+- [ ] Pursue the agreed AP dependency execution direction: **load and link
+  dependencies into RAM first**, keeping Bank 3 selected during execution.
+  Providers stored in eligible B0-B2 need code/metadata, not replicated
+  bank-switching support. Freeze module identity, dependency closure/cycles,
+  ambiguity, RAM allocation/lifetime, sharing and failure cleanup before
+  implementation; require size, host and board qualification. Today's
+  single-AP load plus Bank-3 imports does not implement this dependency loader.
+  See [agreed execution direction](../AP/AP_FNV_CAPABILITIES.md#agreed-execution-direction).
+- [ ] Later, consider **shared-RAM call gates** for execution in banked ROM.
+  This is optional after RAM dependency loading, not its prerequisite. Require
+  an explicit nested-call/return ABI, bank restoration, register/result rules,
+  interrupt/NMI safety and recovery proof; no support-code replication in B0-B2
+  is intended. Do not treat ordinary direct cross-bank JSR as supported.
 - [ ] After the scoped-search proof, implement only a separately frozen bridge
   to the R-YORS II Dynamic FNV Provider Registry. Its proposal lives in the
   sibling `R-YORS-II` repository at

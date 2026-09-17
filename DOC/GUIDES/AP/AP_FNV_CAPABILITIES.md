@@ -137,6 +137,32 @@ tray and 33 bytes left in its carrier; the matching resident HIMON integration
 has very little ROM margin. New features need size measurements and may require
 factoring or a new layout, not simply more code in the existing overlay.
 
+## Agreed execution direction
+
+The operator selected this sequence after reviewing the current AP/FNV work:
+
+1. **Load and link dependencies into RAM first.** Discover an application's
+   dependencies stored in eligible B0-B2 carriers, allocate non-overlapping
+   RAM for their bodies, relocate them and bind imports to their RAM exports
+   or existing Bank-3 services. Execute with Bank 3 selected. Storage banks
+   need provider code and metadata, not resident bank-switching support code.
+   This extends today's single-AP load plus Bank-3 import linking; it is not
+   implemented yet. Before implementation, freeze module identity, dependency
+   closure/cycle handling, ambiguity rules, RAM allocation/lifetime, shared
+   dependencies and failure cleanup, then qualify host and board behavior.
+2. **Possibly add RAM call gates later.** For providers that need to execute
+   in banked ROM, a shared-RAM gate could select the target bank, call it and
+   restore the caller's bank before returning. No replicated support code in
+   B0-B2 is intended, but participating routines must follow the call-gate ABI.
+   This is an optional enhancement, not a prerequisite for step 1. Freeze
+   nested-call state, registers/results, return edges, interrupt/NMI behavior
+   and recovery before implementation or hardware acceptance.
+
+This execution strategy does not itself approve generation-aware activation,
+hot replacement or persistent parent/child menus; those retain their separate
+contracts and gates. It records a future goal, not authorization to implement
+or flash either mechanism now.
+
 ## Evidence and maintenance
 
 - [Current AM03 integration and sizes](AM03_RESIDENT_INTEGRATION_2026-09-16.md)
