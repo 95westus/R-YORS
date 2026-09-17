@@ -6,6 +6,28 @@ Review this checklist before starting any ASM feature implementation. An item
 stays unchecked until its source, regression tests, documentation, resident
 size measurement, and required hardware proof are complete.
 
+### Deferred: ASMF2 FNV/HREC source emission
+
+- [ ] Decide whether ASMF2 should provide a four-byte `FNV name` primitive, a
+  fixed-header `HREC name,K` directive, both, or neither. The intended use is
+  to derive the canonical case-folded FNV-1a hash from source spelling instead
+  of hand-entering `hash0..hash3`. Do not implement syntax yet.
+- [ ] Keep a future assembler feature independent of the current HIMON `K`
+  payload variants. `K` is a record contract selector and new values may add
+  different payload fields. A fixed-header form may emit only
+  `'F','N',('V'|$80),hash0..hash3,K`; ordinary `DB`/`DW` source can describe
+  the payload so a new `K` does not require an ASMF2 change.
+- [ ] Settle record and entry-label placement before choosing shorthand.
+  Explicit source such as `HREC PROC,$05` / `DW PROC,TEXT` / `PROC:` permits
+  the normal forward-`DW` fixup path and needs neither a second assembly pass
+  nor forward source lookahead. A compact `PROC: FNV ...` procedure-head form
+  would need exceptional delayed/calculated label binding and must not silently
+  make `PROC` point at record bytes instead of executable code.
+- [ ] Preserve the current record distinctions in any later proposal:
+  legacy inline executable `$01`, confirming pointer/extra `$03`, and
+  non-confirming pointer/text `$05`. Text/extra is current HBSTR display
+  metadata, not an alias or an argument passed to the called routine.
+
 ### Accepted: ASM-F2 size reduction
 
 - [x] Accept the reduced ASM-F2 image on hardware. Initialization cleanup,

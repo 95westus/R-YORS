@@ -616,6 +616,19 @@ A [addr] [label[:]] MMM [operand] .
   and text/metadata. Future AP package/catalog kind should come from explicit
   package metadata, with the spelling still unsettled. Until that exists,
   installed AP packages should default to opaque non-executable objects.
+- ASMF2 source support for emitting resident FNV/HREC records is deferred. The
+  unsettled choices are a four-byte `FNV name` hash primitive, a fixed-header
+  `HREC name,K` directive, both, or no new directive. ASMF2 must not embed a
+  closed table of `K` payload layouts: future `K` contracts may add or reorder
+  payload fields. A fixed-header directive could stop after
+  `'F','N',('V'|$80),hash0..hash3,K`, leaving payload bytes/words explicit.
+  The explicit `HREC PROC,$05` / `DW PROC,TEXT` / `PROC:` shape works with the
+  existing forward-word fixup path and requires neither a second pass nor
+  source lookahead. A compact procedure-head spelling remains undecided because
+  it would require special label-placement semantics to keep the public entry
+  label on the first instruction rather than on the record. Do not implement
+  any of these spellings until that placement and compatibility decision is
+  made.
 - ASM v1 RAM reference rows carry line number, referenced symbol hash/text, use
   mode, emitted site/current PC, resolution result, and local symbol slot when
   applicable. They drive the basic session report and xref view.
