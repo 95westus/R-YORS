@@ -49,7 +49,7 @@ Require-Text $source 'MICROCHESS_IMP_WRITE_HEX:\s+DW\s+\$FFFF' 'published SYS he
 Require-Text $source 'BOARD\s+EQU\s+\$50' 'wrap-sensitive board zero-page base changed'
 Require-Text $source 'COUNT\s+EQU\s+\$DE\s+BCAP2\s+EQU\s+\$DE' 'counter aliases changed'
 Require-Text $source 'CALLER_SP\s+EQU\s+\$1B00' 'AP caller stack slot changed'
-Require-Text $source 'DONE:\s+LDX\s+CALLER_SP\s+TXS\s+LDA\s+#\$AC\s+SEC\s+RTS' 'AP return sequence changed'
+Require-Text $source 'DONE:\s+JSR\s+POUT9\s+; finish the ''\?'' input line\s+LDX\s+CALLER_SP\s+TXS\s+LDA\s+#\$AC\s+SEC\s+RTS' 'AP return sequence changed'
 Require-Text $source 'CHESS:\s+CLD\s+LDX\s+CALLER_SP\s+TXS\s+; preserve AP return frame\s+TXA\s+SEC\s+SBC\s+#\$37\s+; original \$FF/\$C8 separation\s+STA\s+SP2' 'per-command two-stack reset changed'
 Require-Text $source 'STY\s+BOARD,X\s+; FROM' 'original zero-page indexed board move changed'
 

@@ -179,7 +179,8 @@ NOGO		CMP	#$0D            ; [Enter]
 NOMV		CMP     #'Q'            ; [Q] ***Added to allow game exit***
 		BEQ     DONE		; quit the game, exit back to system.
 		JMP	INPUT		; process move
-DONE:                   LDX             CALLER_SP
+DONE:                   JSR             POUT9          ; finish the '?' input line
+                        LDX             CALLER_SP
                         TXS
                         LDA             #$AC
                         SEC

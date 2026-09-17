@@ -1,8 +1,10 @@
 # Microchess AP
 
-Release status: the help-enabled `$06A6` AP is included with HIMON
+Release status: the board-proven help-enabled `$06A6` AP is included with HIMON
 `00.0915(2324)`, with source, onboard `.a`, and its complete redistribution
-notice. Packaging does not install it or requalify a board carrier.
+notice. The current host-qualified `$06A9` source adds CR/LF when `Q` leaves
+the `?` prompt; it has not replaced or requalified that board carrier.
+Packaging does not install it or requalify a board carrier.
 
 The retained 2026-09-10 board proof installed the build at `B1:9000` and
 qualified onboard assembly, AP-v2 packaging, RAM and carrier
@@ -83,9 +85,9 @@ The target produces:
 Current measured identity:
 
 ```text
-engine/BODY     $2000-$2625, $0625 bytes (1573)
-AP envelope     $06A6 bytes (1702)
-BODY FNV-1a-32  $011A81B8
+engine/BODY     $2000-$2628, $0628 bytes (1576)
+AP envelope     $06A9 bytes (1705)
+BODY FNV-1a-32  $232B8CED
 entry offset    $0000
 relocations     3 ABS16 import rows
 imports         BIO_FTDI_READ_BYTE_BLOCK, BIO_FTDI_WRITE_BYTE_BLOCK,
@@ -145,11 +147,11 @@ Require the success lines:
 
 ```text
 SEAL OK
-PKG OK @=$3000 L=$06A6
+PKG OK @=$3000 L=$06A9
 ASM BYE
 ```
 
-`PACKAGE` leaves the complete envelope at `$3000-$35E5`. Do not use `G 2000`:
+`PACKAGE` leaves the complete envelope at `$3000-$35E8`. Do not use `G 2000`:
 the BODY still contains three unresolved import words. Do not load another file
 or create another package before running it, because `$3000` is a transient RAM
 buffer.
@@ -181,7 +183,8 @@ Q
 `C` initializes the board, the first `P` plays the canned `$13->$33` move,
 `6242` plus Return applies the human move, and the second `P` performs a real
 off-book search. `Q` must return to HIMON with a line showing `A=AC` and carry
-set. Retain that terminal transcript for physical-board acceptance.
+set, with its `>` prompt beginning on a new line. Retain that terminal
+transcript for physical-board acceptance.
 
 ## Write MicroChess To A Flash Carrier
 
@@ -197,9 +200,9 @@ envelope and ask APMAN to install it in the first suitable Bank 1 sector:
 SEAL> SEAL
 SEAL OK
 SEAL> PACKAGE MICROCHESS $3000
-PKG OK @=$3000 L=$06A6
+PKG OK @=$3000 L=$06A9
 SEAL> INSTALL 3000 B1
-INST B1 hhhh L=06A6
+INST B1 hhhh L=06A9
 SEAL> .
 ASM BYE
 >
@@ -216,7 +219,7 @@ Confirm discovery and execute the flash copy by its AP entry name:
 
 ```text
 >APS B1 MICROCHESS
-APS B1 hhhh APC MICROCHESS L=06A6 @2000
+APS B1 hhhh APC MICROCHESS L=06A9 @2000
 >AP B1 MICROCHESS
 GO 2000
 ```
@@ -229,18 +232,40 @@ AP LOAD B1 9000 -> 2000
 GO 2000
 ```
 
-`MICROCHESS` is a resident K05 EXEC+TEXT record with FNV-1a-32 `$34EBE8D5`.
-Its 66-byte implementation consists of the record/pointers, catalog text, a
-launcher that copies the exact NUL-terminated command `AP B1 MICROCHESS` into
-HIMON's command page, and a tail entry into the ordinary `AP` parser. It is
-deliberately pinned to Bank 1 and inherits APMAN's normal missing, malformed,
-import, and load failures; it is not a second package loader or registry.
-Bare `#` lists `MICROCHESS`, while `# MICROCHESS` resolves its exact entry.
-The optimized release HIMON end is `$EDEA`, leaving `$0216` (534) bytes
-below `$F000`. Its AP launcher contract is unchanged.
+There are two ways that bare `MICROCHESS` can acquire this behavior. The
+current image finds its resident K05 EXEC+TEXT record first. That 66-byte
+record/pointers/text/launcher combination copies the exact NUL-terminated
+command `AP B1 MICROCHESS` into HIMON's command page and tail-enters the
+ordinary `AP` parser. It is deliberately pinned to Bank 1 and inherits APMAN's
+normal missing, malformed, import, and load failures; it is not a second
+package loader or registry. Bare `#` lists this resident record and
+`# MICROCHESS` resolves its exact entry. The optimized release HIMON end is
+`$EDEA`, leaving `$0216` (534) bytes below `$F000`.
 
-The current alias remains deliberately dedicated. Before adding another AP
-command alias, use the proposed shared K05 launcher contract in the
+The resident alias is optional for execution. If that record is absent, the
+normal resident-command miss path uses the already-computed FNV identity and
+asks APMAN to find a unique, fully validated AP export of the same name in the
+policy-enabled banks. `PACKAGE MICROCHESS ...` creates that export identity in
+the AP envelope; install time does not need to create or modify a resident FNV
+record. With scoped search enabled, bare `MICROCHESS` can therefore find,
+load, link, and run the carrier without spelling `AP B1 MICROCHESS`.
+
+The choices have different operational properties:
+
+| Form | Advantages | Costs or limitations |
+| --- | --- | --- |
+| Resident `MICROCHESS` alias | Appears in bare `#`; `# MICROCHESS` shows its resident entry; deterministic Bank 1 selection; resident lookup wins before external search. | Consumes 66 HIMON bytes; is application-specific; masks the automatic command-miss search; fails if the package moves out of Bank 1. |
+| Automatic bare-name AP search | Needs no per-application HIMON record; follows the configured eligible-bank policy; derives identity from the AP export already made by `PACKAGE`; rejects zero, duplicate, malformed, or ineligible matches. | Does not add the external name to the resident `#` catalog; requires the compatible HIMON/APMAN pair and enabled scoped policy; cannot select one bank when duplicate names exist. |
+| Explicit `AP Bn name` | Selects the bank deliberately; remains useful for diagnosis, recovery, duplicate-name disambiguation, destination override, and `AP L` load-only operation. | More typing and requires the operator to know the intended bank. |
+
+Resident records remain authoritative. Automatic AP lookup is only the
+top-level monitor command-miss fallback; it does not make external AP exports
+available to resident-only `THE_JOIN_*` calls or typed AP import resolution.
+
+The current alias remains deliberately dedicated. A second resident alias is
+only justified when resident `#` visibility or fixed-bank selection is a
+requirement; automatic bare-name AP search otherwise avoids an alias entirely.
+Before adding another resident AP command alias, use the proposed shared K05 launcher contract in the
 [HIMON map](../HIMON/HIMON_MAP.md#proposed-shared-fnv-ap-alias-launcher).
 That design keeps names in `#`, leaves `?` as built-in help, and reduces each
 generalized additional alias to a 12-byte record, one bank byte, and one copy

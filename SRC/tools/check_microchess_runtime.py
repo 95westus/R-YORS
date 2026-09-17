@@ -113,6 +113,8 @@ def main() -> int:
         raise AssertionError("help did not render the copyright attribution")
     if "R-YORS port AI-assisted with OpenAI Codex" not in rendered:
         raise AssertionError("help did not render the AI-assistance disclosure")
+    if not rendered.endswith("\r\n"):
+        raise AssertionError("Q did not finish the MicroChess prompt line")
     if rendered.count("00 01 02 03 04 05 06 07") < 3:
         raise AssertionError("board was not rendered before each command")
     if memory[0x005F] != 0x33:

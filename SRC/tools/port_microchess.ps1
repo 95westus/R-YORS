@@ -70,7 +70,8 @@ MICROCHESS:             TSX
 '@ })
 $body = $body -replace '(?m)^\s*JSR\s+Init_6551\s*$', ''
 $body = $body -replace '(?m)^DONE\s+JMP\s+\$FF00.*$', @'
-DONE:                   LDX             CALLER_SP
+DONE:                   JSR             POUT9          ; finish the '?' input line
+                        LDX             CALLER_SP
                         TXS
                         LDA             #$AC
                         SEC

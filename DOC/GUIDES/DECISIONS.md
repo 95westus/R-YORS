@@ -487,7 +487,7 @@ start +count    count is the number of bytes
   tooling and public routine identity.
 - Existing `hash0..3` fields store FNV-1a low byte through high byte.
 - Words and longs are little-endian: low byte first.
-- Accepted, not yet implemented: HIMON's first scoped external-name resolver
+- Implemented and board-qualified: HIMON's first scoped external-name resolver
   uses Bank-3 `$FFF2` as a persistent B0-B2 eligibility byte and a separate RAM
   request card for one lookup. `$FFF2=$FF` or an invalid policy signature means
   policy absent and disables automatic external search; it does not fall back
