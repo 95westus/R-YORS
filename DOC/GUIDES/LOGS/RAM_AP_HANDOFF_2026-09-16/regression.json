@@ -1,0 +1,6 @@
+{
+  "command": "make -C SRC asm-test HIMON_VISIBLE_STAMP='0915(2324)'",
+  "result": "PASS",
+  "exit_code": 0,
+  "safe_handoff_cases": 11
+}

@@ -1,0 +1,7 @@
+{
+  "result": "PASS",
+  "restored": "B2:8-F accepted baseline with AM02 at B2:8",
+  "am02_sector_sha256": "0b5fe1df0b300593aef1ebcbdcc521df6aece1ce62118539b0af74d2afa08c58",
+  "bank2_sha256": "0b2aa7566a6fbcea0263f6c02fbcab301b7310ac445698c1a9be9752c64456a6",
+  "top_after_sha256": "96d9d707d6270d2158ed93583bceab848c5899fd75b4566564287c3976d9811f"
+}

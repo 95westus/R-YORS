@@ -1,4 +1,4 @@
-"""Linked RAM AP + bank uniqueness proof; pinned private HIMON/AM02 helpers."""
+"""Linked RAM AP + bank uniqueness proof using current private helpers."""
 import argparse,json,hashlib,subprocess
 from pathlib import Path
 from audit_himon_ap_contracts import ROOT,Machine,fnv,word,import_record
@@ -20,7 +20,7 @@ def main():
   (folder/'build.log').write_text('\n'.join(logs));assert r.returncode==0,(cmd,r.stdout,r.stderr)
  code=srecord(folder/'fnv-ram-ap-2000.s19');sy=symbols(folder/'fnv-ram-ap-2000.map')
  assert min(code)==0x2000 and max(code)<0x2600 and sy['RAM_AP_END']==max(code)+1
- top=(ROOT.parent/'STR8-N/BUILD/v1.34/bin/str8n-v1.34-bank3-f000-ffff.bin').read_bytes()
+ top=(ROOT.parent/'STR8-N/BUILD/v1.35/bin/str8n-v1.35-bank3-f000-ffff.bin').read_bytes()
  cases=[]
  def check(name,ram=(),banks=(),request=7,windows=255,enable=1,ramwindows=8,policy=0xA6,fmt=1,namelen=7,nameptr=0x2F00,
            status=0xD1,count=0,source=0,bank=0,window=0,address=0,offset=0,bodylen=0,fail_restore=False,mutate_unique=False):
@@ -38,11 +38,11 @@ def main():
   class BoundedMemory(parent):
    def __getitem__(self,a):
     if isinstance(a,int):
-     assert not 0x4000<=a<0x7000,('outside provider window',name,hex(a))
+     assert not 0x4000<=a<0x6C00,('outside provider window',name,hex(a))
      if 0x7F00<=a<0x8000:assert a in (0x7FA0,0x7FEC),('unexpected I/O read',hex(a))
     return super().__getitem__(a)
    def __setitem__(self,a,v):
-    assert not 0x3000<=a<0x7000,('provider/outside workspace write',name,hex(a))
+    assert not 0x3000<=a<0x6C00,('provider/outside workspace write',name,hex(a))
     if 0x7F00<=a<0x8000:assert a in (0x7FA0,0x7FEC),('unexpected I/O write',hex(a))
     return super().__setitem__(a,v)
   m.m.__class__=BoundedMemory

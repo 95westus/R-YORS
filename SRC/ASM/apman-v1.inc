@@ -1,13 +1,13 @@
 ; ----------------------------------------------------------------------------
 ; APMAN V1 request/result card shared by HIMON, ASM-F2, and the carrier.
 ;
-; APMAN is a fixed-load AP body at $7000. HIMON owns discovery/loading; the
+; APMAN is a fixed-load AP body at $6C00. HIMON owns discovery/loading; the
 ; manager owns carrier lookup, load/execute, status, and sector installation.
 ; The card is foreground scratch, not persistent media and not an ABI promise
 ; to STR8-N.
 ; ----------------------------------------------------------------------------
 
-APMAN_ENTRY                EQU             $7000
+APMAN_ENTRY                EQU             $6C00
 APMAN_LIMIT_EXCLUSIVE      EQU             $7C00
 
 APMAN_CARD_BASE            EQU             $7C60

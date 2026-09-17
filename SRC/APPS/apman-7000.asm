@@ -1,5 +1,5 @@
 ; ---------------------------------------------------------------------------
-; APMAN V1 -- banked AP carrier manager, fixed at $7000.
+; APMAN V1 AM03 -- banked AP carrier manager, fixed at $6C00.
 ;
 ; This first carrier manager deliberately keeps the media model small:
 ; exactly one complete AP v2 envelope at a 4K sector base. It understands the
@@ -45,6 +45,7 @@ HIM_AP_BODY_LEN_LO      EQU             $7E39
 HIM_AP_BODY_LEN_HI      EQU             $7E3A
 
 HIM_AP_OP_PARSE         EQU             $00
+HIM_AP_OP_LOAD_SAFE     EQU             ASM_ABI_AP_OP_LOAD
 HIM_AP_OP_LOAD          EQU             ASM_ABI_AP_OP_TAKEOVER
 
 FNV_HASH0               EQU             $B0
@@ -89,12 +90,33 @@ FLAG_LOAD_ONLY          EQU             $01
 FLAG_SELECTOR_ADDR      EQU             $02
 FLAG_DUMP               EQU             $04
 
+; AM03 combined-discovery state. This foreground page is retired before child
+; entry or failure return; applications own it again after the transition.
+AM03_STATE              EQU             $1B00
+AM03_RAM_COUNT          EQU             AM03_STATE+$00
+AM03_RAM_ENABLE_SAVE    EQU             AM03_STATE+$01
+AM03_RAM_CURSOR_LO      EQU             AM03_STATE+$02
+AM03_RAM_CURSOR_HI      EQU             AM03_STATE+$03
+AM03_RAM_FIRST_LO       EQU             AM03_STATE+$04
+AM03_RAM_FIRST_HI       EQU             AM03_STATE+$05
+AM03_BANK_STATUS        EQU             AM03_STATE+$06
+AM03_BANK_OK            EQU             AM03_STATE+$07
+AM03_SAVED_RESULT       EQU             AM03_STATE+$10
+AM03_SAVED_ENTRY        EQU             AM03_STATE+$16
+AM03_SAVED_BODY         EQU             AM03_STATE+$18
+AM03_STATE_END          EQU             AM03_STATE+$20
+
+FNV_ENTRY_LO            EQU             FNV_SCOPE_BASE+$18
+FNV_ENTRY_HI            EQU             FNV_SCOPE_BASE+$19
+FNV_BODY_LO             EQU             FNV_SCOPE_BASE+$1A
+FNV_BODY_HI             EQU             FNV_SCOPE_BASE+$1B
+
                         CODE
 
 ; The four bytes following the entry branch are the bootstrap identity. The
 ; resident scanner checks them only after the AP v2 envelope validates.
 APMAN:                  BRA             APMAN_DISPATCH
-                        DB              'A','M','0','2'
+                        DB              'A','M','0','3'
 
 APMAN_DISPATCH:         STZ             ASM_ABI_SESSION_RESUME
                         STZ             APMAN_STATUS
@@ -129,14 +151,14 @@ APMAN_SCOPE_COMMAND:
                         LDY             #$00
                         LDA             (PTRL),Y
                         BNE             APMAN_DISPATCH_BAD
-                        LDA             PTRL
-                        STA             TAIL_LO
-                        LDA             PTRH
-                        STA             TAIL_HI
-                        JSR             APMAN_FIND_REQUEST
-                        BCC             APMAN_SCOPE_RETURN
-                        JMP             APMAN_AP_HAVE
-APMAN_SCOPE_RETURN:     RTS
+; Automatic resident misses always include the one frozen RAM provider window.
+; Persistent bank policy remains independent and is intersected by resident FIND.
+                        LDA             #$01
+                        STA             FNV_RAM_ENABLE
+                        STA             FNV_FORMAT
+                        LDA             #$08
+                        STA             FNV_RAM_WINDOWS
+                        JMP             AM03_SCOPE_HANDOFF
 
 ; ---------------------------------------------------------------------------
 ; AP Bn name|s000 [destination]
@@ -505,20 +527,22 @@ APMAN_FIND_NAMED:      LDX             BANK
                         STZ             FNV_RAM_ENABLE
                         LDA             #FNV_FORMAT_AP_EXPORT
                         STA             FNV_FORMAT
-APMAN_FIND_REQUEST:     LDA             #<APMAN_SCOPE_CANDIDATE
+APMAN_FIND_REQUEST:     JSR             APMAN_FIND_REQUEST_RAW
+                        BCS             APMAN_FIND_RETURN
+                        JMP             APMAN_FAIL_A
+APMAN_FIND_REQUEST_RAW: LDA             #<APMAN_SCOPE_CANDIDATE
                         STA             FNV_VALIDATE_LO
                         LDA             #>APMAN_SCOPE_CANDIDATE
                         STA             FNV_VALIDATE_HI
                         LDA             #FNV_SCOPE_FIND_OP
                         STA             HIM_AP_OP
-                        JSR             APMAN_CALL_AP
-                        BCS             APMAN_FIND_RETURN
-                        JMP             APMAN_FAIL_A
+                        JMP             APMAN_CALL_AP
 APMAN_FIND_RETURN:      RTS
 APMAN_BANK_BITS:        DB              $01,$02,$04
 
 APMAN_STAGE_VALIDATE:  JSR             APMAN_STAGE_RAW
                         BCC             APMAN_STAGE_VALID_FAIL
+APMAN_VALIDATE_STAGED:
                         STZ             HIM_AP_SRC_LO
                         LDA             #>STAGE_BASE
                         STA             HIM_AP_SRC_HI
@@ -533,6 +557,473 @@ APMAN_SCOPE_CANDIDATE: JSR             APMAN_LOCATION_PROTECTED
                         BCC             APMAN_STAGE_VALID_FAIL
                         JMP             APMAN_FIND_ENTRY_ROW
 APMAN_SCOPE_INVALID:    CLC
+                        RTS
+
+; ---------------------------------------------------------------------------
+; AM03 combined RAM/banked discovery and guarded handoff.
+; ---------------------------------------------------------------------------
+AM03_FIND_COMBINED:     JSR             AM03_CLEAR_RESULT
+                        STZ             AM03_RAM_COUNT
+                        STZ             AM03_BANK_OK
+                        LDA             FNV_FORMAT
+                        CMP             #FNV_FORMAT_AP_EXPORT
+                        BEQ             AM03_FIND_FORMAT_OK
+                        JMP             AM03_FIND_BAD
+AM03_FIND_FORMAT_OK:
+                        LDA             FNV_NAME_HI
+                        CMP             #>CMD_BUF
+                        BEQ             AM03_FIND_NAME_PAGE_OK
+                        JMP             AM03_FIND_BAD
+AM03_FIND_NAME_PAGE_OK:
+                        LDA             FNV_NAME_LEN
+                        BNE             AM03_FIND_NAME_NONZERO
+                        JMP             AM03_FIND_BAD
+AM03_FIND_NAME_NONZERO:
+                        CMP             #$20
+                        BCC             AM03_FIND_NAME_OK
+                        JMP             AM03_FIND_BAD
+AM03_FIND_NAME_OK:
+                        LDA             FNV_RAM_ENABLE
+                        STA             AM03_RAM_ENABLE_SAVE
+                        BEQ             AM03_FIND_BANKS
+                        LDA             FNV_RAM_WINDOWS
+                        CMP             #$08
+                        BEQ             AM03_FIND_RAM_REQUEST_OK
+                        JMP             AM03_FIND_BAD
+AM03_FIND_RAM_REQUEST_OK:
+                        STZ             AM03_RAM_CURSOR_LO
+                        LDA             #$30
+                        STA             AM03_RAM_CURSOR_HI
+AM03_FIND_RAM_LOOP:     JSR             AM03_RAM_CANDIDATE
+                        BCC             AM03_FIND_RAM_NEXT
+                        LDA             AM03_RAM_COUNT
+                        CMP             #$02
+                        BCS             AM03_FIND_RAM_NEXT
+                        INC             AM03_RAM_COUNT
+                        CMP             #$00
+                        BNE             AM03_FIND_RAM_NEXT
+                        LDA             AM03_RAM_CURSOR_LO
+                        STA             AM03_RAM_FIRST_LO
+                        LDA             AM03_RAM_CURSOR_HI
+                        STA             AM03_RAM_FIRST_HI
+AM03_FIND_RAM_NEXT:     INC             AM03_RAM_CURSOR_LO
+                        BNE             AM03_FIND_RAM_BOUND
+                        INC             AM03_RAM_CURSOR_HI
+AM03_FIND_RAM_BOUND:    LDA             AM03_RAM_CURSOR_HI
+                        CMP             #$3F
+                        BCC             AM03_FIND_RAM_LOOP
+                        LDA             AM03_RAM_CURSOR_LO
+                        CMP             #$FC
+                        BCC             AM03_FIND_RAM_LOOP
+AM03_FIND_BANKS:        STZ             FNV_RAM_ENABLE
+                        JSR             APMAN_FIND_REQUEST_RAW
+                        STA             AM03_BANK_STATUS
+                        BCS             AM03_FIND_BANK_OK
+                        JMP             AM03_FIND_BANK_FAILED
+AM03_FIND_BANK_OK:
+                        LDA             #$01
+                        STA             AM03_BANK_OK
+AM03_FIND_BANK_RESTORE: LDA             AM03_RAM_ENABLE_SAVE
+                        STA             FNV_RAM_ENABLE
+                        LDA             AM03_BANK_OK
+                        BNE             AM03_FIND_COMBINE
+                        LDA             AM03_BANK_STATUS
+                        CMP             #APMAN_STATUS_DUPLICATE
+                        BNE             AM03_FIND_NOT_DUPLICATE
+                        JMP             AM03_FIND_DUPLICATE
+AM03_FIND_NOT_DUPLICATE:
+                        CMP             #APMAN_STATUS_NOT_FOUND
+                        BEQ             AM03_FIND_BANK_MISS_STATUS
+                        JMP             AM03_FIND_FAIL_A
+AM03_FIND_BANK_MISS_STATUS:
+; A failed bank unique revalidation is not an empty bank scope.
+                        LDA             FNV_MATCH_COUNT
+                        BEQ             AM03_FIND_COMBINE
+                        JMP             AM03_FIND_MISS
+AM03_FIND_COMBINE:      LDA             FNV_MATCH_COUNT
+                        CLC
+                        ADC             AM03_RAM_COUNT
+                        BNE             AM03_FIND_HAVE_COUNT
+                        JMP             AM03_FIND_MISS
+AM03_FIND_HAVE_COUNT:
+                        CMP             #$02
+                        BCC             AM03_FIND_UNIQUE_COUNT
+                        JMP             AM03_FIND_DUPLICATE
+AM03_FIND_UNIQUE_COUNT:
+                        LDA             AM03_RAM_COUNT
+                        BEQ             AM03_FIND_BANK_RESULT
+                        LDA             AM03_RAM_FIRST_LO
+                        STA             AM03_RAM_CURSOR_LO
+                        LDA             AM03_RAM_FIRST_HI
+                        STA             AM03_RAM_CURSOR_HI
+                        JSR             AM03_RAM_CANDIDATE
+                        BCC             AM03_FIND_MISS
+                        LDA             #$01
+                        STA             FNV_FOUND_SOURCE
+                        LDA             #$FF
+                        STA             FNV_FOUND_BANK
+                        LDA             #$03
+                        STA             FNV_FOUND_WINDOW
+                        LDA             AM03_RAM_FIRST_LO
+                        STA             FNV_FOUND_ADDR_LO
+                        LDA             AM03_RAM_FIRST_HI
+                        STA             FNV_FOUND_ADDR_HI
+                        BRA             AM03_FIND_METADATA
+AM03_FIND_BANK_RESULT:  LDA             AM03_BANK_OK
+                        BEQ             AM03_FIND_MISS
+; HIM_FNV_FIND continues through the requested scope after its unique match.
+; Later candidates may therefore replace STAGE_BASE, ROW and the parser facts.
+; Re-stage the recorded carrier before publishing metadata or loading it.
+                        LDA             FNV_FOUND_BANK
+                        STA             BANK
+                        LDA             FNV_FOUND_WINDOW
+                        STA             SECTOR
+                        JSR             APMAN_STAGE_VALIDATE
+                        BCC             AM03_FIND_MISS
+                        JSR             APMAN_FIND_ENTRY_ROW
+                        BCC             AM03_FIND_MISS
+                        JSR             AM03_MATCH_NAME
+                        BCC             AM03_FIND_MISS
+                        LDA             #$02
+                        STA             FNV_FOUND_SOURCE
+                        STZ             FNV_FOUND_ADDR_LO
+                        LDA             FNV_FOUND_WINDOW
+                        STA             FNV_FOUND_ADDR_HI
+AM03_FIND_METADATA:     LDA             #$01
+                        STA             FNV_MATCH_COUNT
+                        LDY             #$01
+                        LDA             (ROW_LO),Y
+                        STA             FNV_ENTRY_LO
+                        INY
+                        LDA             (ROW_LO),Y
+                        STA             FNV_ENTRY_HI
+                        LDA             HIM_AP_BODY_LEN_LO
+                        STA             FNV_BODY_LO
+                        LDA             HIM_AP_BODY_LEN_HI
+                        STA             FNV_BODY_HI
+                        LDA             #APMAN_STATUS_OK
+                        SEC
+                        RTS
+AM03_FIND_BANK_FAILED:  STZ             AM03_BANK_OK
+                        JMP             AM03_FIND_BANK_RESTORE
+AM03_FIND_BAD:          LDA             #APMAN_STATUS_BAD_RANGE
+                        BRA             AM03_FIND_FAIL_A
+AM03_FIND_DUPLICATE:    LDA             #$02
+                        STA             FNV_MATCH_COUNT
+                        LDA             #APMAN_STATUS_DUPLICATE
+                        BRA             AM03_FIND_FAIL_A
+AM03_FIND_MISS:         LDA             #APMAN_STATUS_NOT_FOUND
+AM03_FIND_FAIL_A:       PHA
+                        JSR             AM03_CLEAR_RESULT
+                        PLA
+                        CLC
+                        RTS
+
+; Require the complete AP envelope to remain in $3000-$3FFF before staging it.
+AM03_RAM_CANDIDATE:     LDA             AM03_RAM_CURSOR_LO
+                        STA             PTRL
+                        LDA             AM03_RAM_CURSOR_HI
+                        STA             PTRH
+                        LDY             #$00
+                        LDA             (PTRL),Y
+                        CMP             #'A'
+                        BNE             AM03_RAM_INVALID
+                        INY
+                        LDA             (PTRL),Y
+                        CMP             #'P'
+                        BNE             AM03_RAM_INVALID
+                        INY
+                        LDA             (PTRL),Y
+                        CMP             #$02
+                        BNE             AM03_RAM_INVALID
+                        INY
+                        LDA             (PTRL),Y
+                        STA             TMP0
+                        INY
+                        LDA             (PTRL),Y
+                        STA             TMP1
+                        BNE             AM03_RAM_LENGTH_OK
+                        LDA             TMP0
+                        CMP             #$05
+                        BCC             AM03_RAM_INVALID
+AM03_RAM_LENGTH_OK:     LDA             AM03_RAM_CURSOR_LO
+                        CLC
+                        ADC             TMP0
+                        TAX
+                        LDA             AM03_RAM_CURSOR_HI
+                        ADC             TMP1
+                        BCS             AM03_RAM_INVALID
+                        CMP             #$40
+                        BCC             AM03_RAM_COPY
+                        BNE             AM03_RAM_INVALID
+                        CPX             #$00
+                        BNE             AM03_RAM_INVALID
+AM03_RAM_COPY:          STZ             VALUE_LO
+                        LDA             #>STAGE_BASE
+                        STA             VALUE_HI
+                        JSR             APMAN_COPY_BYTES
+                        JSR             APMAN_VALIDATE_STAGED
+                        BCC             AM03_RAM_INVALID
+                        JSR             APMAN_FIND_ENTRY_ROW
+                        BCC             AM03_RAM_INVALID
+                        LDY             #$03
+                        LDX             #$00
+AM03_RAM_HASH:          LDA             (ROW_LO),Y
+                        CMP             FNV_WANTED_HASH0,X
+                        BNE             AM03_RAM_INVALID
+                        INY
+                        INX
+                        CPX             #$04
+                        BNE             AM03_RAM_HASH
+                        JMP             AM03_MATCH_NAME
+AM03_RAM_INVALID:       CLC
+                        RTS
+
+AM03_CLEAR_RESULT:      STZ             FNV_MATCH_COUNT
+                        LDX             #$04
+AM03_CLEAR_LOCATION:    STZ             FNV_FOUND_SOURCE,X
+                        DEX
+                        BPL             AM03_CLEAR_LOCATION
+                        LDX             #$07
+AM03_CLEAR_ENTRY:       STZ             FNV_ENTRY_LO,X
+                        DEX
+                        BPL             AM03_CLEAR_ENTRY
+                        RTS
+
+; Compare the entry row's exact canonical PACK40 name with the stable command.
+AM03_MATCH_NAME:        LDY             #$07
+                        LDA             (ROW_LO),Y
+                        CMP             FNV_NAME_LEN
+                        BEQ             AM03_MATCH_LENGTH_OK
+                        JMP             AM03_MATCH_FAIL
+AM03_MATCH_LENGTH_OK:
+                        STA             COUNT
+                        LDA             FNV_NAME_LO
+                        STA             TAIL_LO
+                        LDA             FNV_NAME_HI
+                        STA             TAIL_HI
+                        LDA             ROW_LO
+                        CLC
+                        ADC             #$08
+                        STA             PTRL
+                        LDA             ROW_HI
+                        ADC             #$00
+                        STA             PTRH
+AM03_MATCH_GROUP:       LDA             COUNT
+                        BEQ             AM03_MATCH_OK
+                        LDY             #$00
+                        LDA             (PTRL),Y
+                        STA             VALUE_LO
+                        INY
+                        LDA             (PTRL),Y
+                        STA             VALUE_HI
+                        JSR             APMAN_DIV40
+                        LDA             TMP0
+                        STA             TMP2
+                        JSR             APMAN_DIV40
+                        LDA             VALUE_HI
+                        BNE             AM03_MATCH_FAIL
+                        LDA             VALUE_LO
+                        JSR             AM03_MATCH_CODE
+                        BCC             AM03_MATCH_FAIL
+                        LDA             COUNT
+                        BEQ             AM03_MATCH_PAD_TWO
+                        LDA             TMP0
+                        JSR             AM03_MATCH_CODE
+                        BCC             AM03_MATCH_FAIL
+                        LDA             COUNT
+                        BEQ             AM03_MATCH_PAD_ONE
+                        LDA             TMP2
+                        JSR             AM03_MATCH_CODE
+                        BCC             AM03_MATCH_FAIL
+                        LDA             PTRL
+                        CLC
+                        ADC             #$02
+                        STA             PTRL
+                        BCC             AM03_MATCH_GROUP
+                        INC             PTRH
+                        BRA             AM03_MATCH_GROUP
+AM03_MATCH_PAD_TWO:     LDA             TMP0
+                        ORA             TMP2
+                        BNE             AM03_MATCH_FAIL
+                        BRA             AM03_MATCH_OK
+AM03_MATCH_PAD_ONE:     LDA             TMP2
+                        BNE             AM03_MATCH_FAIL
+AM03_MATCH_OK:          SEC
+                        RTS
+AM03_MATCH_CODE:        CMP             #$28
+                        BCS             AM03_MATCH_CODE_FAIL
+                        JSR             APMAN_PACK40_CODE_ASCII
+                        LDY             #$00
+                        CMP             (TAIL_LO),Y
+                        BNE             AM03_MATCH_CODE_FAIL
+                        INC             TAIL_LO
+                        BNE             AM03_MATCH_CODE_COUNT
+                        INC             TAIL_HI
+AM03_MATCH_CODE_COUNT:  DEC             COUNT
+                        SEC
+                        RTS
+AM03_MATCH_CODE_FAIL:
+AM03_MATCH_FAIL:        CLC
+                        RTS
+
+AM03_SCOPE_HANDOFF:     JSR             AM03_FIND_COMBINED
+                        BCS             AM03_SCOPE_FIRST_OK
+                        JMP             AM03_SCOPE_FAIL_A
+AM03_SCOPE_FIRST_OK:    CMP             #APMAN_STATUS_OK
+                        BEQ             AM03_SCOPE_COUNT_OK
+                        JMP             AM03_SCOPE_NOT_FOUND
+AM03_SCOPE_COUNT_OK:    LDA             FNV_MATCH_COUNT
+                        CMP             #$01
+                        BEQ             AM03_SCOPE_SAVE
+                        JMP             AM03_SCOPE_NOT_FOUND
+AM03_SCOPE_SAVE:        LDX             #$05
+AM03_SCOPE_SAVE_RESULT: LDA             FNV_MATCH_COUNT,X
+                        STA             AM03_SAVED_RESULT,X
+                        DEX
+                        BPL             AM03_SCOPE_SAVE_RESULT
+                        LDX             #$03
+AM03_SCOPE_SAVE_ENTRY:  LDA             FNV_ENTRY_LO,X
+                        STA             AM03_SAVED_ENTRY,X
+                        DEX
+                        BPL             AM03_SCOPE_SAVE_ENTRY
+                        LDA             AM03_SAVED_BODY
+                        ORA             AM03_SAVED_BODY+$01
+                        BNE             AM03_SCOPE_BODY_NONZERO
+                        JMP             AM03_SCOPE_BAD_RANGE
+AM03_SCOPE_BODY_NONZERO:
+                        LDA             AM03_SAVED_BODY+$01
+                        CMP             #$10
+                        BCC             AM03_SCOPE_SECOND
+                        BEQ             AM03_SCOPE_BODY_LIMIT
+                        JMP             AM03_SCOPE_BAD_RANGE
+AM03_SCOPE_BODY_LIMIT:  LDA             AM03_SAVED_BODY
+                        BEQ             AM03_SCOPE_SECOND
+                        JMP             AM03_SCOPE_BAD_RANGE
+AM03_SCOPE_SECOND:      JSR             AM03_FIND_COMBINED
+                        BCS             AM03_SCOPE_SECOND_OK
+                        JMP             AM03_SCOPE_FAIL_A
+AM03_SCOPE_SECOND_OK:   CMP             #APMAN_STATUS_OK
+                        BEQ             AM03_SCOPE_COMPARE_RESULT
+                        JMP             AM03_SCOPE_NOT_FOUND
+AM03_SCOPE_COMPARE_RESULT:
+                        LDX             #$05
+AM03_SCOPE_CHECK_RESULT:LDA             FNV_MATCH_COUNT,X
+                        CMP             AM03_SAVED_RESULT,X
+                        BEQ             AM03_SCOPE_RESULT_OK
+                        JMP             AM03_SCOPE_CHANGED
+AM03_SCOPE_RESULT_OK:
+                        DEX
+                        BPL             AM03_SCOPE_CHECK_RESULT
+                        LDX             #$03
+AM03_SCOPE_CHECK_ENTRY: LDA             FNV_ENTRY_LO,X
+                        CMP             AM03_SAVED_ENTRY,X
+                        BEQ             AM03_SCOPE_ENTRY_FACT_OK
+                        JMP             AM03_SCOPE_CHANGED
+AM03_SCOPE_ENTRY_FACT_OK:
+                        DEX
+                        BPL             AM03_SCOPE_CHECK_ENTRY
+; The second scan's validated staging copy is the only load/link source.
+                        STZ             HIM_AP_SRC_LO
+                        LDA             #>STAGE_BASE
+                        STA             HIM_AP_SRC_HI
+                        STZ             HIM_AP_DST_LO
+                        LDA             #$20
+                        STA             HIM_AP_DST_HI
+                        LDA             #HIM_AP_OP_LOAD_SAFE
+                        STA             HIM_AP_OP
+                        JSR             APMAN_CALL_AP
+                        BCC             AM03_SCOPE_AP_ERROR
+                        CPX             #$00
+                        BNE             AM03_SCOPE_CHANGED
+                        CPY             #$20
+                        BNE             AM03_SCOPE_CHANGED
+                        LDA             HIM_AP_BODY_LEN_LO
+                        CMP             AM03_SAVED_BODY
+                        BNE             AM03_SCOPE_CHANGED
+                        LDA             HIM_AP_BODY_LEN_HI
+                        CMP             AM03_SAVED_BODY+$01
+                        BNE             AM03_SCOPE_CHANGED
+; LOAD reparsed and linked the same stage. Recheck name and entry offset.
+                        JSR             APMAN_FIND_ENTRY_ROW
+                        BCC             AM03_SCOPE_CHANGED
+                        JSR             AM03_MATCH_NAME
+                        BCC             AM03_SCOPE_CHANGED
+                        LDY             #$01
+                        LDA             (ROW_LO),Y
+                        CMP             AM03_SAVED_ENTRY
+                        BNE             AM03_SCOPE_CHANGED
+                        INY
+                        LDA             (ROW_LO),Y
+                        CMP             AM03_SAVED_ENTRY+$01
+                        BNE             AM03_SCOPE_CHANGED
+; Re-prove offset < BODY and form the final child address without wrap.
+                        LDA             AM03_SAVED_ENTRY+$01
+                        CMP             AM03_SAVED_BODY+$01
+                        BCC             AM03_SCOPE_ENTRY_OK
+                        BNE             AM03_SCOPE_BAD_RANGE
+                        LDA             AM03_SAVED_ENTRY
+                        CMP             AM03_SAVED_BODY
+                        BCS             AM03_SCOPE_BAD_RANGE
+AM03_SCOPE_ENTRY_OK:    LDA             AM03_SAVED_ENTRY
+                        STA             PTRL
+                        LDA             AM03_SAVED_ENTRY+$01
+                        CLC
+                        ADC             #$20
+                        BCS             AM03_SCOPE_BAD_RANGE
+                        STA             PTRH
+                        JSR             AM03_RETIRE
+; Manufacture a normal subroutine return edge, then tail-enter the child.
+                        LDA             #>(AM03_SCOPE_CHILD_RETURN-1)
+                        PHA
+                        LDA             #<(AM03_SCOPE_CHILD_RETURN-1)
+                        PHA
+                        JMP             (PTRL)
+AM03_SCOPE_CHILD_RETURN:RTS
+AM03_SCOPE_AP_ERROR:    LDA             HIM_AP_STATUS
+                        BRA             AM03_SCOPE_FAIL_A
+AM03_SCOPE_NOT_FOUND:
+AM03_SCOPE_CHANGED:     LDA             #APMAN_STATUS_NOT_FOUND
+                        BRA             AM03_SCOPE_FAIL_A
+AM03_SCOPE_BAD_RANGE:   LDA             #APMAN_STATUS_BAD_RANGE
+AM03_SCOPE_FAIL_A:      PHA
+                        JSR             APMAN_FAIL_A
+                        JSR             AM03_RETIRE
+                        PLA
+                        CLC
+                        RTS
+
+; Remove every scoped-discovery byte before child entry or failure return.
+; PTRL/PTRH retain the final child entry on success.
+AM03_RETIRE:            LDX             #$1F
+AM03_RETIRE_FNV:        STZ             FNV_SCOPE_BASE,X
+                        DEX
+                        BPL             AM03_RETIRE_FNV
+                        LDX             #$13
+AM03_RETIRE_CARD:       STZ             APMAN_CARD_BASE,X
+                        DEX
+                        BPL             AM03_RETIRE_CARD
+                        LDX             #$00
+                        LDA             #$00
+AM03_RETIRE_COMMAND:    STA             CMD_BUF,X
+                        INX
+                        BNE             AM03_RETIRE_COMMAND
+                        STZ             VALUE_LO
+                        LDA             #>STAGE_BASE
+                        STA             VALUE_HI
+                        LDX             #$10
+AM03_RETIRE_STAGE_PAGE: LDY             #$00
+                        LDA             #$00
+AM03_RETIRE_STAGE_BYTE: STA             (VALUE_LO),Y
+                        INY
+                        BNE             AM03_RETIRE_STAGE_BYTE
+                        INC             VALUE_HI
+                        DEX
+                        BNE             AM03_RETIRE_STAGE_PAGE
+                        LDX             #(AM03_STATE_END-AM03_STATE-1)
+AM03_RETIRE_STATE:      STZ             AM03_STATE,X
+                        DEX
+                        BPL             AM03_RETIRE_STATE
                         RTS
 
 ; Locate the one entry export. ROW points at its flags byte.
@@ -634,9 +1125,9 @@ APMAN_SELECTED_IS_MANAGER:
                         STA             HIM_AP_OP
                         JMP             APMAN_CALL_AP
 
-; APMAN remains live at $7000 while it asks HIMON to copy/fix the selected
+; APMAN remains live at $6C00 while it asks HIMON to copy/fix the selected
 ; body. Keep the loaded body in ordinary foreground RAM below the manager.
-; The end address is exclusive, so a body ending exactly at $7000 is safe.
+; The end address is exclusive, so a body ending exactly at $6C00 is safe.
 APMAN_LOAD_RANGE_SAFE: LDA             APMAN_FOUND_LOAD_HI
                         CMP             #$20
                         BCC             APMAN_LOAD_RANGE_BAD
@@ -649,7 +1140,7 @@ APMAN_LOAD_RANGE_SAFE: LDA             APMAN_FOUND_LOAD_HI
                         STA             TMP1
                         BCS             APMAN_LOAD_RANGE_BAD
                         LDA             TMP1
-                        CMP             #$70
+                        CMP             #$6C
                         BCC             APMAN_LOAD_RANGE_GOOD
                         BNE             APMAN_LOAD_RANGE_BAD
                         LDA             TMP0
@@ -1136,6 +1627,9 @@ APMAN_DIV40_DONE:      LDA             VALUE_LO
                         RTS
 
 APMAN_PRINT_PACK40_CODE:
+                        JSR             APMAN_PACK40_CODE_ASCII
+                        JMP             APMAN_PUTC
+APMAN_PACK40_CODE_ASCII:
                         BEQ             APMAN_PACK40_SPACE
                         CMP             #$1B
                         BCC             APMAN_PACK40_ALPHA
@@ -1145,19 +1639,19 @@ APMAN_PRINT_PACK40_CODE:
                         CMP             #$26
                         BEQ             APMAN_PACK40_Q
                         LDA             #'.'
-                        JMP             APMAN_PUTC
+                        RTS
 APMAN_PACK40_ALPHA:    CLC
                         ADC             #'@'
-                        JMP             APMAN_PUTC
+                        RTS
 APMAN_PACK40_DIGIT:    CLC
                         ADC             #('0'-$1B)
-                        JMP             APMAN_PUTC
+                        RTS
 APMAN_PACK40_UNDER:    LDA             #'_'
-                        JMP             APMAN_PUTC
+                        RTS
 APMAN_PACK40_Q:        LDA             #'?'
-                        JMP             APMAN_PUTC
+                        RTS
 APMAN_PACK40_SPACE:    LDA             #' '
-                        JMP             APMAN_PUTC
+                        RTS
 
 ; ---------------------------------------------------------------------------
 ; Command token helpers.
@@ -1365,6 +1859,6 @@ MSG_ERR:               DB              "APMAN ERR=$",0
                         INCLUDE         "apman-str8-worker.inc"
 
 _END_CODE:
-APMAN_IMAGE_END         EQU             $7000+(_END_CODE-APMAN)
+APMAN_IMAGE_END         EQU             $6C00+(_END_CODE-APMAN)
                         ENDMOD
                         END

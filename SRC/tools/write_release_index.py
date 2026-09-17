@@ -6,7 +6,7 @@ from verify_component_release import sha
 root = Path(__file__).resolve().parents[2] / 'RELEASE'
 qualification = json.loads((root / 'QUALIFICATION.json').read_text())
 components = json.loads((root / 'component-release-manifest.json').read_text())
-products = [item['file'] for item in components] + ['str8n-v1.34-release.zip',
+products = [item['file'] for item in components] + ['str8n-v1.35-release.zip',
             'ryors-v1.2-himon-asm-bank3-8-e.s19', 'QUALIFICATION.json']
 for item in components:
     assert sha((root / item['file']).read_bytes()) == item['sha256']
@@ -17,11 +17,11 @@ index = {'schema': 1, 'created': qualification['created'],
 stamp = qualification['release_stamp']
 readme = f'''# Current release packages
 
-HIMON and ASM-F2 build identity: **00.{stamp}**. STR8-N: **v1.34**.
+HIMON and ASM-F2 build identity: **00.{stamp}**. STR8-N: **v1.35**.
 
 | Package | Contents |
 | --- | --- |
-| [STR8-N v1.34](str8n-v1.34-release.zip) | Canonical 4 KiB BIN, S19/update tools, Bank Maintenance `.a`, WDC-to-STR8 migration kit, guides, MIT license, manifests and verification |
+| [STR8-N v1.35](str8n-v1.35-release.zip) | Canonical 4 KiB BIN, S19/update tools, Bank Maintenance `.a`, WDC-to-STR8 migration kit, guides, MIT license, manifests and verification |
 | [HIMON](%HIMON%) | C-E S19 and BIN, combined 8-E S19, monitor docs, maintenance/LED/RTC apps, Life and MicroChess with their notices and available `.a` source |
 | [ASM-F2](%ASM%) | 8-B S19 and BIN, combined 8-E S19, current reporter `.a`, assembler examples, terminal/bank tools, and separate validation fixtures |
 

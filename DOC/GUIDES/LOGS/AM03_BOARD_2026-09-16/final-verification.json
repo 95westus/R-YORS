@@ -1,0 +1,17 @@
+{
+  "result": "PASS",
+  "baseline_sha256": "d1d4b9db35106ce84ac9f55983a745bd852a6acbc4594f4d3aec74fbfacf45af",
+  "actual_sha256": "6d6e31ccaa7bc38b07d7894268e1aac32ff6ceb5419d87e4d18b7d1b4c623347",
+  "expected_sha256": "6d6e31ccaa7bc38b07d7894268e1aac32ff6ceb5419d87e4d18b7d1b4c623347",
+  "changed_sectors": [
+    "B2:8",
+    "B3:D",
+    "B3:E",
+    "B3:F"
+  ],
+  "journal_transactions": [
+    "B2",
+    "B3",
+    "B3"
+  ]
+}

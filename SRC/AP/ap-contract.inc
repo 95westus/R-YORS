@@ -38,7 +38,7 @@ HIM_AP_RAM_BASE_HI      EQU             $20
 HIM_AP_SOURCE_LIMIT_HI  EQU             $50
 HIM_AP_LOAD_LIMIT_HI    EQU             $50
 HIM_AP_TAKEOVER_LIMIT_HI EQU            $70
-HIM_AP_TOOL_BASE_HI     EQU             $70
+HIM_AP_TOOL_BASE_HI     EQU             $6C
 HIM_AP_TOOL_LIMIT_HI    EQU             $7C
 HIM_AP_FLASH_BASE_HI    EQU             $80
 HIM_AP_FLASH_LIMIT_HI   EQU             $FF

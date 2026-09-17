@@ -1,0 +1,27 @@
+{
+  "serial_log": "C:\\SRC\\R-YORS\\DOC\\GUIDES\\LOGS\\AM03_BOARD_2026-09-16\\physical-reset-20260916-203949\\serial-com4.jsonl",
+  "helper_sha256": "f15a35a26b88bc2d4a5eab83ed27f13a14007ec4fe25ac456631cf544efb7952",
+  "banks": {
+    "0": {
+      "bytes": 32768,
+      "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8",
+      "reset": "F818"
+    },
+    "1": {
+      "bytes": 32768,
+      "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211",
+      "reset": "F000"
+    },
+    "2": {
+      "bytes": 32768,
+      "sha256": "2444130717cea5a10fa02982523f984f7de2bd06f696b2c5349ca576ea120740",
+      "reset": "F000"
+    },
+    "3": {
+      "bytes": 32768,
+      "sha256": "6115d06c8aad84ab24378c2b841eca33a1f3149b2494d58ff764d33de15d90f0",
+      "reset": "F000"
+    }
+  },
+  "flash_sha256": "3f550b36ab774e9ab190743af68b8266feec7916685756a3fe8a2873d6b760ae"
+}

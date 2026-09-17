@@ -1,0 +1,7 @@
+{
+  "result": "PASS",
+  "restored": "B2:8 AM03 compatible with timestamped HIMON",
+  "manager_sha256": "34fdeee4902c7d88222d2a6f84010d26a6257550eed1ce7aebea77c970f4b0f0",
+  "bank2_sha256": "2444130717cea5a10fa02982523f984f7de2bd06f696b2c5349ca576ea120740",
+  "top_after_sha256": "f354d2276c6d0bb374e6c838447aa5bce75d9b92353afc21d7074844b2ad2a33"
+}

@@ -91,6 +91,8 @@ The [hardware record](../LOGS/RAM_AP_UNIQUENESS_2026-09-16.md) records eight
 RAM-only board cases, full regression and exact four-bank isolation.
 Unresolved imports may still appear in valid metadata: this slice deliberately
 does not link. The accepted resident-first command dispatcher remains unchanged.
-The next slice must settle ownership across normal AP load/link and command
-entry, including how the inspector's own `$2000` code is retired or relocated.
-No callable RAM-provider command or public request ABI is introduced here.
+The following [safe-handoff slice](RAM_AP_HANDOFF_2026-09-16.md) now settles
+ownership through normal AP load, link, child entry and return by running a
+separate transition at `$5000` and replacing this `$2000` inspector with the
+linked child. Resident-miss command integration and a public request ABI remain
+outside this metadata slice.

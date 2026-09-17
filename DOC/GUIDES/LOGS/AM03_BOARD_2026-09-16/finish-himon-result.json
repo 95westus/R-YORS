@@ -1,0 +1,7 @@
+{
+  "result": "PASS",
+  "himon_payload_sha256": "99a83cd507b48ee898d815e4a2f914f11a556ca6c377f95c5365a2c745298153",
+  "himon_rom_sha256": "8b2983991635451be41a340126d1a0580eaebfaa259db9c532af19010e77587f",
+  "himon_board_s19_sha256": "ed3cd645844b07faf6ea62c4fa4caa3e8098f005000690d6c9d1e1eb48e6c82d",
+  "top_after_sha256": "93221aca902ed671d08787b1e771f51685439a729b3e0d8ed3deaa0e13bcb8e5"
+}

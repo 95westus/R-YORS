@@ -28,11 +28,11 @@ if (-not $SkipBuild) {
 if ($LASTEXITCODE -ne 0) { throw 'Component release verification failed' }
 & python -B (Join-Path $repo 'SRC/tools/check_component_releases.py') $out
 if ($LASTEXITCODE -ne 0) { throw 'Component archive negative checks failed' }
-$str8zip = Join-Path $str8n 'BUILD/v1.34/str8n-v1.34-release.zip'
-if (-not (Test-Path -LiteralPath $str8zip)) { throw 'Build and verify the standalone STR8-N v1.34 package first' }
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $str8n 'tools/verify_release_package.ps1') -Root (Join-Path $str8n 'BUILD/v1.34/str8n-v1.34-release') -ZipPath $str8zip
+$str8zip = Join-Path $str8n 'BUILD/v1.35/str8n-v1.35-release.zip'
+if (-not (Test-Path -LiteralPath $str8zip)) { throw 'Build and verify the standalone STR8-N v1.35 package first' }
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $str8n 'tools/verify_release_package.ps1') -Root (Join-Path $str8n 'BUILD/v1.35/str8n-v1.35-release') -ZipPath $str8zip
 if ($LASTEXITCODE -ne 0) { throw 'Standalone STR8 package verification failed' }
-Copy-Item -LiteralPath $str8zip -Destination (Join-Path $out 'str8n-v1.34-release.zip') -Force
+Copy-Item -LiteralPath $str8zip -Destination (Join-Path $out 'str8n-v1.35-release.zip') -Force
 & python -B (Join-Path $repo 'SRC/tools/write_release_index.py')
 if ($LASTEXITCODE -ne 0) { throw 'Release index verification failed' }
 Write-Host "Release ZIPs and qualified 8-E S19 written to $out"

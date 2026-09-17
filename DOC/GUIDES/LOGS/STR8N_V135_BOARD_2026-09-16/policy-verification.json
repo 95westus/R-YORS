@@ -1,0 +1,9 @@
+{
+  "result": "PASS",
+  "changed_sectors": [
+    "B3:F"
+  ],
+  "scratch_b1a_restored": true,
+  "other_sectors_unchanged": true,
+  "flash_sha256": "d1d4b9db35106ce84ac9f55983a745bd852a6acbc4594f4d3aec74fbfacf45af"
+}

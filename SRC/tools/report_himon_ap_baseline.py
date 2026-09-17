@@ -113,7 +113,7 @@ def image(build, name, begin, end_symbol, limit):
 def report(build):
     himon, sym, memory, _ = image(build, 'himon-rom-c000', 0xC000, '_END_DATA', 0xF000)
     asm, _, _, _ = image(build, 'asm-v1-flash-8000', 0x8000, '_END_DATA', 0xC000)
-    manager, msym, mmemory, _ = image(build, 'apman-7000', 0x7000, 'APMAN_IMAGE_END', 0x7C00)
+    manager, msym, mmemory, _ = image(build, 'apman-7000', 0x6C00, 'APMAN_IMAGE_END', 0x7C00)
     owners = {}
     rows = []
     for owner, label, first, last in HIMON_GROUPS:

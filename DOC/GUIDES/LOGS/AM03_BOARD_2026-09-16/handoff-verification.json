@@ -1,0 +1,10 @@
+{
+  "result": "PASS",
+  "cases": [
+    "bare bank APTEST fresh load and retirement",
+    "unique RAM child executed marker write and retired state",
+    "bank BANKDUMP imported calls, menu, map, return"
+  ],
+  "top_sha256": "f354d2276c6d0bb374e6c838447aa5bce75d9b92353afc21d7074844b2ad2a33",
+  "explanation": "AM03 successful handoff is silent; GO is not its contract."
+}

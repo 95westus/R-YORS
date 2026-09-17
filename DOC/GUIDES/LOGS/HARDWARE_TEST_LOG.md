@@ -26811,3 +26811,18 @@ and all flash remain exact. Final 128 KiB SHA256:
 `8a9977c675364f95a53b58b23067ba469d3595026064a2530e7c3e9db3096f4b`.
 No flashing; SPI SRAM/WORK remain deferred. Load/link ownership and command
 entry remain the next separate gate.
+
+
+## 2026-09-16 — safe RAM AP handoff
+
+[Contract, results and evidence](RAM_AP_HANDOFF_2026-09-16.md): a 322-byte
+private `$5000` handoff repeats RAM/bank uniqueness, loads and links the child
+at `$2000`, retires discovery state, enters it, and returns through the caller.
+Eleven linked-byte host cases, full `asm-test`, and eight COM4 cases pass.
+The board cases include linked resident imports, installed APTEST B2:9,
+RAM/flash duplicate refusal, missing-import no-entry, malformed/invalid-card
+refusal, state retirement and preservation of a child's clear carry. Provider
+RAM and both complete flash archives are exact. Final flash SHA256:
+`8a9977c675364f95a53b58b23067ba469d3595026064a2530e7c3e9db3096f4b`.
+No flashing or reset-dependent change. Resident-miss command integration is
+the remaining scoped-search slice; SPI SRAM/WORK remain deferred.

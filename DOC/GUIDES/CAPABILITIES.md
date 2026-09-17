@@ -1,17 +1,17 @@
 # Current Capability Matrix
 
 This is the short authority for the supported STR8-N, HIMON, and ASM-F2 command
-surfaces. The latest COM4 workbench installation, after scoped HIMON/AM02
-installation and the step-2 smoke pass on 2026-09-16, is:
+surfaces. The current COM4 workbench installation is:
 
 ```text
-STR8-N 1.34
-HIMON   00.0915(2324) in Bank-3 sectors C-E
+STR8-N 1.35
+HIMON   00.0916(1949) in Bank-3 sectors C-E
 ASM-F2  00.0915(2324) in Bank-3 sectors 8-B
+APMAN   AM03 in Bank-2 sector 8
 ```
 
 The [step-2 board record](LOGS/SCOPED_SMOKE_BOARD_2026-09-16.md) identifies
-the exact installed image: HIMON is 12,280 bytes with 8 bytes free. AM02 at
+the preceding accepted pair: HIMON is 12,280 bytes with 8 bytes free. AM02 at
 B2:8 has a 3,059-byte BODY and 13-byte overlay reserve; APTEST remains at B2:9.
 Full host gates, bounded board smoke, physical reset and final four-bank
 isolation pass. The earlier [initialization-size record](LOGS/HIMON_AP_INIT_SIZE_2026-09-16.md)
@@ -22,18 +22,30 @@ ASM-F2 occupies the former Bank-3 WDCMONV2 region.
 
 The [scoped FNV candidate](AP/HIMON_SCOPED_FNV_IMPLEMENTATION_2026-09-16.md)
 adds banked AP lookup after a resident command miss and requires AM02. The pair
-is installed with `$FFF2=$A6`. Named and bare APTEST launch, disabled-policy
+was installed with `$FFF2=$A6`. Named and bare APTEST launch, disabled-policy
 refusal, B0 named refusal, direct RAM execution and ASM smoke pass. The [banked AP qualification](LOGS/SCOPED_QUALIFICATION_2026-09-16.md) now passes B1/B2 BANKDUMP,
 malformed/duplicate refusal, resident precedence, role guards, paced LED/PCR
 observation, physical reset and exact final isolation. BANKDUMP is retained at B2:A.
-Integrated RAM-provider lookup remains unimplemented. A separate
-[RAM HREC inspector](AP/RAM_HREC_PROOF_2026-09-16.md) validates bounded record
+Integrated RAM-provider lookup is now installed through AM03. The
+[policy/configuration reference](AP/FNV_POLICY_CONFIGURATION.md) records the
+exact byte encodings, compatible-manager prerequisites and safe-update limits.
+The separate [RAM HREC inspector](AP/RAM_HREC_PROOF_2026-09-16.md) validates bounded record
 metadata in existing `$3000-$3FFF` RAM without executing providers. SPI SRAM
 is not installed; SPI support and WORK allocation remain deferred.
 The subsequent [RAM AP uniqueness inspector](AP/RAM_AP_UNIQUENESS_2026-09-16.md)
 validates bounded AP envelopes and combines RAM/eligible-bank counts, rejecting
-cross-source duplicates. It returns metadata only and requires its pinned
-HIMON/AM02 images; integrated RAM command execution remains open.
+cross-source duplicates. The later safe-handoff transient proves load, link,
+retirement, child entry and return.
+
+The [AM03 candidate](AP/AM03_RESIDENT_INTEGRATION_2026-09-16.md)
+integrates those paths with its matching HIMON bootstrap. Its BODY occupies
+`$6C00-$7BB0` (4017 bytes), with 79 tray bytes free. Host checks and
+[focused board handoff verification](LOGS/AM03_BOARD_2026-09-16/HANDOFF_CORRECTION.md)
+pass for bank APTEST, a RAM child execution marker, retirement, provider
+preservation, and BANKDUMP imports/menu/map/return. Automatic handoff is silent;
+the earlier missing-`GO` failure was a test error. Physical-reset acceptance
+of this pair now passes, with all three handoff checks repeated after reset
+and all 32 flash sectors matching the expected image.
 
 The later [sector-role update](AP/SECTOR_ROLES_AND_RAM_TRANSIENTS_2026-09-16.md)
 removes flash WORK and protects B2:F for backup. Its top-level RAM-transient
@@ -297,7 +309,7 @@ gates agree.
 | Possible capability | Why it is plausible | What is still missing |
 | --- | --- | --- |
 | Consolidated AP Store manager | V1 media and transient install/read/plan/delete tools are already hardware-accepted | One persistent menu/dispatcher, frozen overlay map, recovery contract, and complete acceptance pass |
-| Scoped automatic external AP/FNV search | Resident FNV lookup and banked carrier validation already exist | Frozen enrollment policy, duplicate/malformed rejection, RAM map, size, and board proof |
+| Scoped automatic external AP/FNV search | Resident FNV lookup, banked/RAM uniqueness, and a private safe load/link/entry handoff are proven | Resident-miss command integration and its final size/board acceptance |
 | Managed AP Store compaction | Live/stale/free accounting and append-only generations already exist | Atomic compaction/recovery rules, wear policy, implementation, and destructive board testing |
 | A stable parent-AP/child-AP call ABI | Direct AP loading and manager operation `$04` make chaining mechanically possible | Parent context, scratch ownership, non-overlap, error-return, and reset/bank-restore contracts |
 | Non-runnable library/module packages | AP v2 already represents typed exports and imports | Package identity for bodies without an executable `ENTRY`; `MODULE` is reserved but not syntax |

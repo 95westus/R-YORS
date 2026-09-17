@@ -67,7 +67,7 @@ S3X_HOME ?= $(LOCAL_ROOT)/s3x
 STR8N_HOME ?= ../../STR8-N
 STR8N_MANIFEST := $(STR8N_HOME)/BUILD/str8n-manifest.json
 STR8N_LOCK := INTEGRATION/str8n.lock.json
-STR8N_PUBLIC_CONTRACT := $(STR8N_HOME)/BUILD/v1.34/include/str8n-public.inc
+STR8N_PUBLIC_CONTRACT := $(STR8N_HOME)/BUILD/v1.35/include/str8n-public.inc
 STR8N_IMPORTED_CONTRACT := $(INC_DIR)/str8n-public.inc
 STR8N_RECEIPT := $(BUILD_DIR)/integration/str8n-receipt.json
 STR8N_EXTERNAL_CHECK := tools/check_external_str8n.ps1
@@ -165,7 +165,7 @@ APMAN_BANK2_BIN := $(BIN_DIR)/apman-v1-bank2-8000.bin
 APMAN_BANK2_S19 := $(S19_DIR)/apman-v1-bank2-8000.s19
 APMAN_BOOTSTRAP_CHECK := tools/check_apman_bootstrap.ps1
 APMAN_INSPECT_CHECK := tools/check_apman_inspect.ps1
-APMAN_LINKFLAGS := -g -s -t -c7000 -hm19 -j -o
+APMAN_LINKFLAGS := -g -s -t -c6C00 -hm19 -j -o
 APMAN_WORKER_GEN := tools/write_apman_worker_inc.ps1
 APMAN_WORKER_SOURCE := $(STR8N_HOME)/tools/bank-maint/str8n-v1.23-bank-maint-2000.asm
 APMAN_WORKER_INC := $(INC_DIR)/apman-str8-worker.inc
@@ -721,7 +721,7 @@ asm-dc-check: $(ASM_DC_CHECK) $(ASM_V1_CORE_SRC) $(HIMON_SRC)
 
 board-s19-check: $(BOARD_S19_IDENTITY_CHECK) $(ASM_V1_FLASH_S19) $(HIMON_S19) $(HIMON_ROM_S19) $(HIMON_ROM_INSTALL_S19) $(HIMON_APV2_INSTALL_S19) $(RYORS_V12_ASM_S19) $(RYORS_V12_HIMON_S19) $(RYORS_V12_28K_S19)
 	@make -C "$(STR8N_HOME)" ryors-full-bank RYORS_28K_S19="$(abspath $(RYORS_V12_28K_S19))"
-	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.34/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
+	powershell -NoProfile -ExecutionPolicy Bypass -File $(BOARD_S19_IDENTITY_CHECK) -S19Dir "$(S19_DIR)" -Str8FullBankPath "$(STR8N_HOME)/BUILD/v1.35/s19/ryors-v1.2-str8n-himon-asm-bank0-2-8-f.s19"
 
 release-files: $(PUBLISH_RELEASE_TOOL) tools/package_component_releases.py tools/verify_component_release.py
 	powershell -NoProfile -ExecutionPolicy Bypass -File $(PUBLISH_RELEASE_TOOL) -RepoRoot ".." -Str8nRoot "$(STR8N_HOME)" -OutDir "$(PUBLISHED_RELEASE_DIR)"
@@ -729,7 +729,7 @@ release-files: $(PUBLISH_RELEASE_TOOL) tools/package_component_releases.py tools
 asm-test: asm-abi-check apman ap-store-v1-check ap-store-inventory-check ap-store-sector-tool-check ap-store-chain-tool-check ap-store-slice6-tool-check asm-opcode-coverage asm-dc-check asm-terminal-check str8-readonly-bank-tools-check asmtest-6800-wdc-check asm-v1-core asm-v1-runtime asm-v1-runtime-smoke asm-v1-runtime-asmtest asm-v1-runtime-paste asm-v1-flash asm-session-report bank-audit bank-dump pia-led-show microchess asm-ap-v2-check asm-error-check asm-size-check himon-size-check himon-ap-contract-check
 	@echo "ASM v1 smoke checks passed."
 
-.PHONY: himon-ap-contract-check himon-ap-boundary-check himon-ap-range-check himon-ap-init-check apman-size-check fnv-scope-policy-check fnv-scope-check
+.PHONY: himon-ap-contract-check himon-ap-boundary-check himon-ap-range-check himon-ap-init-check apman-size-check am03-layout-check fnv-scope-policy-check fnv-scope-check
 fnv-scope-policy-check:
 	$(PYTHON) -B tools/check_fnv_scope_policy.py --output "$(BUILD_DIR)/tmp/fnv-scope-policy.json"
 
@@ -751,6 +751,17 @@ fnv-ram-ap-check: $(HIMON_ROM_S19) $(ASM_V1_FLASH_S19) $(APMAN_BANK2_BIN)
 	$(PYTHON) -B tools/check_fnv_ram_ap.py --output "$(BUILD_DIR)/tmp/fnv-ram-ap.json"
 
 asm-test: fnv-ram-ap-check
+
+.PHONY: fnv-ram-ap-handoff-check
+fnv-ram-ap-handoff-check: fnv-ram-ap-check
+	$(PYTHON) -B tools/check_fnv_ram_ap_handoff.py --output "$(BUILD_DIR)/tmp/fnv-ram-ap-handoff.json"
+
+asm-test: fnv-ram-ap-handoff-check
+
+am03-layout-check: $(APMAN_BANK2_BIN) tools/check_am03_layout.py
+	$(PYTHON) -B tools/check_am03_layout.py --output "$(BUILD_DIR)/tmp/am03-layout.json"
+
+asm-test: am03-layout-check
 
 .PHONY: ram-transients
 ram-transients: asm-test life fnv1a-hbstr
@@ -1029,8 +1040,8 @@ $(BANK_DUMP_A): $(BANK_DUMP_SRC) $(BANK_DUMP_S19) $(BANK_DUMP_A_GEN)
 $(APMAN_S19): $(APMAN_OBJ)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(APMAN_LINKFLAGS) $(APMAN_S19) $(APMAN_OBJ)
-	@echo [ps] set S9 start $$7000 in $(APMAN_S19)
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(APMAN_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S90370008C'; Set-Content -Path $$p -Value $$lines"
+	@echo [ps] set S9 start $$6C00 in $(APMAN_S19)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$p = '$(APMAN_S19)'; $$lines = Get-Content -Path $$p; $$lines[-1] = 'S9036C0090'; Set-Content -Path $$p -Value $$lines"
 
 $(APMAN_WORKER_INC): $(APMAN_WORKER_GEN) $(APMAN_WORKER_SOURCE)
 	@if not exist $(subst /,\,$(INC_DIR)) mkdir $(subst /,\,$(INC_DIR))
@@ -1040,7 +1051,7 @@ $(APMAN_OBJ): $(APMAN_WORKER_INC) $(ASM_DIR)/apman-v1.inc AP/fnv-scope-card.inc
 
 $(APMAN_PACKAGE): $(APMAN_S19) tools/build_ap_fixed_package.ps1
 	@if not exist $(subst /,\,$(BIN_DIR)) mkdir $(subst /,\,$(BIN_DIR))
-	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_ap_fixed_package.ps1 -S19Path "$(APMAN_S19)" -MapPath "$(APMAN_MAP)" -PackagePath "$@" -BaseAddress 0x7000 -EntrySymbol APMAN -ExportName APMAN -EndSymbol APMAN_IMAGE_END
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_ap_fixed_package.ps1 -S19Path "$(APMAN_S19)" -MapPath "$(APMAN_MAP)" -PackagePath "$@" -BaseAddress 0x6C00 -EntrySymbol APMAN -ExportName APMAN -EndSymbol APMAN_IMAGE_END
 
 $(APMAN_BANK2_BIN): $(APMAN_PACKAGE) tools/build_ap_carrier_sector.ps1
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/build_ap_carrier_sector.ps1 -PackagePath "$(APMAN_PACKAGE)" -BinPath "$@"

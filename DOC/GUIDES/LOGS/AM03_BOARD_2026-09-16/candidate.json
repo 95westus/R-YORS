@@ -1,0 +1,8 @@
+{
+  "result": "PREPARED",
+  "baseline_sha256": "d1d4b9db35106ce84ac9f55983a745bd852a6acbc4594f4d3aec74fbfacf45af",
+  "expected_sha256": "75bc3c18d1828ddb783020968cb60d29c9d612cbb4dab6a4aa73b80e7a3bd5d3",
+  "manager_sha256": "34fdeee4902c7d88222d2a6f84010d26a6257550eed1ce7aebea77c970f4b0f0",
+  "himon_sha256": "b7a58dc3753984801dce622f54b74bb4796f1531b28b310f51894f098dc0db51",
+  "manager_s19_sha256": "b702c9774655803dff12490145ed8bfcfecf5ca23054c7484386d095bb105782"
+}

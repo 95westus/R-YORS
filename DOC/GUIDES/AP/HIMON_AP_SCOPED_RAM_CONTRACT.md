@@ -8,6 +8,10 @@ incorporates the subsequent corrections.
 
 ## Current boundaries
 
+Persistent policy encodings and deployment/update prerequisites are documented
+in [FNV policy and configuration](FNV_POLICY_CONFIGURATION.md). Policy bytes
+are flash configuration, not the transient scope-card fields listed below.
+
 Ranges are inclusive. Calls are foreground and non-reentrant, with Bank 3
 selected and decimal mode clear. Shared zero page and A/X/Y are volatile unless
 the called interface explicitly specifies a result.
@@ -18,11 +22,12 @@ the called interface explicitly specifies a result.
 | `$0200-$09FF` | ASM names outside manager use; selector at `$0200-$0226`, resident stage reader at `$0300-$0335`, or carried mutation worker at `$0200-$042A` during bank-tool use. These are alternative owners. |
 | `$0A00-$19FF` | ASM fixup names or one staged sector. Every stage invalidates previous pointers into the tray. |
 | `$1A00-$1AFF` | Command page shadow, copied before the manager replaces the monitor command buffer. |
-| `$1B00-$1FFF` | Application workspace. Microchess owns `$1B00` for its saved caller stack pointer; do not use it for retained search state across child entry. |
+| `$1B00-$1B1F` | AM03 transition state while discovery is live. It is cleared before child entry or failure return. |
+| `$1B20-$1FFF` | Application workspace. Microchess regains its `$1B00` cell after transition retirement; no AM03 state survives child entry. |
 | `$2000-$4FFF` | Ordinary AP BODY/source range. A whole source envelope must fit; LOAD rejects overlapping source/destination. |
-| `$5000-$6D6D` | ASM UDATA outside TAKEOVER; retained counts do not preserve overwritten low-memory names. |
+| `$5000-$6D6D` | ASM UDATA outside TAKEOVER. Loading AM03 at `$6C00` invalidates an ASM continuation before overwriting the tail. |
 | `$2000-$6FFF` | Explicit TAKEOVER destination; successful validation invalidates ASM resume before copying, including when subsequent linking fails. |
-| `$7000-$7BFF` | Manager/tool tray. Candidate AM02 BODY is `$7000-$7BF2`; its 13-byte margin is still part of this tray. Installed AM01 ends at `$7BD6`. |
+| `$6C00-$7BFF` | Manager/tool tray. Installed AM03 BODY is `$6C00-$7BB0` (4017 bytes); its 79-byte margin remains part of this tray. The carrier is B2:8. |
 | `$7A00-$7AFF` / `$7B00...` | Monitor command/decoding buffers outside manager execution; overlap the loaded manager and high-tool overlay. No nested monitor input/loader while the manager is live. |
 | `$7C00-$7DBF` | Foreground high-tool overlay. APMAN card is `$7C60-$7C73`; AP Store chain-tool card is `$7C80-$7D3F`. Other tools own overlapping ranges, including BANKAUDIT/BANKDUMP. No state survives arbitrary child entry here. |
 | `$7DC0-$7DC7` | Resident import-link scratch, retained across resolver calls. |
@@ -33,7 +38,8 @@ the called interface explicitly specifies a result.
 The resident PARSE source ranges remain `$0A00-$19FF`, `$2000-$4FFF`, and
 visible Bank-3 `$8000-$FEFF`. INSTALL rejects unstable staging sources before
 bootstrap. Ordinary LOAD also permits the separate tool tray; TAKEOVER does
-not. A managed child must finish below `$7000`.
+not. AM03's child path always relocates to `$2000`, and every installed
+non-manager AP in the accepted readback finishes below `$6C00`.
 
 ## Scoped proof card
 
@@ -54,8 +60,9 @@ scratch and STR8 state, and outside staging, command shadow and manager BODY.
 | `$0C-$10` | Found source, bank, window, address low/high |
 | `$11-$12` | Traversal bank and sector/window cursor |
 | `$13-$15` | Canonical-name pointer low/high and length |
-| `$16-$17` | Live AM02 candidate-validator callback pointer |
-| `$18-$1F` | Reserved; initialize, do not infer persistent results |
+| `$16-$17` | Live AM03 candidate-validator callback pointer |
+| `$18-$1B` | Selected entry offset and BODY length during AM03 discovery |
+| `$1C-$1F` | Reserved; initialize, do not infer persistent results |
 
 Initialize the entire card before every request. Copy wanted identity before
 FNV helpers can overwrite zero page. A canonical-name pointer must refer to
@@ -71,9 +78,10 @@ existing `$A7/$A8`, and `$12` holds the sector-mask cursor. The callback owns
 `$AC/$AD` for the bounded entry row. Nonzero RAM-enable and HREC format are
 rejected before staging.
 
-The future initial RAM-provider proof is limited to `$3000-$3FFF`; it must not treat
-the sector staging tray as another provider. RAM HREC and AP-export validation
-remain separate paths and cannot execute on the strength of a hash alone.
+AM03's RAM-provider search is limited to `$3000-$3FFF`; it does not treat the
+sector staging tray as another provider. It bounds and stages a complete AP v2
+envelope, verifies its seal, executable entry, hash and exact canonical name,
+then combines its saturated count with the policy-filtered bank count.
 
 The [initial RAM HREC inspector](RAM_HREC_PROOF_2026-09-16.md) now implements
 that one-window metadata-only proof as a separate 333-byte transient. It uses
@@ -90,6 +98,16 @@ matching private HIMON helpers and a fresh AM02 overlay. In this AP proof,
 card `$18-$19` is an entry offset and `$1A-$1B` is BODY length, not the HREC
 proof's entry/extra pointers. These phase-specific metadata meanings are not
 a shared public execution ABI. Inspectors do not survive arbitrary child entry.
+
+The historical [safe handoff proof](RAM_AP_HANDOFF_2026-09-16.md) relocates the
+transition routine to `$5000-$5141`, saves comparison state at `$5400-$540F`,
+and deliberately replaces the `$2000` inspector with the linked child. It
+repeats discovery, compares the exact selected location and entry/BODY facts,
+uses resident AP `LOAD`, revalidates the canonical entry, retires every
+discovery-owned byte, and tail-enters the child. This remains a private
+explicit-card path. AM03 incorporates the same double-discovery, load/link,
+retirement and return-edge rules into the manager path reached by a resident
+miss. The standalone inspector and transition remain retained proof artifacts.
 
 ## Transitions and recovery
 
@@ -112,12 +130,21 @@ A future persistent menu must reload/reinitialize its overlay after child
 return and separately specify interrupted mutation recovery. This current
 contract does not approve nesting the old transient tools.
 
-## Baseline and remaining gates
+## Historical baselines and subsequent acceptance
+
+The size and discovery observations below describe earlier checkpoints, not
+the current installation. The [current AM03 integration](AM03_RESIDENT_INTEGRATION_2026-09-16.md)
+and its linked board proof supersede their not-installed/reset-open status:
+HIMON `00.0916(1949)` and AM03 at B2:8 pass physical reset, post-reset handoff
+and exact full-flash readback. BODY/envelope are now 4017/4063 bytes.
 
 The accepted parser-initialization reduction ends HIMON at `$EE3E` (450 bytes
 free); APMAN BODY/package are `$0BD7`/`$0C05`. The banked integration candidate
 ends HIMON at `$EFF8` (8 bytes free) and APMAN at `$7BF3` (13 bytes free), with
-envelope `$0C21`. Measure linked growth for each further slice.
+envelope `$0C21`. The offline AM03 candidate leaves HIMON unchanged, moves
+APMAN to `$6C00`, and measures BODY/package as `$0F92`/`$0FC0`, leaving
+110 bytes in the runtime tray and 64 erased bytes in its carrier. Host
+qualification passes; AM03 has not been flashed or accepted on the board.
 
 COM4 discovery on 2026-09-16 reports Microchess B1:$9000, envelope `$06A6`,
 and APMAN B2:$8000, envelope `$0C05`. The

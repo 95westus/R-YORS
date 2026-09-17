@@ -23,5 +23,8 @@ DOC/GUIDES/LOGS/HIMON_RESTAMP_2026-09-15.jsonl -text whitespace=cr-at-eol
 # Archived patches/logs can contain intentional whitespace; do not normalize it.
 DOC/GUIDES/LOGS/HIMON_AP_*_2026-09-16/** -text whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab,cr-at-eol
 DOC/GUIDES/LOGS/APMAN_SIZE_2026-09-16/** -text whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab,cr-at-eol
+DOC/GUIDES/LOGS/RAM_AP_HANDOFF_2026-09-16/** -text whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab,cr-at-eol
+DOC/GUIDES/LOGS/AM03_BOARD_2026-09-16/** -text whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab,cr-at-eol
+DOC/GUIDES/LOGS/STR8N_V135_BOARD_2026-09-16/** -text whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab,cr-at-eol
 DOC/GUIDES/LOGS/HIMON_AP_*_2026-09-16.jsonl -text whitespace=cr-at-eol
 DOC/GUIDES/LOGS/BSO2_B2_INSTALL_*.jsonl -text whitespace=cr-at-eol

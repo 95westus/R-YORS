@@ -1,0 +1,224 @@
+  Wed Sep 16 2026 17:40                                                                                                    Page 1
+
+
+                                               ***************************************
+                                               **      WDC 65C02 Macro Assembler    **
+                                               **                                   **
+                                               **     Version 3.49.1- Feb  6 2006    **
+                                               ***************************************
+
+     1                        ; Private, image-pinned safe AP handoff proof.
+     2                        ; Requires fnv-ram-ap-2000 at $2000, stable name at $2F00, optional provider
+     3                        ; at $3000-$3FFF, loaded AM02 at $7000, and initialized $7D40 card.
+     4                        ; Repeats discovery, compares the exact unique result, loads/links only from
+     5                        ; the validated $0A00 stage into $2000, revalidates the canonical entry row,
+     6                        ; retires discovery state, then enters the child. Child RTS returns through
+     7                        ; this handoff to its caller; A and flags on successful return are child-owned.
+     8                        ; Pre-entry failure: C=0, A=status. No provider or flash writes.
+     9                                                CHIP            65C02
+    10                                                INCLUDE         "image-addresses.inc"
+    11                        
+    12             00007E2F   HIM_AP_OP               EQU             $7E2F
+    13             00007E30   HIM_AP_STATUS           EQU             $7E30
+    14             00007E31   HIM_AP_SRC_LO           EQU             $7E31
+    15             00007E32   HIM_AP_SRC_HI           EQU             $7E32
+    16             00007E33   HIM_AP_DST_LO           EQU             $7E33
+    17             00007E34   HIM_AP_DST_HI           EQU             $7E34
+    18             00007E39   HIM_AP_BODY_LEN_LO      EQU             $7E39
+    19             00007E3A   HIM_AP_BODY_LEN_HI      EQU             $7E3A
+    20             00007E6A   HIM_ASM_SESSION_RESUME  EQU             $7E6A
+    21                        
+    22             00005400   HANDOFF_STATE           EQU             $5400
+    23             00005400   HANDOFF_RESULT0         EQU             HANDOFF_STATE+$00
+    24             00005401   HANDOFF_RESULT1         EQU             HANDOFF_STATE+$01
+    25             00005402   HANDOFF_RESULT2         EQU             HANDOFF_STATE+$02
+    26             00005403   HANDOFF_RESULT3         EQU             HANDOFF_STATE+$03
+    27             00005404   HANDOFF_RESULT4         EQU             HANDOFF_STATE+$04
+    28             00005405   HANDOFF_RESULT5         EQU             HANDOFF_STATE+$05
+    29             00005406   HANDOFF_ENTRY_LO        EQU             HANDOFF_STATE+$06
+    30             00005407   HANDOFF_ENTRY_HI        EQU             HANDOFF_STATE+$07
+    31             00005408   HANDOFF_BODY_LO         EQU             HANDOFF_STATE+$08
+    32             00005409   HANDOFF_BODY_HI         EQU             HANDOFF_STATE+$09
+    33             00005410   HANDOFF_STATE_END       EQU             HANDOFF_STATE+$10
+    34                        
+    35                                                ORG             $5000
+    36                        RAM_AP_HANDOFF:
+    37 00:5000: D8                                   CLD
+    38 00:5001: 9C 6A 7E                             STZ             HIM_ASM_SESSION_RESUME
+    39 00:5004: 20 00 20                             JSR             RAM_AP_FIND
+    40 00:5007: B0 03                                BCS             HANDOFF_FIRST_OK
+    41 00:5009: 4C 09 51                             JMP             HANDOFF_FAIL_A
+    42 00:500C: C9 AC        HANDOFF_FIRST_OK:       CMP             #$AC
+    43 00:500E: F0 03                                BEQ             ?FIRST_STATUS_OK
+    44 00:5010: 4C 03 51                             JMP             HANDOFF_NOT_FOUND
+    45                        ?FIRST_STATUS_OK:
+    46 00:5013: AD 4B 7D                             LDA             $7D4B
+    47 00:5016: C9 01                                CMP             #$01
+    48 00:5018: F0 03                                BEQ             ?FIRST_COUNT_OK
+    49 00:501A: 4C 03 51                             JMP             HANDOFF_NOT_FOUND
+    50                        ?FIRST_COUNT_OK:
+    51 00:501D: A2 05                                LDX             #$05
+    52 00:501F: BD 4B 7D     ?SAVE_LOCATION:         LDA             $7D4B,X
+  Wed Sep 16 2026 17:40                                                                                                    Page 2
+
+
+    53 00:5022: 9D 00 54                             STA             HANDOFF_RESULT0,X
+    54 00:5025: CA                                   DEX
+    55 00:5026: 10 F7                                BPL             ?SAVE_LOCATION
+    56 00:5028: A2 03                                LDX             #$03
+    57 00:502A: BD 58 7D     ?SAVE_ENTRY:            LDA             $7D58,X
+    58 00:502D: 9D 06 54                             STA             HANDOFF_ENTRY_LO,X
+    59 00:5030: CA                                   DEX
+    60 00:5031: 10 F7                                BPL             ?SAVE_ENTRY
+    61                        ; A whole linked BODY must fit $2000-$2FFF; $3000 remains the provider floor.
+    62 00:5033: AD 08 54                             LDA             HANDOFF_BODY_LO
+    63 00:5036: 0D 09 54                             ORA             HANDOFF_BODY_HI
+    64 00:5039: D0 03                                BNE             ?BODY_NONZERO
+    65 00:503B: 4C 07 51                             JMP             HANDOFF_BAD_RANGE
+    66                        ?BODY_NONZERO:
+    67 00:503E: AD 09 54                             LDA             HANDOFF_BODY_HI
+    68 00:5041: C9 10                                CMP             #$10
+    69 00:5043: 90 0D                                BCC             HANDOFF_RANGE_OK
+    70 00:5045: F0 03                                BEQ             ?BODY_HIGH_LIMIT
+    71 00:5047: 4C 07 51                             JMP             HANDOFF_BAD_RANGE
+    72                        ?BODY_HIGH_LIMIT:
+    73 00:504A: AD 08 54                             LDA             HANDOFF_BODY_LO
+    74 00:504D: F0 03                                BEQ             HANDOFF_RANGE_OK
+    75 00:504F: 4C 07 51                             JMP             HANDOFF_BAD_RANGE
+    76                        HANDOFF_RANGE_OK:
+    77                        ; Re-run the full uniqueness search. It leaves the unique candidate in $0A00.
+    78 00:5052: 20 00 20                             JSR             RAM_AP_FIND
+    79 00:5055: B0 03                                BCS             ?SECOND_FOUND
+    80 00:5057: 4C 09 51                             JMP             HANDOFF_FAIL_A
+    81                        ?SECOND_FOUND:
+    82 00:505A: C9 AC                                CMP             #$AC
+    83 00:505C: F0 03                                BEQ             ?SECOND_STATUS_OK
+    84 00:505E: 4C 03 51                             JMP             HANDOFF_NOT_FOUND
+    85                        ?SECOND_STATUS_OK:
+    86 00:5061: A2 05                                LDX             #$05
+    87 00:5063: BD 4B 7D     ?CHECK_LOCATION:        LDA             $7D4B,X
+    88 00:5066: DD 00 54                             CMP             HANDOFF_RESULT0,X
+    89 00:5069: F0 03                                BEQ             ?LOCATION_MATCH
+    90 00:506B: 4C 03 51                             JMP             HANDOFF_CHANGED
+    91                        ?LOCATION_MATCH:
+    92 00:506E: CA                                   DEX
+    93 00:506F: 10 F2                                BPL             ?CHECK_LOCATION
+    94 00:5071: A2 03                                LDX             #$03
+    95 00:5073: BD 58 7D     ?CHECK_ENTRY:           LDA             $7D58,X
+    96 00:5076: DD 06 54                             CMP             HANDOFF_ENTRY_LO,X
+    97 00:5079: F0 03                                BEQ             ?ENTRY_MATCH
+    98 00:507B: 4C 03 51                             JMP             HANDOFF_CHANGED
+    99                        ?ENTRY_MATCH:
+   100 00:507E: CA                                   DEX
+   101 00:507F: 10 F2                                BPL             ?CHECK_ENTRY
+   102                        ; The second scan's validated staging copy is the only load source.
+   103 00:5081: 9C 31 7E                             STZ             HIM_AP_SRC_LO
+   104 00:5084: A9 0A                                LDA             #$0A
+   105 00:5086: 8D 32 7E                             STA             HIM_AP_SRC_HI
+   106 00:5089: 9C 33 7E                             STZ             HIM_AP_DST_LO
+   107 00:508C: A9 20                                LDA             #$20
+   108 00:508E: 8D 34 7E                             STA             HIM_AP_DST_HI
+   109 00:5091: A9 01                                LDA             #$01
+   110 00:5093: 8D 2F 7E                             STA             HIM_AP_OP
+  Wed Sep 16 2026 17:40                                                                                                    Page 3
+
+
+   111 00:5096: 20 10 51                             JSR             HANDOFF_AP_SERVICE
+   112 00:5099: 90 63                                BCC             HANDOFF_AP_ERROR
+   113 00:509B: E0 00                                CPX             #$00
+   114 00:509D: D0 64                                BNE             HANDOFF_CHANGED
+   115 00:509F: C0 20                                CPY             #$20
+   116 00:50A1: D0 60                                BNE             HANDOFF_CHANGED
+   117 00:50A3: AD 39 7E                             LDA             HIM_AP_BODY_LEN_LO
+   118 00:50A6: CD 08 54                             CMP             HANDOFF_BODY_LO
+   119 00:50A9: D0 58                                BNE             HANDOFF_CHANGED
+   120 00:50AB: AD 3A 7E                             LDA             HIM_AP_BODY_LEN_HI
+   121 00:50AE: CD 09 54                             CMP             HANDOFF_BODY_HI
+   122 00:50B1: D0 50                                BNE             HANDOFF_CHANGED
+   123                        ; LOAD reparsed and linked the same stage. Recheck its public identity/offset.
+   124 00:50B3: 20 9B 73                             JSR             APMAN_FIND_ENTRY_ROW
+   125 00:50B6: 90 4B                                BCC             HANDOFF_CHANGED
+   126 00:50B8: 20 25 E0                             JSR             HIM_FNV_MATCH_NAME
+   127 00:50BB: 90 46                                BCC             HANDOFF_CHANGED
+   128 00:50BD: A0 01                                LDY             #$01
+   129 00:50BF: B1 AC                                LDA             ($AC),Y
+   130 00:50C1: CD 06 54                             CMP             HANDOFF_ENTRY_LO
+   131 00:50C4: D0 3D                                BNE             HANDOFF_CHANGED
+   132 00:50C6: C8                                   INY
+   133 00:50C7: B1 AC                                LDA             ($AC),Y
+   134 00:50C9: CD 07 54                             CMP             HANDOFF_ENTRY_HI
+   135 00:50CC: D0 35                                BNE             HANDOFF_CHANGED
+   136                        ; Re-prove offset < BODY and form the final address without wrap.
+   137 00:50CE: AD 07 54                             LDA             HANDOFF_ENTRY_HI
+   138 00:50D1: CD 09 54                             CMP             HANDOFF_BODY_HI
+   139 00:50D4: 90 0A                                BCC             HANDOFF_ENTRY_IN_BODY
+   140 00:50D6: D0 2F                                BNE             HANDOFF_BAD_RANGE
+   141 00:50D8: AD 06 54                             LDA             HANDOFF_ENTRY_LO
+   142 00:50DB: CD 08 54                             CMP             HANDOFF_BODY_LO
+   143 00:50DE: B0 27                                BCS             HANDOFF_BAD_RANGE
+   144 00:50E0: AD 06 54     HANDOFF_ENTRY_IN_BODY:  LDA             HANDOFF_ENTRY_LO
+   145 00:50E3: 18                                   CLC
+   146 00:50E4: 69 00                                ADC             #$00
+   147 00:50E6: 85 A0                                STA             $A0
+   148 00:50E8: AD 07 54                             LDA             HANDOFF_ENTRY_HI
+   149 00:50EB: 69 20                                ADC             #$20
+   150 00:50ED: B0 18                                BCS             HANDOFF_BAD_RANGE
+   151 00:50EF: 85 A1                                STA             $A1
+   152 00:50F1: 20 13 51                             JSR             HANDOFF_RETIRE
+   153                        ; Manufacture a normal subroutine return edge, then tail-enter the child.
+   154 00:50F4: A9 50                                LDA             #>(HANDOFF_CHILD_RETURN-1)
+   155 00:50F6: 48                                   PHA
+   156 00:50F7: A9 FC                                LDA             #<(HANDOFF_CHILD_RETURN-1)
+   157 00:50F9: 48                                   PHA
+   158 00:50FA: 6C A0 00                             JMP             ($A0)
+   159 00:50FD: 60           HANDOFF_CHILD_RETURN:   RTS
+   160                        
+   161 00:50FE: AD 30 7E     HANDOFF_AP_ERROR:       LDA             HIM_AP_STATUS
+   162 00:5101: 80 06                                BRA             HANDOFF_FAIL_A
+   163                        HANDOFF_NOT_FOUND:
+   164 00:5103: A9 D1        HANDOFF_CHANGED:        LDA             #$D1
+   165 00:5105: 80 02                                BRA             HANDOFF_FAIL_A
+   166 00:5107: A9 D4        HANDOFF_BAD_RANGE:      LDA             #$D4
+   167 00:5109: 48           HANDOFF_FAIL_A:         PHA
+   168 00:510A: 20 13 51                             JSR             HANDOFF_RETIRE
+  Wed Sep 16 2026 17:40                                                                                                    Page 4
+
+
+   169 00:510D: 68                                   PLA
+   170 00:510E: 18                                   CLC
+   171 00:510F: 60                                   RTS
+   172 00:5110: 6C 2D 7E     HANDOFF_AP_SERVICE:     JMP             ($7E2D)
+   173                        
+   174                        ; Remove every discovery-owned byte before child entry or failure return.
+   175                        ; Keep $A0/$A1: they hold the final child entry on success.
+   176 00:5113: A2 1F        HANDOFF_RETIRE:         LDX             #$1F
+   177 00:5115: 9E 40 7D     ?CARD:                  STZ             $7D40,X
+   178 00:5118: CA                                   DEX
+   179 00:5119: 10 FA                                BPL             ?CARD
+   180 00:511B: A2 1F                                LDX             #$1F
+   181 00:511D: 9E 00 2F     ?NAME:                  STZ             $2F00,X
+   182 00:5120: CA                                   DEX
+   183 00:5121: 10 FA                                BPL             ?NAME
+   184 00:5123: 64 A2                                STZ             $A2
+   185 00:5125: A9 0A                                LDA             #$0A
+   186 00:5127: 85 A3                                STA             $A3
+   187 00:5129: A2 10                                LDX             #$10
+   188 00:512B: A0 00        ?STAGE_PAGE:            LDY             #$00
+   189 00:512D: A9 00                                LDA             #$00
+   190 00:512F: 91 A2        ?STAGE_BYTE:            STA             ($A2),Y
+   191 00:5131: C8                                   INY
+   192 00:5132: D0 FB                                BNE             ?STAGE_BYTE
+   193 00:5134: E6 A3                                INC             $A3
+   194 00:5136: CA                                   DEX
+   195 00:5137: D0 F2                                BNE             ?STAGE_PAGE
+   196 00:5139: A2 0F                                LDX             #(HANDOFF_STATE_END-HANDOFF_STATE-1)
+   197 00:513B: 9E 00 54     ?STATE:                 STZ             HANDOFF_STATE,X
+   198 00:513E: CA                                   DEX
+   199 00:513F: 10 FA                                BPL             ?STATE
+   200 00:5141: 60                                   RTS
+   201                        RAM_AP_HANDOFF_END:
+   202                                                END
+
+
+      Lines assembled: 205
+      Errors: 0

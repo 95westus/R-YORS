@@ -1,0 +1,128 @@
+{
+  "result": "PASS",
+  "bytes": 322,
+  "end_exclusive": "5142",
+  "binary_sha256": "8fde3b143f20960d27325ea7a16d0ea03148eadacc1f1097af2bed8441f77204",
+  "private_addresses": {
+    "HIM_FNV_MATCH_NAME": 57381,
+    "APMAN_FIND_ENTRY_ROW": 29595,
+    "RAM_AP_FIND": 8192
+  },
+  "inputs": {
+    "s19/himon-rom-c000.s19": "cc08b1099f3bf76a45c0f1efff119d6f5766209f028b03cc95e2ce4a7a2ad6e6",
+    "s19/apman-7000.s19": "f61c4246f9e40b89803698d838bf8d54112879f07cf6beeba93dfefeb5aa2ef7",
+    "s19/fnv-ram-ap-2000.s19": "aeb7ccacfa079e1c4639ef735094866cf69b49a6c86f8da0aec8aef0cb65e63b"
+  },
+  "cases": [
+    {
+      "case": "unique-ram-enters-and-returns",
+      "result": "PASS",
+      "a": "5A",
+      "carry": true,
+      "finder_calls": 2,
+      "load": true,
+      "entered": true,
+      "steps": 168039
+    },
+    {
+      "case": "nonzero-entry-offset",
+      "result": "PASS",
+      "a": "5A",
+      "carry": true,
+      "finder_calls": 2,
+      "load": true,
+      "entered": true,
+      "steps": 169483
+    },
+    {
+      "case": "resident-import-linked-before-entry",
+      "result": "PASS",
+      "a": "5A",
+      "carry": true,
+      "finder_calls": 2,
+      "load": true,
+      "entered": true,
+      "steps": 1249860
+    },
+    {
+      "case": "unique-banked-enters-and-returns",
+      "result": "PASS",
+      "a": "5A",
+      "carry": true,
+      "finder_calls": 2,
+      "load": true,
+      "entered": true,
+      "steps": 295387
+    },
+    {
+      "case": "duplicate-refuses-before-load",
+      "result": "PASS",
+      "a": "D2",
+      "carry": false,
+      "finder_calls": 1,
+      "load": false,
+      "entered": false,
+      "steps": 226046
+    },
+    {
+      "case": "missing-import-never-enters",
+      "result": "PASS",
+      "a": "09",
+      "carry": false,
+      "finder_calls": 2,
+      "load": true,
+      "entered": false,
+      "steps": 860319
+    },
+    {
+      "case": "malformed-provider-refuses",
+      "result": "PASS",
+      "a": "D1",
+      "carry": false,
+      "finder_calls": 1,
+      "load": false,
+      "entered": false,
+      "steps": 85298
+    },
+    {
+      "case": "invalid-card-refuses",
+      "result": "PASS",
+      "a": "D4",
+      "carry": false,
+      "finder_calls": 1,
+      "load": false,
+      "entered": false,
+      "steps": 12723
+    },
+    {
+      "case": "provider-change-between-scans-refuses",
+      "result": "PASS",
+      "a": "D1",
+      "carry": false,
+      "finder_calls": 2,
+      "load": false,
+      "entered": false,
+      "steps": 159650
+    },
+    {
+      "case": "staged-body-change-refuses",
+      "result": "PASS",
+      "a": "07",
+      "carry": false,
+      "finder_calls": 2,
+      "load": false,
+      "entered": false,
+      "steps": 167064
+    },
+    {
+      "case": "child-carry-and-a-are-preserved",
+      "result": "PASS",
+      "a": "A7",
+      "carry": false,
+      "finder_calls": 2,
+      "load": true,
+      "entered": true,
+      "steps": 168039
+    }
+  ]
+}

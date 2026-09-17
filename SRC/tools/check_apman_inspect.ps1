@@ -133,7 +133,7 @@ if ((Map 'APMAN_DUMP_PREFIX') -ge (Map 'APMAN_PRINT_LOCATION')) {
 # the checked STR8 selector. This is deliberately before bank switching and
 # remains safe when APMAN executes from its RAM overlay.
 if ($bodyStart -lt 0) { Fail 'BODY payload is missing' }
-$stageOffset = $bodyStart + (Map 'APMAN_STAGE_RAW') - 0x7000
+$stageOffset = $bodyStart + (Map 'APMAN_STAGE_RAW') - (Map 'APMAN_ENTRY')
 [byte[]]$stagePrefix = @(
     0x08, 0x78,             # PHP / SEI
     0xA5, 0xA8,             # LDA SECTOR

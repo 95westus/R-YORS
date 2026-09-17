@@ -1,0 +1,6 @@
+{
+  "result": "PASS",
+  "range": "5000-5141",
+  "exact_handoff_readback": true,
+  "asm_resume": "00"
+}

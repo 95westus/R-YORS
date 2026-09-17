@@ -102,7 +102,7 @@ def main():
         (folder/'top.bin').write_bytes(target)
         include = f'TU_CANDIDATE_SUM EQU ${sum(target)&65535:04X}\n'
         include += '\n'.join(' DB '+','.join(f'${x:02X}' for x in target[i:i+16]) for i in range(0,4096,16))+'\n'
-        (folder/'str8n-v1.34-top-image.inc').write_text(include)
+        (folder/'str8n-v1.35-top-image.inc').write_text(include)
         # RAM-only derivative: retain the proven programming/recovery routines.
         # Check roles and transition before backup mutation; unique confirmation.
         guard = f'''TU_PF_SIG1_OK:
@@ -119,14 +119,14 @@ POLICY_REJECT:          JMP TU_PREFLIGHT_FAIL
 POLICY_ACCEPT:
 '''
         derived = source.replace('TU_PF_SIG1_OK:', guard)
-        derived = derived.replace('"STR8-N 1.34 TOP UPDATE"', f'"STR8-N 1.34 POLICY {policy:02X}"')
-        derived = derived.replace('"TYPE STR8-N 1.34> "', f'"TYPE POLICY {policy:02X}> "')
-        derived = derived.replace('"STR8-N 1.34",0', f'"POLICY {policy:02X}",0')
+        derived = derived.replace('"STR8-N 1.35 TOP UPDATE"', f'"STR8-N 1.35 POLICY {policy:02X}"')
+        derived = derived.replace('"TYPE STR8-N 1.35> "', f'"TYPE POLICY {policy:02X}> "')
+        derived = derived.replace('"STR8-N 1.35",0', f'"POLICY {policy:02X}",0')
         (folder/'policy.asm').write_text(derived)
         shutil.copy2(inputs[4], folder/inputs[4].name)
         commands = [
             ['wdc02as','-G','-L','-S','-W','-I','.', '-DSTR8_TOP_EMBED=0',
-             '-DSTR8_DIRECTORY_REFRESH=0','-DSTR8_IN65_VERSION_134=1','policy.asm'],
+             '-DSTR8_DIRECTORY_REFRESH=0','-DSTR8_IN65_VERSION_135=1','policy.asm'],
             ['wdcln','-g','-s','-t','-hm19','-j','-o','policy.s19','policy.obj']]
         for command in commands:
             r = subprocess.run(command, cwd=folder, text=True, capture_output=True)

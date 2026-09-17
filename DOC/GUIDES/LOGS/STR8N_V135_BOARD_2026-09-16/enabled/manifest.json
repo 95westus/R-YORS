@@ -1,0 +1,27 @@
+{
+  "serial_log": "C:\\SRC\\R-YORS\\DOC\\GUIDES\\LOGS\\STR8N_V135_BOARD_2026-09-16\\serial-com4.jsonl",
+  "helper_sha256": "f15a35a26b88bc2d4a5eab83ed27f13a14007ec4fe25ac456631cf544efb7952",
+  "banks": {
+    "0": {
+      "bytes": 32768,
+      "sha256": "2f0000c74eceec809a814e31f822702977d7bfed5ee6f3bc4869627864ca59a8",
+      "reset": "F818"
+    },
+    "1": {
+      "bytes": 32768,
+      "sha256": "bdba6529824b41be3d4d9d862532c4ba30c455c4391408dcef7d72d3b9b30211",
+      "reset": "F000"
+    },
+    "2": {
+      "bytes": 32768,
+      "sha256": "0b2aa7566a6fbcea0263f6c02fbcab301b7310ac445698c1a9be9752c64456a6",
+      "reset": "F000"
+    },
+    "3": {
+      "bytes": 32768,
+      "sha256": "57bceb8ba9289ddde90de5c896f86ec6d9870512ad817751da1fa9a84671f5af",
+      "reset": "F000"
+    }
+  },
+  "flash_sha256": "d1d4b9db35106ce84ac9f55983a745bd852a6acbc4594f4d3aec74fbfacf45af"
+}

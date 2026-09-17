@@ -1,7 +1,7 @@
 ; Discover the APMAN carrier at a sector base in Banks 2, 1, then 0. Every
 ; candidate is fully parsed before its four-byte body identity is inspected.
 ; The command page is shadowed at $1A00 before loading because the manager may
-; use the complete $7000-$7BFF tool tray. Direct `AP pkg dst` remains the
+; use the complete $6C00-$7BFF tool tray. Direct `AP pkg dst` remains the
 ; recovery route when no installed manager can be found.
 HIM_APMAN_BOOTSTRAP:
 ; Reject unstable INSTALL input before command-shadow/selector/staging writes.
@@ -67,7 +67,7 @@ HIM_APMAN_POLICY_OK:
                         JSR             HIM_AP_SERVICE
                         BCC             ?NEXT
                         LDA             HIM_AP_BODY_LEN_HI
-                        CMP             #$0C
+                        CMP             #$10
                         BCC             ?SIZE_OK
                         BNE             ?NEXT
                         LDA             HIM_AP_BODY_LEN_LO
@@ -122,7 +122,7 @@ HIM_AP_MANAGER_ID_BODY:
 HIM_AP_MANAGER_ID_FAIL: CLC
                         RTS
 
-HIM_AP_MANAGER_ID:      DB              'A','M','0','2'
+HIM_AP_MANAGER_ID:      DB              'A','M','0','3'
 
 HIM_AP_STAGE_BANK_SOURCE:
                         LDA             CMDP_START_HI

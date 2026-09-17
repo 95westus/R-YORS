@@ -1,0 +1,7 @@
+{
+  "result": "PASS",
+  "physical_reset": true,
+  "handoff_cases": 3,
+  "all_32_sectors_exact": true,
+  "flash_sha256": "3f550b36ab774e9ab190743af68b8266feec7916685756a3fe8a2873d6b760ae"
+}

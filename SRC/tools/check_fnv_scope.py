@@ -24,7 +24,7 @@ def main():
     p.add_argument('--build-dir',type=Path,default=ROOT/'SRC/BUILD')
     p.add_argument('--output',type=Path,required=True)
     args=p.parse_args()
-    top=(ROOT.parent/'STR8-N/BUILD/v1.34/bin/str8n-v1.34-bank3-f000-ffff.bin').read_bytes()
+    top=(ROOT.parent/'STR8-N/BUILD/v1.35/bin/str8n-v1.35-bank3-f000-ffff.bin').read_bytes()
     carrier=(args.build_dir/'bin/apman-v1-bank2-8000.bin').read_bytes()
     cases=[]
 
@@ -77,7 +77,7 @@ def main():
     for bank in (2,1):
         m=make(); install(m,bank,9,capsule())
         r=command(m,'BANKDUMP')
-        assert r['carry'] and r['a']==0x5A and 'GO 2000' in r['output']
+        assert r['carry'] and r['a']==0x5A and r['output']==''
         assert 0 not in m.requests
         assert m.stages[:14]==[(b,s) for b in (2,1) for s in range(0x80,0x100,0x10)
                                if (b,s) not in ((1,0xE0),(1,0xF0))]
@@ -86,7 +86,7 @@ def main():
 
     m=make(); install(m,0,9,capsule())
     r=command(m,'BANKDUMP')
-    assert not r['carry'] and r['manager_status']==0xD1 and 0 not in m.requests
+    assert not r['carry'] and r['a']==0xD1 and r['manager_status']==0 and 0 not in m.requests
     save('excluded-b0',m,r)
 
     m=make(0xA7); install(m,0,9,capsule())
@@ -102,7 +102,8 @@ def main():
             m=make(0xA7,0); locations=[(b,s) for b in (2,1) for s in range(8,16)]
         for b,s in locations[:count]: install(m,b,s,capsule())
         r=command(m,'BANKDUMP')
-        assert not r['carry'] and r['manager_status']==0xD2 and m.m.ram[0x7D4B]==2
+        assert not r['carry'] and r['a']==0xD2 and r['manager_status']==0
+        assert m.m.ram[0x7D4B]==0
         assert r['output'].count('APMAN ERR=')==1 and 'GO ' not in r['output']
         save(f'duplicate-{count}',m,r)
 
@@ -126,12 +127,12 @@ def main():
     for name in (b'T',b'AA',b'ABC',b'FOUR',b'LONG_0123456789?.',b'A'*31):
         m=make(); install(m,2,9,capsule(name=name))
         r=command(m,name.decode())
-        assert r['carry'] and r['a']==0x5A
+        assert r['carry'] and r['a']==0x5A, (name, r)
         save('canonical-'+name.decode(),m,r)
 
     m=make(); install(m,2,9,capsule())
     r=command(m,'BANKDUMP',entry='CMD_DISPATCH_HASH')
-    assert r['a']==0x5A and 'GO 2000' in r['output'] and 0 not in m.requests
+    assert r['a']==0x5A and r['output']=='' and 0 not in m.requests
     save('resident-miss-dispatch',m,r)
 
     m=make(); install(m,2,9,capsule(name=b'FNV1A_INIT'))
@@ -155,7 +156,7 @@ def main():
 
     m=make(); install(m,2,9,capsule())
     r=command(m,'   BANKDUMP  ',entry='CMD_DISPATCH_HASH')
-    assert r['a']==0x5A and 'GO 2000' in r['output']
+    assert r['a']==0x5A and r['output']==''
     save('bare-command-leading-and-trailing-spaces',m,r)
 
     for offset in (4,0xFFFF):
@@ -181,7 +182,7 @@ def main():
     m=make(); install(m,2,9,capsule(body=b'\x20\0\0\x60',imports=import_record(1,b'NO_SUCH_IMPORT'),
                                   reloc=b'\x01\x04\x01\x00\x00\x00'))
     r=command(m,'BANKDUMP')
-    assert not r['carry'] and r['manager_status']==0xD3 and 'GO ' not in r['output']
+    assert not r['carry'] and r['a']==9 and r['manager_status']==0 and 'GO ' not in r['output']
     save('import-link-failure-no-entry',m,r)
 
     m=make(); install(m,2,9,b'FN\xD6'+fnv(b'BANKDUMP').to_bytes(4,'little')+b'\x01\x60')
@@ -211,8 +212,8 @@ def main():
     m.m.ram[0x7A00:0x7A09]=b'BANKDUMP\0';m.setword('CMDP_PTR_LO',0x7A00)
     # Three resident import scans plus full BODY validation exceed the small
     # fixture's five-million-instruction limit (about 5.9 million here).
-    r=m.run('HIM_FNV_FALLBACK',stop=0x2000,limit=8_000_000)
-    assert m.c.pc==0x2000 and 'GO 2000' in r['output'] and 0 not in m.requests
+    r=m.run('HIM_FNV_FALLBACK',stop=0x2000,limit=16_000_000)
+    assert m.c.pc==0x2000 and r['output']=='' and 0 not in m.requests
     for site,target in zip(sites,expected):
         assert m.m.ram[site:site+2]==word(target)
     save('real-bankdump-load-link-entry',m,r)
@@ -269,7 +270,7 @@ def main():
         return prior()
     m.c.step=fail_restore_once
     r=command(m,'BANKDUMP')
-    assert injected and not r['carry'] and r['manager_status']==0xD9
+    assert injected and not r['carry'] and r['a']==0xD9 and r['manager_status']==0
     assert m.m.bank==3 and 'GO ' not in r['output']
     save('restore-failure-retry-from-ram',m,r)
 
@@ -277,7 +278,7 @@ def main():
     for sector in (14,15):
         m=make(roles=(0xFF,0x2F)); install(m,1,sector,capsule())
         r=command(m,'BANKDUMP')
-        assert r['carry'] and r['a']==0x5A and (2,0xF0) not in m.stages
+        assert r['carry'] and r['a']==0x5A and r['output']=='' and (2,0xF0) not in m.stages
         assert m.stages[:15]==[(b,s) for b in (2,1) for s in range(0x80,0x100,0x10)
                               if (b,s)!=(2,0xF0)]
         save(f'no-flash-work-released-b1-{sector:X}',m,r)

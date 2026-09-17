@@ -217,7 +217,7 @@ def main():
     parser.add_argument('--baseline-dir', type=Path)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    top = (ROOT.parent/'STR8-N/BUILD/v1.34/bin/str8n-v1.34-bank3-f000-ffff.bin').read_bytes()
+    top = (ROOT.parent/'STR8-N/BUILD/v1.35/bin/str8n-v1.35-bank3-f000-ffff.bin').read_bytes()
     lock = json.loads((ROOT/'SRC/INTEGRATION/str8n.lock.json').read_text())
     assert sha(top).upper() == lock['artifacts']['topSectorSha256']
     fixture_directory = ROOT/'SRC/BUILD/tmp/apman-size-fixtures'

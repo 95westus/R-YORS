@@ -138,7 +138,7 @@ class Machine:
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--build-dir',type=Path,default=ROOT/'LOCAL/himon-ap-baseline-20260916/build-1')
-    p.add_argument('--top',type=Path,default=ROOT.parent/'STR8-N/BUILD/v1.34/bin/str8n-v1.34-bank3-f000-ffff.bin')
+    p.add_argument('--top',type=Path,default=ROOT.parent/'STR8-N/BUILD/v1.35/bin/str8n-v1.35-bank3-f000-ffff.bin')
     p.add_argument('--output',type=Path,required=True)
     args = p.parse_args()
     top = args.top.read_bytes()

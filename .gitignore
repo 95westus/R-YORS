@@ -12,6 +12,9 @@
 *.out
 *.app
 
+__pycache__/
+*.pyc
+
 *.hex
 
 .tmp_versions/

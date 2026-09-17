@@ -123,7 +123,7 @@ def qualify(stamp, baseline, logs):
         'release_stamp': stamp, 'basis': 'Complete host regression plus exact timestamp-only equivalence to physical-reset-qualified COM4 firmware.',
         'board_record': 'DOC/GUIDES/LOGS/ASMF2_SIZE_2026-09-15.md',
         'baseline_full_bank_sha256': BOARD_SHA,
-        'board_versions': {'STR8-N': '1.34', 'HIMON': '00.0915(2233)', 'ASM-F2': '00.0915(2243)'},
+        'board_versions': {'STR8-N': '1.35', 'HIMON': '00.0915(2233)', 'ASM-F2': '00.0915(2243)'},
         'timestamp_fields': versions,
         'changed_byte_count': sum(a != b for a, b in zip(original, payload)),
         'combined_s19_sha256': sha((ROOT / 'SRC/BUILD/s19' / COMBINED).read_bytes()),
@@ -274,7 +274,7 @@ installation, memory-map, assembler, and application instructions.
 
 ## Install
 
-Requires STR8-N 1.34. From HIMON enter `STR8`, confirm, then select `S`.
+Requires STR8-N 1.35. From HIMON enter `STR8`, confirm, then select `S`.
 At `STR8-N>` enter `I`, bank `3`, range `{range_text}`, and confirm `Y`.
 Only after `S19` appears send `FIRMWARE/{component}`. Wait for
 `COMMIT? Y:`, confirm `Y`, and require `OK`. Enter `C` to start HIMON;

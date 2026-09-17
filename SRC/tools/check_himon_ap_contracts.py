@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--build-dir', type=Path, default=ROOT/'SRC/BUILD')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    top = (ROOT.parent/'STR8-N/BUILD/v1.34/bin/str8n-v1.34-bank3-f000-ffff.bin').read_bytes()
+    top = (ROOT.parent/'STR8-N/BUILD/v1.35/bin/str8n-v1.35-bank3-f000-ffff.bin').read_bytes()
     lock = json.loads((ROOT/'SRC/INTEGRATION/str8n.lock.json').read_text())
     assert sha(top).upper() == lock['artifacts']['topSectorSha256']
     build = args.build_dir
@@ -46,7 +46,7 @@ def main():
     # Full-span checks, overflow, both destination policies, and unchanged source policy.
     for op, dst, length, expected in [
         (1,0x4000,1,0),(1,0x4FFF,1,0),(1,0x4FFF,2,6),
-        (1,0x5000,1,6),(1,0x6FFF,1,6),(1,0x7000,1,0),
+        (1,0x5000,1,6),(1,0x6BFF,1,6),(1,0x6C00,1,0),(1,0x7000,1,0),
         (1,0x7BFF,1,0),(1,0x7BFF,2,6),(1,0x7C00,1,6),
         (5,0x1FFF,1,6),(5,0x2000,1,0),(5,0x4FFF,2,0),
         (5,0x5000,4,0),(5,0x6D6D,1,0),(5,0x6FFF,1,0),
@@ -111,7 +111,7 @@ def main():
     for name,command,mode,installed,dst in [
         ('absent','APS',2,False,0x4000),('corrupt','APS',2,True,0x4000),
         ('load','AP L B1 8000 5000',1,True,0x5000),
-        ('last-byte','AP L B1 8000 6FFF',1,True,0x6FFF),
+        ('last-byte','AP L B1 8000 6BFF',1,True,0x6BFF),
         ('overlay-rejected','AP L B1 8000 7000',1,True,0x7000),
         ('named','AP L B1 T 5000',1,True,0x5000),
         ('duplicate','AP L B1 T 5000',1,True,0x5000),

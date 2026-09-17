@@ -397,8 +397,22 @@ SPI SRAM WORK is not yet allocated.
   providers or extend monitor dispatch. The subsequent
   [RAM AP slice](../AP/RAM_AP_UNIQUENESS_2026-09-16.md) implements bounded AP
   validation and combined RAM/bank uniqueness as a 476-byte, image-pinned
-  metadata inspector. Load/link ownership and command entry remain open;
-  this combined checkbox stays unchecked. SPI SRAM is not installed; defer SPI support and
+  metadata inspector. The following
+  [safe-handoff slice](../AP/RAM_AP_HANDOFF_2026-09-16.md) adds a separate
+  322-byte `$5000` transition that repeats discovery, loads/links at `$2000`,
+  retires discovery state, enters the child, and returns through the caller's
+  stack edge. The [AM03 candidate](../AP/AM03_RESIDENT_INTEGRATION_2026-09-16.md)
+  now integrates those rules into the manager path reached by a resident miss.
+  Its BODY is `$6C00-$7BB0` and its envelope is `$0FDF`; focused handoff,
+  range, legacy-manager, front-door and accepted-readback audits pass. AM03 is
+  installed with HIMON `0916(1949)`. Corrected board checks prove RAM child
+  execution, bank APTEST loading, retirement and BANKDUMP imports/map/return;
+  the earlier missing-`GO` verdict was a harness error (see the
+  [correction](../LOGS/AM03_BOARD_2026-09-16/HANDOFF_CORRECTION.md)). Physical
+  reset, all three post-reset handoff checks, and exact all-32-sector readback
+  now pass. The broader RAM/HREC scope remains open, so this combined checkbox
+  stays unchecked.
+  SPI SRAM is not installed; defer SPI support and
   WORK allocation until the operator confirms installation.
 - [ ] After the scoped-search proof, implement only a separately frozen bridge
   to the R-YORS II Dynamic FNV Provider Registry. Its proposal lives in the

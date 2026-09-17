@@ -62,7 +62,7 @@ def main():
         else:
             raise AssertionError('Boundary gate accepted '+bad)
 
-    top = (ROOT.parent/'STR8-N/BUILD/v1.34/bin/str8n-v1.34-bank3-f000-ffff.bin').read_bytes()
+    top = (ROOT.parent/'STR8-N/BUILD/v1.35/bin/str8n-v1.35-bank3-f000-ffff.bin').read_bytes()
     lock = json.loads((ROOT/'SRC/INTEGRATION/str8n.lock.json').read_text())
     assert sha(top).upper() == lock['artifacts']['topSectorSha256']
     cases = []

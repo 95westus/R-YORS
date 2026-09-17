@@ -25,6 +25,27 @@ those gates agree.
 
 ## Host Gate
 
+AM03 automatic handoff is silent. Its board oracle must observe a child-written
+RAM marker, a fresh loaded BODY, retired scope/staging state, or actual
+BANKDUMP menu/map/return; do not require the legacy `GO`/`AP LOAD` messages.
+The [corrected AM03 verification](../LOGS/AM03_BOARD_2026-09-16/HANDOFF_CORRECTION.md)
+passes these checks on the installed pair. The separate physical-reset gate
+also passes, with all three handoff checks repeated and all 32 flash sectors
+matching the expected image. Preserve earlier failed harness transcripts as historical
+evidence, not as proof that child execution failed.
+
+The [safe RAM AP handoff proof](../AP/RAM_AP_HANDOFF_2026-09-16.md) adds
+`make -C SRC fnv-ram-ap-handoff-check` to `asm-test`. Require two complete
+uniqueness passes with exact location/entry/BODY agreement, bounded load to
+`$2000-$2FFF`, resident relocation/import linking, final canonical entry
+revalidation, and complete card/name/stage/private-state retirement before
+child entry or failure return. Assert no provider or flash write, no staged or
+provider execution, no foreign-ROM fetch, no entry after any link failure, and
+ASM-resume invalidation on every path. Require balanced child `RTS` return with
+child A/flags preserved. Board proof uses only
+RAM transients and accepted flash carriers; no flash update is part of this
+slice.
+
 The [RAM AP/combined uniqueness proof](../AP/RAM_AP_UNIQUENESS_2026-09-16.md)
 adds `make -C SRC fnv-ram-ap-check` to `asm-test`. Require bounded full-envelope
 copy before PARSE, canonical-name and entry validation, duplicate saturation
@@ -467,6 +488,21 @@ boot, and HIMON prompt trace. Post-reset ASM retained its identity and text
 errors; a fresh session passed assembly/SEAL/PACKAGE/LOAD and exact `A9 AC 60`
 readback. The feature queue is now accepted. Detailed evidence is in
 [the new hardware record](../LOGS/ASMF2_TEXT_2026-09-05.md).
+
+## AM03 offline integration gate
+
+Before an AM03 board install, run `make -C SRC asm-test` with the frozen
+visible stamp. Its prerequisites must prove the `$6C00-$7BFF` tray and
+carrier limits, audit every AP in the accepted final readback against the
+`$6C00` child ceiling, exercise combined RAM/bank uniqueness and guarded
+handoff, and retain the resident-front-door scope regression. The handoff cases
+must include provider change between scans, staged tampering, failed imports,
+duplicate refusal, exact retirement and child A/carry return.
+
+These checks qualify an offline candidate only. Board acceptance requires a
+paired HIMON/AM03 install at B2:8, reset/isolation proof and the existing banked
+regression. A real RAM-backed command remains deferred until provider hardware
+is installed.
 
 ## Current Board Gate
 

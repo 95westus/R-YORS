@@ -1,0 +1,42 @@
+[
+  {
+    "case": "ram-retire-enter-return",
+    "result": "PASS",
+    "capture": "5a35a500000000000000000000000000"
+  },
+  {
+    "case": "ram-import-link-enter",
+    "result": "PASS",
+    "capture": "5a35a500000000000000000000000000"
+  },
+  {
+    "case": "bank-aptest-enter-return",
+    "result": "PASS",
+    "capture": "5a350000000000000000000000000000"
+  },
+  {
+    "case": "ram-bank-duplicate-refuses",
+    "result": "PASS",
+    "capture": "d2b40000000000000000000000000000"
+  },
+  {
+    "case": "missing-import-never-enters",
+    "result": "PASS",
+    "capture": "09340009000000000000000000000000"
+  },
+  {
+    "case": "malformed-provider-refuses",
+    "result": "PASS",
+    "capture": "d1b40000000000000000000000000000"
+  },
+  {
+    "case": "invalid-card-refuses",
+    "result": "PASS",
+    "capture": "d4b40000000000000000000000000000"
+  },
+  {
+    "case": "child-clear-carry-return",
+    "result": "PASS",
+    "capture": "a7b4a500000000000000000000000000"
+  }
+]

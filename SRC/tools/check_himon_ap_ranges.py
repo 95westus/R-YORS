@@ -83,12 +83,12 @@ def main():
 
     for op in (1, 5):
         windows = ((0x2000, 0x7000),) if op == 5 else (
-            (0x2000, 0x5000), (0x7000, 0x7C00))
+            (0x2000, 0x5000), (0x6C00, 0x7C00))
         for high in range(256):
             for low in (0, 1, 0xFE, 0xFF):
                 destination = high * 256 + low
                 lengths = {0, 1, 2, 0xFF, 0x100, 0x101, 0x1000, 0xFFFF}
-                for end in (0x2000, 0x5000, 0x7000, 0x7C00, 0x10000):
+                for end in (0x2000, 0x5000, 0x6C00, 0x7000, 0x7C00, 0x10000):
                     lengths.update(end - destination + delta for delta in (-1, 0, 1)
                                    if 0 <= end - destination + delta <= 0xFFFF)
                 for length in sorted(lengths):

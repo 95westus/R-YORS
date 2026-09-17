@@ -1,0 +1,11 @@
+{
+  "serial_log": "C:\\SRC\\R-YORS\\DOC\\GUIDES\\LOGS\\AM03_BOARD_2026-09-16\\serial-com4.jsonl",
+  "helper_sha256": "f15a35a26b88bc2d4a5eab83ed27f13a14007ec4fe25ac456631cf544efb7952",
+  "banks": {
+    "2": {
+      "bytes": 32768,
+      "sha256": "5e7b6c7e4cbc18fa38f8850475ac37cb69cd92cbce77ecc097f965d261a5c03f",
+      "reset": "F000"
+    }
+  }
+}

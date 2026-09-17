@@ -1,0 +1,34 @@
+{
+  "result": "PASS",
+  "exported_tool": {
+    "name": "fnv-ram-ap-handoff-5000",
+    "kind": "private image-pinned safe AP handoff proof",
+    "source_repository": "R-YORS",
+    "source": "SRC/BUILD/s19/fnv-ram-ap-handoff-5000.s19",
+    "load_address": "5000",
+    "last_address": "5141",
+    "s19_entry": "5000",
+    "data_bytes": 322,
+    "bin_bytes": 322,
+    "hole_fill": "FF",
+    "requirements": "Requires the matching fnv-ram-ap-2000 inspector, HIMON/AM02 images and freshly loaded AM02 overlay. Call $5000 only after initializing the inspector card/name. Repeats unique discovery, loads/links to $2000, retires discovery state, and enters the child. Child RTS returns through the handoff. See DOC/GUIDES/AP/RAM_AP_HANDOFF_2026-09-16.md and BUILD/tmp/fnv-ram-ap-handoff.json image identities.",
+    "native_source": null,
+    "files": {
+      "A/fnv-ram-ap-handoff-5000.a": "7325ba2a716df94dffe7e9980c87b30a0813e0171df880c85bb37d5729ccc53e",
+      "S19/fnv-ram-ap-handoff-5000.s19": "a746b6600d0e632564fa966f55cd88e9345a671787fb645e05584842b62fd4bd",
+      "BIN/fnv-ram-ap-handoff-5000.bin": "8fde3b143f20960d27325ea7a16d0ea03148eadacc1f1097af2bed8441f77204"
+    },
+    "image_pins": {
+      "inputs": {
+        "s19/himon-rom-c000.s19": "cc08b1099f3bf76a45c0f1efff119d6f5766209f028b03cc95e2ce4a7a2ad6e6",
+        "s19/apman-7000.s19": "f61c4246f9e40b89803698d838bf8d54112879f07cf6beeba93dfefeb5aa2ef7",
+        "s19/fnv-ram-ap-2000.s19": "aeb7ccacfa079e1c4639ef735094866cf69b49a6c86f8da0aec8aef0cb65e63b"
+      },
+      "private_addresses": {
+        "HIM_FNV_MATCH_NAME": 57381,
+        "APMAN_FIND_ENTRY_ROW": 29595,
+        "RAM_AP_FIND": 8192
+      }
+    }
+  }
+}

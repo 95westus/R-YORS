@@ -22,9 +22,15 @@ card, not a standalone monitor command. Its
 existing `$3000-$3FFF` RAM and does not authorize provider execution.
 `fnv-ram-ap-2000` is the subsequent
 [RAM AP/combined uniqueness inspector](../DOC/GUIDES/AP/RAM_AP_UNIQUENESS_2026-09-16.md).
-It requires matching HIMON/AM02 image pins from the manifest and a freshly
+It requires matching HIMON/AM03 image pins from the manifest and a freshly
 loaded manager. Its result is an envelope location and entry offset, with no
 provider load/link/entry. The HREC and AP proofs are alternative `$2000` images.
+`fnv-ram-ap-handoff-5000` is the retained matching
+[safe handoff](../DOC/GUIDES/AP/RAM_AP_HANDOFF_2026-09-16.md). It survives at
+`$5000`, repeats the inspector search, loads/links the selected BODY over the
+inspector at `$2000`, retires all discovery state, and enters the child. It is
+also private and image-pinned; it is not a standalone monitor command. AM03
+now integrates this transition into resident-miss dispatch.
 The maintained WDCMONv2 archive/migration RAM tools retain their original use
 requirements. Lab-only factory reconstruction images, private `$0200` workers,
 and flash-resident images are excluded. The manifest records excluded R-YORS

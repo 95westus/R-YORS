@@ -1,8 +1,8 @@
-; Private, image-pinned AP metadata proof. Loaded AM02 required.
+; Private, image-pinned AP metadata proof. Matching loaded manager required.
 ; $7D40 card: format=1, stable name at $2F00 (length 1..31), requested
 ; banks/windows as installed finder; RAM enable nonzero requires windows=$08.
 ; Code $2000..., state $2E00-$2E0F, name $2F00-$2F1E, providers $3000-$3FFF.
-; Staging $0A00-$19FF, AM02 $7000...; foreground Bank 3, decimal clear.
+; Staging $0A00-$19FF, current manager overlay; foreground Bank 3, decimal clear.
 ; No provider load/link/entry. C=1/A=$AC unique metadata; D1 miss, D2 duplicate,
 ; D4 request, D9 restore failure. +$18/19 entry OFFSET, +$1A/1B BODY length.
 ; Found source 1=RAM, 2=bank; bank=$FF for RAM; window=3 or sector high byte.

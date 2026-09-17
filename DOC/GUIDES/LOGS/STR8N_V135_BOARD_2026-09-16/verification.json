@@ -1,0 +1,10 @@
+{
+  "result": "PASS",
+  "changed_sectors": [
+    "B2:F",
+    "B3:F"
+  ],
+  "b2f_exact_old_top": true,
+  "other_sectors_unchanged": true,
+  "flash_sha256": "c0c0398cfb3a8a027963c341351418eae311b868ed5e106d88f03d81f44118d3"
+}

@@ -337,8 +337,8 @@ if ($source.Contains('HIM_APMAN_BOOTSTRAP:')) {
         Fail 'APMAN package BODY is missing or malformed'
     }
     if ($body[2] -ne [byte][char]'A' -or $body[3] -ne [byte][char]'M' -or
-            $body[4] -ne [byte][char]'0' -or $body[5] -ne [byte][char]'2') {
-        Fail 'APMAN package BODY does not carry the AM02 scoped manager identity'
+            $body[4] -ne [byte][char]'0' -or $body[5] -ne [byte][char]'3') {
+        Fail 'APMAN package BODY does not carry the AM03 scoped manager identity'
     }
     $apHave = $apman.IndexOf('APMAN_AP_HAVE:')
     $apLoad = $apman.IndexOf('APMAN_AP_LOAD:')
@@ -351,7 +351,7 @@ if ($source.Contains('HIM_APMAN_BOOTSTRAP:')) {
     }
     $sealedBase = [int]$package[9] -bor ([int]$package[10] -shl 8)
     $bodyEnd = [int]$package[11] -bor ([int]$package[12] -shl 8)
-    if ($sealedBase -ne 0x7000 -or $bodyEnd -gt 0x7C00) {
+    if ($sealedBase -ne 0x6C00 -or $bodyEnd -gt 0x7C00) {
         Fail ('APMAN body ${0:X4}-${1:X4} exceeds the manager tray' -f $sealedBase, $bodyEnd)
     }
     if ((Map 'HIM_APMAN_BOOTSTRAP') -lt 0xC000) { Fail 'APMAN bootstrap is not resident' }

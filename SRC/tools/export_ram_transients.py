@@ -46,7 +46,7 @@ def main():
                   'wdcmonv2-archive', 'wdcmonv2-install')
     sources = [(ROOT, p) for p in sorted((ROOT/'SRC/BUILD/s19').glob('*.s19'))]
     for name in str8_names:
-        p = args.str8_home/f'BUILD/v1.34/s19/str8n-v1.34-{name}-2000.s19'
+        p = args.str8_home/f'BUILD/v1.35/s19/str8n-v1.35-{name}-2000.s19'
         assert p.is_file(), p
         sources.append((args.str8_home, p))
     out = args.output
@@ -65,8 +65,12 @@ def main():
         binary = bytes(memory.get(a, 255) for a in range(low, high+1))
         kind = 'AP envelope' if binary[:3] == b'AP\x02' else 'RAM image'
         image_pins = None
-        if source.stem == 'fnv-ram-ap-2000':
-            proof = json.loads((ROOT/'SRC/BUILD/tmp/fnv-ram-ap.json').read_text())
+        private_proofs = {
+            'fnv-ram-ap-2000': 'fnv-ram-ap.json',
+            'fnv-ram-ap-handoff-5000': 'fnv-ram-ap-handoff.json',
+        }
+        if source.stem in private_proofs:
+            proof = json.loads((ROOT/'SRC/BUILD/tmp'/private_proofs[source.stem]).read_text())
             assert proof['result'] == 'PASS' and proof['binary_sha256'] == sha(binary)
             for name, digest in proof['inputs'].items():
                 assert sha((ROOT/'SRC/BUILD'/name).read_bytes()) == digest, ('stale private image pin', name)
@@ -103,13 +107,16 @@ def main():
         if kind == 'AP envelope':
             requirements = 'Data package: stage and use AP LOAD/INSTALL; do not jump to the S9 address.'
         elif source.stem == 'apman-7000':
-            requirements = 'Private AM02 overlay; requires HIMON bootstrap and initialized manager request state.'
+            requirements = 'Private AM03 overlay at $6C00; requires HIMON bootstrap and initialized manager request state.'
         elif source.stem == 'fnv-ram-hrec-2000':
             kind = 'private RAM HREC inspection proof'
             requirements = 'Initialize private $7D40-$7D5F card: banks=0, RAM enable=1, windows=$08, format=0, wanted hash. Bank 3, decimal clear. Scans only $3000-$3FFF; returns metadata, never executes providers. Not a monitor command or public resolver ABI. See DOC/GUIDES/AP/RAM_HREC_PROOF_2026-09-16.md.'
         elif source.stem == 'fnv-ram-ap-2000':
             kind = 'private image-pinned RAM AP uniqueness proof'
-            requirements = 'Requires matching HIMON/AM02 images and a freshly loaded AM02 overlay; pinned private helpers, not a public ABI. Initialize $7D40 card, format=1, stable name at $2F00, RAM window=$08 when enabled. Owns $2E00 state and staging tray. Metadata only; no load/link/entry. See DOC/GUIDES/AP/RAM_AP_UNIQUENESS_2026-09-16.md and BUILD/tmp/fnv-ram-ap.json image identities.'
+            requirements = 'Requires matching HIMON/AM03 images and a freshly loaded AM03 overlay; pinned private helpers, not a public ABI. Initialize $7D40 card, format=1, stable name at $2F00, RAM window=$08 when enabled. Owns $2E00 state and staging tray. Metadata only; no load/link/entry. See DOC/GUIDES/AP/RAM_AP_UNIQUENESS_2026-09-16.md and BUILD/tmp/fnv-ram-ap.json image identities.'
+        elif source.stem == 'fnv-ram-ap-handoff-5000':
+            kind = 'private image-pinned safe AP handoff proof'
+            requirements = 'Retained standalone proof superseded by AM03 resident-miss integration. Requires the matching fnv-ram-ap-2000 inspector and exact HIMON/AM03 images. Call $5000 only after initializing the inspector card/name. See DOC/GUIDES/AP/RAM_AP_HANDOFF_2026-09-16.md and BUILD/tmp/fnv-ram-ap-handoff.json image identities.'
         elif source.stem in ('bank-audit-2000', 'bank-dump-2000'):
             kind = 'host comparison fixture'
             requirements = 'Pins historical HIMON call addresses: do not launch this raw image on the current monitor. Use the companion -imports.a and normal AP load/link.'

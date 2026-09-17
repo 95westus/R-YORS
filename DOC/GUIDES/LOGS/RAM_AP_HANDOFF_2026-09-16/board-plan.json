@@ -1,0 +1,82 @@
+[
+  {
+    "name": "ram-retire-enter-return",
+    "a": 90,
+    "carry": true,
+    "marker": 165,
+    "s19_sha256": "eeec65cf824f8e8ba925aad11497ae36818652c1634af3f02376f4305aa68bf8",
+    "capture": "5a31a500",
+    "provider_sha256": "62a9014bca54b28607a10b0101a7c08343d339e6b23a84f0f4b0b81781aa65ac",
+    "loaded": "ad407d0d002f0d000a0d0054d009a9a58d0069a95a3860a9ee1860"
+  },
+  {
+    "name": "ram-import-link-enter",
+    "a": 90,
+    "carry": true,
+    "marker": 165,
+    "s19_sha256": "c24d597abd23827e202664ce01e2f912dfb3f5e2ecc47b281d680a05ef48baaa",
+    "capture": "5a31a500",
+    "provider_sha256": "f1cfb95591c4be2e1e0a44665121b49369efe35ef8fa1bac10362df3e66cb785",
+    "loaded": "3be4a9a58d0069a95a3860"
+  },
+  {
+    "name": "bank-aptest-enter-return",
+    "a": 90,
+    "carry": true,
+    "marker": 0,
+    "s19_sha256": "027b5be9a7fb42e2e6ec1c8d789d5573f5ba971a35c78f8da5f24f65d861bed9",
+    "capture": "5a310000",
+    "provider_sha256": "f47a8ec3e9aff2318d896942282ad4fe37d6391c82914f54a5da8a37de1300c6",
+    "loaded": ""
+  },
+  {
+    "name": "ram-bank-duplicate-refuses",
+    "a": 210,
+    "carry": false,
+    "marker": 0,
+    "s19_sha256": "bb84fea30047365a2cf6292e04758a5e26d271d3e0ac136d15ba354253e9a629",
+    "capture": "d2b00000",
+    "provider_sha256": "0f0b158c2ebcc6e6a26dfa7b801742717886ff65d8691d1178ee8df50ab7d752",
+    "loaded": ""
+  },
+  {
+    "name": "missing-import-never-enters",
+    "a": 9,
+    "carry": false,
+    "marker": 0,
+    "s19_sha256": "2283ace95f115557bd2f376d7caba207a5fe2f65a9219c60f180daa2d4d165dc",
+    "capture": "09300009",
+    "provider_sha256": "49f9c5b7d0d6d4729599187559c8d899c1fb9f826635d834e74eaecb78edaf07",
+    "loaded": "0000a9a58d0069a95a3860"
+  },
+  {
+    "name": "malformed-provider-refuses",
+    "a": 209,
+    "carry": false,
+    "marker": 0,
+    "s19_sha256": "87165c0834ad71c497c6a39774c6efa370716510c15b98b4f81a3367ddb9484b",
+    "capture": "d1b00000",
+    "provider_sha256": "e047b535939fe6607368f3088274873d4e05daf7b41ea767fb6a0da3af8788c9",
+    "loaded": ""
+  },
+  {
+    "name": "invalid-card-refuses",
+    "a": 212,
+    "carry": false,
+    "marker": 0,
+    "s19_sha256": "7ec7a5800d2fc67d404de04cf8fb213598b41b8c922b2c942f8fa5cad9b6e7be",
+    "capture": "d4b00000",
+    "provider_sha256": "95069eacf45cdd3625287bb40b159dcba383ff91ecc602c137ab38afc700b57b",
+    "loaded": ""
+  },
+  {
+    "name": "child-clear-carry-return",
+    "a": 167,
+    "carry": false,
+    "marker": 165,
+    "s19_sha256": "eb3c48c600744c80eaf4f57cec96705d57dcc4d4c6bb6bd25d200c1a302a62ab",
+    "capture": "a7b0a500",
+    "provider_sha256": "c084dbf72ff0184f7c888d5c180cac98850262c0b53391e5ad2b32b50f9a130a",
+    "loaded": "a9a58d0069a9a71860"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "result": "PASS",
+  "flash_sha256": "f2894b6dca4051fdea0a573830f9af1bb29cb2543ccbb08033639c211235f59d",
+  "old_top_sha256": "90ee878d1989e4428bbcf3aa78aca07623f26e624b2418a5855f5cb48e68c138",
+  "old_backup_b2f_sha256": "2888941e6fbbd6f80f4046a96268ca84eaa6396ea7acd9babfa05793268ca795",
+  "expected_top_sha256": "ab36a4faa23bf43db2de76a37098dbbb6b8638ebf0128d28281167ff7994175e",
+  "updater_sha256": "f9c18e424a8689c0f1c1cadddcb585852eef2f3a77e46a7f58928cd7ad30e846",
+  "changed_top_addresses": [
+    "FC45",
+    "FFF2"
+  ],
+  "policy_transition": "A6 -> FF; restore A6 with guarded F command after v1.35 verification"
+}
