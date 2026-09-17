@@ -1,4 +1,7 @@
-# AM03 resident-miss integration candidate
+# AM03 resident-miss integration
+
+See [AP/FNV capabilities, limits and future work](AP_FNV_CAPABILITIES.md) for
+the operator-level scope and the distinction between current and proposed features.
 
 Status: installed with HIMON `00.0916(1949)`, STR8-N 1.35 and policy `$A6`.
 Focused board handoff verification passes. The earlier reported handoff failure
@@ -37,8 +40,9 @@ names through 31 characters, malformed and duplicate providers, imports,
 double-scan provider change, staged tampering, child A/carry preservation,
 state retirement, 33,270 destination-range cases, legacy APMAN operations and
 the full accepted readback. The readback audit found BANKAUDIT, Microchess,
-APTEST and BANKDUMP all ending below `$6C00`; installed AM02 is excluded from
-the child ceiling and remains the recovery baseline.
+APTEST and BANKDUMP all ending below `$6C00`; the earlier AM02 manager in that
+baseline audit was excluded from the child ceiling. Current HIMON requires AM03;
+that older AM02 image is not a drop-in manager for the current pair.
 
 The retained [host qualification record](../LOGS/AM03_HOST_2026-09-16.md)
 captures the full gate result and exact candidate identities.

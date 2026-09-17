@@ -380,8 +380,10 @@ SPI SRAM WORK is not yet allocated.
   Coordinated installation and [banked AP board qualification](../LOGS/SCOPED_QUALIFICATION_2026-09-16.md)
   pass, including B1/B2 BANKDUMP/imports, malformed/duplicate refusal, resident
   precedence, role guards, paced LED/PCR observation, reset and isolation.
-  RAM-provider/HREC search remains open, so this combined checkbox stays
-  unchecked. BANKDUMP is retained at B2:A; APTEST remains at B2:9.
+  General RAM/HREC provider integration remains open, so this combined checkbox
+  stays unchecked; bounded RAM AP dispatch is now integrated in AM03 as recorded
+  below. See [current capabilities and future boundaries](../AP/AP_FNV_CAPABILITIES.md).
+  BANKDUMP is retained at B2:A; APTEST remains at B2:9.
   The completed banked AP pass is the [scoped-discovery board slice](SCOPED_FNV_BOARD_SLICE_2026-09-16.md):
   prepare guarded policy provisioning and recovery, qualify the HIMON/AM02
   pair, and retain reset/isolation evidence before extending RAM discovery.

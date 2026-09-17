@@ -302,6 +302,8 @@ for a new HIMON + ASM-F2 installation. The
 
 ## Possible Next Capabilities
 
+For the recent AP/FNV work, see [what works, what does not, and future work](AP/AP_FNV_CAPABILITIES.md).
+
 These are grounded in the current plans and proven mechanisms, but remain
 non-current until the normal source, size, host-test, documentation, and board
 gates agree.
@@ -309,14 +311,14 @@ gates agree.
 | Possible capability | Why it is plausible | What is still missing |
 | --- | --- | --- |
 | Consolidated AP Store manager | V1 media and transient install/read/plan/delete tools are already hardware-accepted | One persistent menu/dispatcher, frozen overlay map, recovery contract, and complete acceptance pass |
-| Scoped automatic external AP/FNV search | Resident FNV lookup, banked/RAM uniqueness, and a private safe load/link/entry handoff are proven | Resident-miss command integration and its final size/board acceptance |
+| Broader AP/FNV provider support | AM03 resident-miss dispatch for bounded RAM AP and eligible flash carriers is installed and reset-qualified | General RAM/HREC integration, additional windows and a wider final-image board matrix remain separate work |
 | Managed AP Store compaction | Live/stale/free accounting and append-only generations already exist | Atomic compaction/recovery rules, wear policy, implementation, and destructive board testing |
 | A stable parent-AP/child-AP call ABI | Direct AP loading and manager operation `$04` make chaining mechanically possible | Parent context, scratch ownership, non-overlap, error-return, and reset/bank-restore contracts |
 | Non-runnable library/module packages | AP v2 already represents typed exports and imports | Package identity for bodies without an executable `ENTRY`; `MODULE` is reserved but not syntax |
 | Self-identifying images | Typed DATA exports can carry an image descriptor | AIM/IMD schema, non-self-referential digest, build coherence gate, and proof |
 | Additional transfer formats | The record-service boundary can host explicit parsers | Format contracts and gates; Intel HEX, counted binary, S2/S8, and XMODEM-style transfer are not current |
 | Persistent breakpoints | One-shot breakpoint restore and step machinery already work | Replant/step-over state, lifecycle rules, and hardware proof |
-| Page-level Bank 1 work allocation and wear tracking | B1:E already has an accepted WORK role | Page allocator, erase counters, recovery semantics, and rotation policy |
+| Expanded workspace allocation and wear tracking | Prior flash-WORK experiments and bounded RAM ownership provide design experience | Current WORK is unassigned; confirm hardware/media ownership, then define allocator, recovery and wear policy |
 
 The authoritative scheduling and completion checklist is the
 [ASM Feature Queue](PLANNING/TODO.md). Design sketches elsewhere do not promote
@@ -357,8 +359,9 @@ an item into this table's “current” category.
 - Breakpoints are one-shot, volatile, and limited to permitted user RAM. They
   are not persistent flash breakpoints and cannot safely patch monitor, I/O,
   or flash space.
-- Resident Bank-3 FNV records remain authoritative. Automatic discovery of
-  arbitrary same-named routines across enrolled external banks is not current.
+- Resident Bank-3 FNV records remain authoritative. AM03 automatically discovers
+  bounded AP command providers on a resident miss; arbitrary same-named routines,
+  generation selection and external HREC execution are not current.
 
 ### ASM-F2 and AP linking
 
