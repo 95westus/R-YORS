@@ -14,6 +14,8 @@ import json
 from pathlib import Path
 import re
 
+from finalize_himon_layout import layout as himon_layout
+
 
 # Start inclusive, end exclusive. Keep semantic boundaries explicit: sorting
 # label names alone misattributes local labels, aliases and non-emitted equates.
@@ -27,8 +29,6 @@ HIMON_GROUPS = [
     ('ap', 'HIMON-owned typed-import provider (AP functional subtotal)', 'HIM_AP_LINK_RESOLVE_SLOT_X', 'HIM_AP_LINK_IMPORT_ROW_PTR_X'),
     ('ap', 'Import row walking and relocation patching', 'HIM_AP_LINK_IMPORT_ROW_PTR_X', 'HIM_AP_FIND_HOLE'),
     ('ap', 'Hole suggestion and shared AP error exits', 'HIM_AP_FIND_HOLE', 'L_NOTE_S1_ADDR'),
-    ('ap', 'AP usage and manager-not-found strings', 'MSG_USAGE_AP', 'MSG_USAGE_L'),
-    ('ap', 'AP error prefix', 'MSG_AP_ERR', 'MSG_L_READY'),
     ('shared', 'High-bit string output', 'HIM_WRITE_HBSTRING', 'MON_CTX_REQUIRE_VALID'),
     ('shared', 'PACK40 primitives', 'HIM_PACK40_ASCII_TO_CODE', 'HIM_APMAN_BOOTSTRAP'),
     ('shared', 'Resident catalog/resolver, including catalog UI helpers', 'THE_JOIN_EXEC_XY_FNV', 'FNV1A_INIT_FNV'),
@@ -89,6 +89,10 @@ def image(build, name, begin, end_symbol, limit):
     mpath = spath.with_suffix('.map')
     sym, memory = symbols(mpath), srecord(spath)
     end = sym[end_symbol]
+    fixed_page = 'HIM_MESSAGE_PAGE' in sym
+    layout = himon_layout(sym, memory, require_dense=True) if fixed_page else None
+    if layout:
+        end = limit
     if not begin < end <= limit:
         raise ValueError(f'Invalid image bounds: {name}')
     expected = set(range(begin, end))
@@ -100,10 +104,19 @@ def image(build, name, begin, end_symbol, limit):
                   holes=0, limit=limit, headroom=limit-end, dense_bytes=len(padded),
                   body_sha256=sha(data), dense_sha256=sha(padded),
                   s19_sha256=sha(spath.read_bytes()), map_sha256=sha(mpath.read_bytes()))
+    result.update(used_bytes=len(data), used_spans=[[begin, end]],
+                  padding_bytes=limit-end,
+                  padding_spans=[[end, limit]] if end < limit else [])
+    if layout:
+        result.update(layout)
+        result['headroom'] = layout['core_headroom']
+    result['used_sha256'] = sha(bytes(memory[a] for first, last in result['used_spans']
+                                     for a in range(first, last)))
     if '_BEG_DATA' in sym:
         result['code_section_bytes'] = sym['_END_CODE'] - sym['_BEG_CODE']
         result['data_section_bytes'] = sym['_END_DATA'] - sym['_BEG_DATA']
-        if result['code_section_bytes'] + result['data_section_bytes'] != len(data):
+        if (result['code_section_bytes'] + result['data_section_bytes']
+                + result.get('message_bytes', 0) != result['used_bytes']):
             raise ValueError(f'CODE/DATA accounting mismatch: {name}')
     if '_BEG_UDATA' in sym:
         result['udata'] = [sym['_BEG_UDATA'], sym['_END_UDATA']]
@@ -116,24 +129,45 @@ def report(build):
     manager, msym, mmemory, _ = image(build, 'apman-7000', 0x6C00, 'APMAN_IMAGE_END', 0x7C00)
     owners = {}
     rows = []
+    used = {a for first, last in himon['used_spans'] for a in range(first, last)}
     for owner, label, first, last in HIMON_GROUPS:
         start, end = sym[first], sym[last]
         if not 0xC000 <= start < end <= himon['end_exclusive']:
             raise ValueError(f'Invalid ownership range {label}')
         for a in range(start, end):
-            if a not in memory or a in owners:
+            if a not in used or a in owners:
                 raise ValueError(f'Missing/overlapping ownership at ${a:04X}: {label}')
             owners[a] = owner
         rows.append(dict(owner=owner, label=label, start_symbol=first, end_symbol=last,
                          spans=[[start, end]], bytes=end-start))
-    for section, start, end in [('CODE', sym['_BEG_CODE'], sym['_END_CODE']),
-                                ('DATA', sym['_BEG_DATA'], sym['_END_DATA'])]:
+    # AP text can live in either core DATA or the fixed message page. Follow
+    # each actual terminator, not source adjacency across relocated sections.
+    for label, names in [('AP usage and manager-not-found strings',
+                          ['MSG_USAGE_AP', 'MSG_APMAN_NF']),
+                         ('AP error prefix', ['MSG_AP_ERR'])]:
+        addresses = set()
+        for name in names:
+            address = sym[name]
+            while True:
+                if address not in used or address in owners:
+                    raise ValueError(f'Missing/overlapping AP string {name}')
+                addresses.add(address)
+                if memory[address] & 0x80:
+                    break
+                address += 1
+        owners.update(dict.fromkeys(addresses, 'ap'))
+        rows.append(dict(owner='ap', label=label, spans=spans(addresses), bytes=len(addresses)))
+    sections = [('CODE', sym['_BEG_CODE'], sym['_END_CODE']),
+                ('DATA', sym['_BEG_DATA'], sym['_END_DATA'])]
+    if 'HIM_MESSAGE_PAGE' in sym:
+        sections.append(('HIMMSGPAGE', sym['HIM_MESSAGE_PAGE'], sym['HIM_MESSAGE_PAGE_END']))
+    for section, start, end in sections:
         remainder = set(range(start, end)) - owners.keys()
         rows.append(dict(owner='himon', label=f'Other HIMON {section} (incl. embedded tables/records)',
                          spans=spans(remainder), bytes=len(remainder)))
     totals = {owner: sum(row['bytes'] for row in rows if row['owner'] == owner)
               for owner in ['ap', 'shared', 'himon']}
-    if sum(totals.values()) != himon['emitted_bytes']:
+    if sum(totals.values()) != himon['used_bytes']:
         raise ValueError('HIMON ownership totals do not reconcile')
     package_path = build / 'bin/apman-v1.ap'
     package = package_path.read_bytes()
@@ -162,8 +196,8 @@ def report(build):
                    carrier_sha256=sha(carrier), carrier_tail_bytes=len(carrier)-len(package),
                    worker_bytes=msym['APMAN_WORKER_IMAGE_END']-msym['APMAN_WORKER_IMAGE'],
                    sections=sections, raw_linker_end_code=msym['_END_CODE'])
-    return dict(schema=1, images=[himon, asm, manager], himon_ownership=rows,
-                himon_totals=totals, himon_excluding_dedicated_ap=himon['emitted_bytes']-totals['ap'])
+    return dict(schema=2, images=[himon, asm, manager], himon_ownership=rows,
+                himon_totals=totals, himon_excluding_dedicated_ap=himon['used_bytes']-totals['ap'])
 
 
 def markdown(data):
@@ -171,10 +205,10 @@ def markdown(data):
              'Generated by `SRC/tools/report_himon_ap_baseline.py`. Do not edit manually.', '',
              'All ranges below are inclusive; JSON endpoints are exclusive. Counts come from',
              'linked symbols reconciled against every emitted S19 byte. No image has holes.', '',
-             '| Image | Emitted range | Bytes | Contiguous headroom |',
-             '| --- | --- | ---: | ---: |']
+             '| Image | Emitted range | Emitted bytes | Used bytes | Core headroom |',
+             '| --- | --- | ---: | ---: | ---: |']
     for row in data['images']:
-        lines.append(f"| {row['name']} | `${row['start']:04X}-${row['end_exclusive']-1:04X}` | {row['emitted_bytes']:,} | {row['headroom']:,} |")
+        lines.append(f"| {row['name']} | `${row['start']:04X}-${row['end_exclusive']-1:04X}` | {row['emitted_bytes']:,} | {row['used_bytes']:,} | {row['headroom']:,} |")
     lines += ['', '## HIMON physical byte ownership', '',
               'Shared groups are counted once and remain physically linked with HIMON.',
               'The AP subtotal includes its monitor adapters; source ownership is shown',
@@ -183,6 +217,8 @@ def markdown(data):
               'catalog group includes its UI helpers; linked library code includes flash',
               'and debugger support. Other HIMON includes initialization, MicroChess alias,',
               'monitor/debug/S19 logic, metadata and remaining tables/strings.', '',
+              'Ownership excludes explicit FF padding; FF bytes within linked sections',
+              'still count as used bytes. Fixed-page headroom is measured below the page.', '',
               '| Owner | Block | Emitted ranges | Bytes |', '| --- | --- | --- | ---: |']
     for row in data['himon_ownership']:
         ranges = ', '.join(f'`${a:04X}-${b-1:04X}`' for a,b in row['spans'])
@@ -195,7 +231,11 @@ def markdown(data):
               'Inline tables, FNV records and stored RAM workers remain in their containing',
               'physical blocks. EQU/IF-0 declarations contribute no bytes.', '', '## Image accounting', '']
     for row in data['images'][:2]:
-        lines.append(f"- {row['name']}: CODE {row['code_section_bytes']:,}, DATA {row['data_section_bytes']:,}; dense component {row['dense_bytes']:,} bytes including {row['headroom']:,} bytes of FF padding.")
+        page = f", HIMMSGPAGE {row['message_bytes']:,}" if 'message_bytes' in row else ''
+        lines.append(f"- {row['name']}: CODE {row['code_section_bytes']:,}, DATA {row['data_section_bytes']:,}{page}; dense component {row['dense_bytes']:,} bytes including {row['padding_bytes']:,} bytes of FF padding.")
+        if 'message_bytes' in row:
+            ranges = ', '.join(f'`${a:04X}-${b-1:04X}`' for a, b in row['padding_spans']) or 'none'
+            lines.append(f"  Core ends at `${row['core_end']:04X}` (exclusive); message page `${row['message_start']:04X}-${row['message_end']-1:04X}`. FF padding: {ranges}; message-page room {row['message_headroom']} bytes.")
     manager = data['images'][2]
     ustart, uend = data['images'][1]['udata']
     lines += [f"- APMAN: BODY {manager['emitted_bytes']:,}, envelope overhead {manager['envelope_overhead']:,}, package {manager['package_bytes']:,}, carrier {manager['carrier_bytes']:,}, erased carrier tail {manager['carrier_tail_bytes']:,} bytes.",
@@ -210,10 +250,12 @@ def markdown(data):
               'sector when installed; package size and occupied flash sectors are distinct.', '',
               '## Artifact identities', '', '| Artifact | SHA-256 |', '| --- | --- |']
     for row in data['images']:
-        for kind in ['s19', 'map', 'body', 'dense']:
+        for kind in ['s19', 'map', 'body', 'used', 'dense']:
             lines.append(f"| {row['name']} {kind} | `{row[kind+'_sha256']}` |")
     lines += [f"| APMAN package | `{manager['package_sha256']}` |",
               f"| APMAN carrier | `{manager['carrier_sha256']}` |", '',
+              'Body hashes include every S19-emitted byte, including explicit padding.',
+              'Used hashes concatenate only the linked used spans in ascending address order.',
               'Dense hashes are S19 body plus FF to the stated limit; APMAN dense means',
               'the RAM overlay envelope, not its flash carrier. Accepted board identity and',
               'build provenance are recorded separately in the dated qualification record.', '']

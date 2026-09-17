@@ -275,8 +275,7 @@ MON_START_INIT:
 
                         LDX             #<MSG_BANNER
                         LDY             #>MSG_BANNER
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_WRITE_HBLINE
 
 MON_AFTER_BANNER:
                         LDA             NMI_CTX_FLAG
@@ -286,8 +285,7 @@ MON_AFTER_BANNER:
 
 MAIN_LOOP:
                         LDX             #<MSG_PROMPT
-                        LDY             #>MSG_PROMPT
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
 
                         LDA             #CMD_FLAG_TOP_INPUT
                         STA             CMD_FLAGS
@@ -315,9 +313,7 @@ MAIN_HAVE_LINE:
 
 CMD_UNKNOWN:
                         LDX             #<MSG_UNKNOWN
-                        LDY             #>MSG_UNKNOWN
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_WRITE_PAGE_LINE
                         JMP             MAIN_LOOP
 
 ; Enter STR8-N as a cooperating software restart. Clear the commit byte first,
@@ -336,11 +332,10 @@ CMD_HELP_FNV:
 CMD_HELP:
                         LDX             #<MSG_HELP
                         LDY             #>MSG_HELP
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_HBLINE
 
 ; ----------------------------------------------------------------------------
-; # [token] -- list/resolve FNV records without executing them.
+; # [token] -- list/resolve FNV records; # ! NAME explicitly calls and reports.
 ; ----------------------------------------------------------------------------
 CMD_HASH_INFO_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$12,$91,$0C,$26,CMD_HASH_KIND_EXEC ; # $260C9112 EXEC
@@ -353,6 +348,10 @@ CMD_HASH_INFO:
                         STA             CMDP_START_HI
                         JSR             CMD_PEEK
                         BEQ             CMD_HASH_LIST
+                        CMP             #'!'
+                        BNE             CMD_HASH_INFO_NOT_CALL
+                        JMP             CMD_HASH_CALL
+CMD_HASH_INFO_NOT_CALL:
                         CMP             #'K'
                         BEQ             CMD_HASH_INFO_K_FILTER
 CMD_HASH_INFO_LOOKUP:
@@ -361,18 +360,15 @@ CMD_HASH_INFO_LOOKUP:
                         JSR             THE_JOIN_FIND
                         BCS             CMD_HASH_INFO_FOUND
                         LDX             #<MSG_HASH_NF
-                        LDY             #>MSG_HASH_NF
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         JSR             CMD_HASH_PRINT_TOKEN
                         JMP             SYS_WRITE_CRLF
 CMD_HASH_INFO_FOUND:
                         LDX             #<MSG_HASH_ENTRY
-                        LDY             #>MSG_HASH_ENTRY
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         JSR             CMD_HASH_PRINT_ENTRY
                         LDX             #<MSG_HASH_K
-                        LDY             #>MSG_HASH_K
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         JSR             CMD_HASH_PRINT_KIND
                         JSR             CMD_HASH_PRINT_TOKEN
                         JSR             CMD_HASH_PRINT_EXTRA
@@ -406,16 +402,14 @@ CMD_HASH_INFO_RESTORE_LOOKUP:
 CMD_HASH_USAGE:
                         LDX             #<MSG_HASH_USAGE
                         LDY             #>MSG_HASH_USAGE
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_HBLINE
 
 CMD_HASH_LIST:
                         STZ             CMD_HASH_FILTER_OP
 CMD_HASH_LIST_WITH_FILTER:
                         LDX             #<MSG_HASH_HDR
                         LDY             #>MSG_HASH_HDR
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_WRITE_HBLINE
                         JSR             CMD_HASH_SCAN_INIT
 CMD_HASH_LIST_LOOP:
                         JSR             CMD_HASH_SCAN_NEXT_RECORD
@@ -430,6 +424,8 @@ CMD_HASH_LIST_SKIP:
                         BRA             CMD_HASH_LIST_LOOP
 CMD_HASH_LIST_DONE:
                         RTS
+
+                        INCLUDE         "HIMON/himon-hash-call.inc"
 
 ; ----------------------------------------------------------------------------
 ; D [start [end]]
@@ -497,9 +493,7 @@ CMD_D_PARSE_RANGE_FAIL:
 
 CMD_USAGE_D:
                         LDX             #<MSG_USAGE_D
-                        LDY             #>MSG_USAGE_D
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_PAGE_LINE
 
 ; ----------------------------------------------------------------------------
 ; M start [end|+count]
@@ -516,14 +510,11 @@ CMD_M:
 
 CMD_USAGE_M:
                         LDX             #<MSG_USAGE_M
-                        LDY             #>MSG_USAGE_M
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_PAGE_LINE
 
 CMD_M_PROTECT:
                         LDX             #<MSG_M_PROTECT
-                        LDY             #>MSG_M_PROTECT
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             CMDP_ADDR_HI
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             CMDP_ADDR_LO
@@ -547,9 +538,7 @@ CMD_R_HAVE_CTX:
 
 CMD_USAGE_R:
                         LDX             #<MSG_USAGE_R
-                        LDY             #>MSG_USAGE_R
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_PAGE_LINE
 
 ; ----------------------------------------------------------------------------
 ; X [A=bb X=bb Y=bb P=bb S=bb PC=hhhh]
@@ -564,9 +553,9 @@ CMD_X_HAVE_CTX:
                         JSR             CMD_ADV_PTR
                         JSR             MON_CTX_PARSE_ASSIGN_LIST
                         BCC             CMD_USAGE_X
+MON_RESUME_CONTEXT:
                         LDX             #<MSG_RESUME
-                        LDY             #>MSG_RESUME
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             NMI_CTX_PCH
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             NMI_CTX_PCL
@@ -576,9 +565,7 @@ CMD_X_HAVE_CTX:
 
 CMD_USAGE_X:
                         LDX             #<MSG_USAGE_X
-                        LDY             #>MSG_USAGE_X
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_PAGE_LINE
 
 ; ----------------------------------------------------------------------------
 ; G start
@@ -591,9 +578,9 @@ CMD_G:
                         BCC             CMD_USAGE_G
                         JSR             CMD_REQUIRE_EOL
                         BCC             CMD_USAGE_G
+CMD_GO_ADDR:
                         LDX             #<MSG_GO
-                        LDY             #>MSG_GO
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             CMDP_ADDR_HI
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             CMDP_ADDR_LO
@@ -610,9 +597,7 @@ CMD_G:
 
 CMD_USAGE_G:
                         LDX             #<MSG_USAGE_G
-                        LDY             #>MSG_USAGE_G
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_PAGE_LINE
 
 ; ----------------------------------------------------------------------------
 ; AP pkg dst -- load an AP package body to RAM and run dst.
@@ -666,9 +651,7 @@ CMD_L_ARGS_OK:
                         RTS
 CMD_L_SERVICE_OK:
                         LDX             #<MSG_L_READY
-                        LDY             #>MSG_L_READY
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_WRITE_PAGE_LINE
 
 CMD_L_READ_LOOP:
                         LDX             #<CMD_BUF
@@ -679,8 +662,7 @@ CMD_L_READ_LOOP:
                         BEQ             CMD_L_ABORT
                         STA             LOAD_LINE_STATUS
                         LDX             #<MSG_L_STATUS
-                        LDY             #>MSG_L_STATUS
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             LOAD_LINE_STATUS
                         JSR             SYS_WRITE_HEX_BYTE
                         JSR             SYS_WRITE_CRLF
@@ -713,15 +695,13 @@ CMD_L_PARSE_OK:
                         LDA             LOAD_FAIL_CODE
                         BNE             CMD_L_FAIL_EXIT
                         LDX             #<MSG_L_DONE
-                        LDY             #>MSG_L_DONE
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             LOAD_TOTAL_HI
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             LOAD_TOTAL_LO
                         JSR             SYS_WRITE_HEX_BYTE
                         LDX             #<MSG_L_GO
-                        LDY             #>MSG_L_GO
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             LOAD_GO_HI
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             LOAD_GO_LO
@@ -750,9 +730,7 @@ CMD_L_FAIL_EXIT_DONE:
 
 CMD_USAGE_L:
                         LDX             #<MSG_USAGE_L
-                        LDY             #>MSG_USAGE_L
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_PAGE_LINE
 
                         INCLUDE         "HIMON/himon-debug.inc"
                         INCLUDE         "HIMON/himon-disasm.inc"
@@ -1121,6 +1099,20 @@ HIM_WRITE_HBSTRING_LAST:
                         AND             #$7F
                         JMP             BIO_FTDI_WRITE_BYTE_BLOCK
 
+; Print a high-bit string and newline using the existing console contract.
+HIM_WRITE_HBLINE:
+                        JSR             HIM_WRITE_HBSTRING
+                        JMP             SYS_WRITE_CRLF
+
+; Fixed-page message offsets retain the existing output and scratch contract.
+; Tail entry adds no call-stack level and needs no new RAM.
+HIM_WRITE_PAGE_TEXT:
+                        LDY             #>HIM_MESSAGE_PAGE
+                        JMP             HIM_WRITE_HBSTRING
+HIM_WRITE_PAGE_LINE:
+                        LDY             #>HIM_MESSAGE_PAGE
+                        JMP             HIM_WRITE_HBLINE
+
 ; ----------------------------------------------------------------------------
 ; Context helpers
 ; ----------------------------------------------------------------------------
@@ -1129,9 +1121,7 @@ MON_CTX_REQUIRE_VALID:
                         CMP             #$01
                         BEQ             MON_CTX_REQUIRE_VALID_OK
                         LDX             #<MSG_NOCTX
-                        LDY             #>MSG_NOCTX
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_WRITE_PAGE_LINE
                         CLC
                         RTS
 MON_CTX_REQUIRE_VALID_OK:
@@ -1284,18 +1274,15 @@ MON_PRINT_STOP_AND_REGS:
                         CMP             #TRAP_CAUSE_BRK
                         BEQ             MON_PRINT_STOP_BRK
                         LDX             #<MSG_STOP_NMI
-                        LDY             #>MSG_STOP_NMI
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         BRA             MON_PRINT_STOP_PC
 MON_PRINT_STOP_BRK:
                         LDX             #<MSG_STOP_BRK
-                        LDY             #>MSG_STOP_BRK
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             TRAP_BRK_SIG
                         JSR             SYS_WRITE_HEX_BYTE
                         LDX             #<MSG_STOP_PC
-                        LDY             #>MSG_STOP_PC
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
 MON_PRINT_STOP_PC:
                         LDA             NMI_CTX_PCH
                         JSR             SYS_WRITE_HEX_BYTE
@@ -1306,28 +1293,23 @@ MON_PRINT_REGS:
                         JSR             SYS_WRITE_CRLF
 MON_PRINT_REGS_BODY:
                         LDX             #<MSG_REG_A
-                        LDY             #>MSG_REG_A
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             NMI_CTX_A
                         JSR             SYS_WRITE_HEX_BYTE
                         LDX             #<MSG_REG_X
-                        LDY             #>MSG_REG_X
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             NMI_CTX_X
                         JSR             SYS_WRITE_HEX_BYTE
                         LDX             #<MSG_REG_Y
-                        LDY             #>MSG_REG_Y
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             NMI_CTX_Y
                         JSR             SYS_WRITE_HEX_BYTE
                         LDX             #<MSG_REG_P
-                        LDY             #>MSG_REG_P
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             NMI_CTX_P
                         JSR             SYS_WRITE_HEX_BYTE
                         LDX             #<MSG_REG_S
-                        LDY             #>MSG_REG_S
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             NMI_CTX_S
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             #' '
@@ -1350,16 +1332,14 @@ MON_PRINT_RET_AND_REGS:
                         JSR             SYS_WRITE_CRLF
                         JSR             MON_PRINT_EXEC_ID
                         LDX             #<MSG_ENTRY
-                        LDY             #>MSG_ENTRY
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             NMI_CTX_PCH
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             NMI_CTX_PCL
                         JSR             SYS_WRITE_HEX_BYTE
                         JSR             SYS_WRITE_CRLF
                         LDX             #<MSG_RET
-                        LDY             #>MSG_RET
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         JMP             MON_PRINT_REGS_BODY
 
 MON_PRINT_EXEC_ID:
@@ -1369,11 +1349,10 @@ MON_PRINT_EXEC_ID:
                         JMP             MON_PRINT_HASH
 MON_PRINT_EXEC_GO:
                         LDX             #<MSG_BOX_GO
-                        LDY             #>MSG_BOX_GO
 MON_PRINT_BOX:
                         LDA             #'#'
                         JSR             BIO_FTDI_WRITE_BYTE_BLOCK
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             #'#'
                         JMP             BIO_FTDI_WRITE_BYTE_BLOCK
 
@@ -1391,76 +1370,36 @@ MON_PRINT_HASH:
                         LDA             #'#'
                         JMP             BIO_FTDI_WRITE_BYTE_BLOCK
 
+; Private display scratch: A/X/Y are disposable; saved context is read-only.
+; Preserve the historical first N/n from entry carry (not saved P bit 7).
+; Each output call sets carry, so keep the shifting saved status on the stack.
 MON_PRINT_FLAGS:
+                        LDX             #$00
                         LDA             NMI_CTX_P
-                        LDX             #'N'
-                        LDY             #'n'
-                        JSR             MON_PRINT_FLAG_CHAR
-                        LDA             NMI_CTX_P
-                        LDX             #'V'
-                        LDY             #'v'
+                        BRA             MON_PRINT_FLAGS_BIT
+MON_PRINT_FLAGS_NEXT:
                         ASL             A
-                        ASL             A
-                        JSR             MON_PRINT_FLAG_CHAR
+MON_PRINT_FLAGS_BIT:
+                        PHA
+                        LDA             MON_FLAG_NAMES,X
+                        BCS             MON_PRINT_FLAGS_UPPER
+                        ORA             #$20
+MON_PRINT_FLAGS_UPPER:
+                        CPX             #$02
+                        BNE             MON_PRINT_FLAGS_EMIT
                         LDA             #'-'
+MON_PRINT_FLAGS_EMIT:
                         JSR             BIO_FTDI_WRITE_BYTE_BLOCK
-                        LDA             NMI_CTX_P
-                        LDX             #'B'
-                        LDY             #'b'
+                        PLA
+                        CPX             #$00
+                        BNE             MON_PRINT_FLAGS_ADV
                         ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        JSR             MON_PRINT_FLAG_CHAR
-                        LDA             NMI_CTX_P
-                        LDX             #'D'
-                        LDY             #'d'
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        JSR             MON_PRINT_FLAG_CHAR
-                        LDA             NMI_CTX_P
-                        LDX             #'I'
-                        LDY             #'i'
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        JSR             MON_PRINT_FLAG_CHAR
-                        LDA             NMI_CTX_P
-                        LDX             #'Z'
-                        LDY             #'z'
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        JSR             MON_PRINT_FLAG_CHAR
-                        LDA             NMI_CTX_P
-                        LDX             #'C'
-                        LDY             #'c'
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-                        ASL             A
-MON_PRINT_FLAG_CHAR:
-                        BCS             MON_PRINT_FLAG_SET
-                        TYA
-                        BRA             MON_PRINT_FLAG_OUT
-MON_PRINT_FLAG_SET:
-                        TXA
-MON_PRINT_FLAG_OUT:
-                        JMP             BIO_FTDI_WRITE_BYTE_BLOCK
+MON_PRINT_FLAGS_ADV:
+                        INX
+                        CPX             #$08
+                        BNE             MON_PRINT_FLAGS_NEXT
+                        RTS
+MON_FLAG_NAMES:          DB              "NV-BDIZC"
 
 MON_PRINT_MEM_RANGE:
 MON_PRINT_MEM_NEXT_LINE:
@@ -1621,9 +1560,7 @@ SYS_PRINT_IO_SLOT_SKIP:
                         TAX
                         JSR             HIM_WRITE_HBSTRING
                         LDX             #<MSG_D_IO_SKIP
-                        LDY             #>MSG_D_IO_SKIP
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_PAGE_LINE
 
 HIM_CHECK_CTRL_C:
                         LDA             HIM_RX_HAVE
@@ -1690,9 +1627,7 @@ MON_MODIFY_NEXT:
 
 MON_MODIFY_BAD:
                         LDX             #<MSG_USAGE_M
-                        LDY             #>MSG_USAGE_M
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_WRITE_PAGE_LINE
                         BRA             MON_MODIFY_LOOP
 
 MON_MODIFY_ABORT:
@@ -2251,8 +2186,7 @@ CMD_L_PRINT_FAIL:
                         LDA             LOAD_FAIL_CODE
                         PHA
                         LDX             #<MSG_L_ERR
-                        LDY             #>MSG_L_ERR
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         PLA
                         JSR             SYS_WRITE_HEX_BYTE
                         JMP             SYS_WRITE_CRLF
@@ -2322,9 +2256,7 @@ CMD_DISPATCH_SCAN_MISS:
 HIM_FNV_RESIDENT_MISS:
                         JSR             MON_PRINT_HASH
                         LDX             #<MSG_HASH_NF
-                        LDY             #>MSG_HASH_NF
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_WRITE_PAGE_LINE
                         RTS
 
 ; ----------------------------------------------------------------------------
@@ -2588,8 +2520,7 @@ CMD_HASH_CONFIRM_EXEC:
                         RTS
 CMD_HASH_CONFIRM_ASK:
                         LDX             #<MSG_RUN
-                        LDY             #>MSG_RUN
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         JSR             CMD_HASH_RECORD_EXTRA
                         LDA             CMD_HASH_EXTRA_LO
                         ORA             CMD_HASH_EXTRA_HI
@@ -2602,16 +2533,13 @@ CMD_HASH_CONFIRM_TOKEN:
                         JSR             CMD_HASH_PRINT_TOKEN_RAW
 CMD_HASH_CONFIRM_ADDR:
                         LDX             #<MSG_RUN_AT
-                        LDY             #>MSG_RUN_AT
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         JSR             CMD_HASH_PRINT_ENTRY
                         LDX             #<MSG_HASH_K
-                        LDY             #>MSG_HASH_K
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         JSR             CMD_HASH_PRINT_KIND
                         LDX             #<MSG_RUN_Q
-                        LDY             #>MSG_RUN_Q
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         JSR             HIM_READ_BYTE_BLOCK
                         JSR             BIO_FTDI_WRITE_BYTE_BLOCK
                         JSR             HIM_CHAR_TO_UPPER
@@ -2660,6 +2588,7 @@ CMD_HASH_PRINT_RECORD_HASH:
                         LDA             (CMD_HASH_TAB_LO),Y
                         JMP             SYS_WRITE_HEX_BYTE
 
+DBG_PRINT_CMD_ADDR:
 CMD_HASH_PRINT_ENTRY:
                         LDA             CMDP_ADDR_HI
                         JSR             SYS_WRITE_HEX_BYTE
@@ -2698,6 +2627,7 @@ CMD_HASH_PRINT_TOKEN_LOOP:
 CMD_HASH_PRINT_TOKEN_DONE:
                         RTS
 
+DIS_WRITE_SPACE:
 CMD_HASH_SPACE:
                         LDA             #' '
                         JMP             BIO_FTDI_WRITE_BYTE_BLOCK
@@ -2724,6 +2654,7 @@ CMD_EXEC_ADDR:
                         STY             NMI_CTX_Y
                         PLA
                         STA             NMI_CTX_P
+                        CLD             ; Saved P retains the target's decimal flag.
                         TSX
                         STX             NMI_CTX_S
                         LDA             CMD_EXEC_ENTRY_LO
@@ -2906,7 +2837,7 @@ CMD_PARSE_HEX_WORD_TOKEN:
                         STZ             CMDP_TOKEN_LEN
 CMD_PARSE_HEX_WORD_LOOP:
                         JSR             CMD_PEEK
-                        JSR             CMD_HEX_ASCII_TO_NIBBLE
+                        JSR             UTL_HEX_ASCII_TO_NIBBLE
                         BCC             CMD_PARSE_HEX_WORD_DONE
                         STA             CMDP_NIB_HI
                         LDA             CMDP_TOKEN_LEN
@@ -2977,35 +2908,6 @@ CMD_IS_DELIM_TRUE:
                         SEC
                         RTS
 
-CMD_HEX_ASCII_TO_NIBBLE:
-                        CMP             #'0'
-                        BCC             CMD_HXN_BAD
-                        CMP             #':'
-                        BCC             CMD_HXN_DIGIT
-                        CMP             #'A'
-                        BCC             CMD_HXN_CHECK_LOWER
-                        CMP             #'G'
-                        BCC             CMD_HXN_UPPER
-CMD_HXN_CHECK_LOWER:
-                        CMP             #'a'
-                        BCC             CMD_HXN_BAD
-                        CMP             #'g'
-                        BCS             CMD_HXN_BAD
-                        SEC
-                        SBC             #$57
-                        RTS
-CMD_HXN_UPPER:
-                        SEC
-                        SBC             #$37
-                        RTS
-CMD_HXN_DIGIT:
-                        SEC
-                        SBC             #'0'
-                        RTS
-CMD_HXN_BAD:
-                        CLC
-                        RTS
-
                         INCLUDE         "HIMON/himon-bootlog.inc"
 
                         DATA
@@ -3054,19 +2956,9 @@ TXT_SYS_READ_CSTRING_ECHO_UPPER:
 TXT_BIO_FTDI_PUT_CSTR:   DB              "PUT CST",('R'+$80)
 TXT_STR8:                DB              "STR8: BOOTLOADE",('R'+$80)
 TXT_MICROCHESS:          DB              "MICROCHES",('S'+$80)
-MSG_PROMPT:              DB              ('>'+$80)
-MSG_UNKNOWN:             DB              ('?'+$80)
-MSG_HASH_NF:             DB              " HSH_NF",('!'+$80)
 MSG_HASH_HDR:            DB              "HASH     ENTRY K TEX",('T'+$80)
-MSG_HASH_ENTRY:
-MSG_L_GO:
-MSG_ENTRY:               DB              " ENTRY",('='+$80)
-MSG_HASH_K:              DB              " K",('='+$80)
 MSG_EXEC_ERR:            DB              " EXEC ERR=",('$'+$80)
-MSG_HASH_USAGE:          DB              "# [K=hh|K<hh|K>hh|token",(']'+$80)
-MSG_RUN:                 DB              "RUN",(' '+$80)
-MSG_RUN_AT:              DB              " ",('@'+$80)
-MSG_RUN_Q:               DB              " ?",(' '+$80)
+MSG_HASH_USAGE:          DB              "# [K=hh|K<hh|K>hh|token|! name",(']'+$80)
 MSG_D_IO_NAME_LO:        DB              <MSG_D_IO_CS0,<MSG_D_IO_CS1,<MSG_D_IO_CS2,<MSG_D_IO_CS3
                         DB              <MSG_D_IO_ACIA,<MSG_D_IO_PIA,<MSG_D_IO_VIA,<MSG_D_IO_FTDI
 MSG_D_IO_NAME_HI:        DB              >MSG_D_IO_CS0,>MSG_D_IO_CS1,>MSG_D_IO_CS2,>MSG_D_IO_CS3
@@ -3079,16 +2971,8 @@ MSG_D_IO_ACIA:           DB              "ACI",('A'+$80)
 MSG_D_IO_PIA:            DB              "PI",('A'+$80)
 MSG_D_IO_FTDI:           DB              "FTDI "
 MSG_D_IO_VIA:            DB              "VI",('A'+$80)
-MSG_D_IO_SKIP:           DB              " IO SKI",('P'+$80)
 MSG_HELP:                DB              "#? D M R X G AP APS L B N STR",('8'+$80)
-MSG_USAGE_D:             DB              "D [a [b]",(']'+$80)
-MSG_USAGE_M:             DB              "M start [end|+cnt",(']'+$80)
-MSG_M_PROTECT:           DB              "M PROT=",('$'+$80)
-MSG_USAGE_R:             DB              "R reg",('s'+$80)
-MSG_USAGE_X:             DB              "X reg",('s'+$80)
-MSG_USAGE_G:             DB              "G ",('a'+$80)
 MSG_USAGE_AP:            DB              "AP pkg dst | AP [L|D] Bn name|s000 [dst",(']'+$80)
-MSG_APMAN_NF:            DB              "APMAN N",('F'+$80)
                         IF              0
 MSG_USAGE_APS:           DB              "AP",('S'+$80)
 MSG_APS_PREFIX:          DB              "APS",(' '+$80)
@@ -3111,40 +2995,7 @@ MSG_APS_CLASS_LO:        DB              <MSG_APS_HEADER_FF,<MSG_APS_OPAQUE
                         DB              <MSG_APS_BAD,<MSG_APS_RETIRED_BAD
                         DB              <MSG_APS_WORK,<MSG_APS_TOP_BACKUP
                         ENDIF
-MSG_USAGE_L:             DB              ('L'+$80)
-MSG_NOCTX:               DB              "NOCT",('X'+$80)
-MSG_RESUME:              DB              "RESUME",(' '+$80)
-MSG_GO:                  DB              "GO",(' '+$80)
-MSG_AP_ERR:              DB              "APERR=",('$'+$80)
-MSG_L_READY:             DB              "L S1",('9'+$80)
-MSG_L_STATUS:            DB              "L",('S'+$80)
-MSG_L_ERR:               DB              "LERR=",('$'+$80)
-MSG_L_DONE:              DB              "L OK",('='+$80)
-MSG_STOP_NMI:            DB              "NMI"
-MSG_STOP_PC:             DB              " PC",('='+$80)
-MSG_STOP_BRK:            DB              "BRK",(' '+$80)
-MSG_RET:                 DB              "RET",(' '+$80)
-MSG_BOX_GO:              DB              "G",('O'+$80)
-MSG_REG_A:               DB              "A",('='+$80)
-MSG_REG_X:               DB              " X",('='+$80)
-MSG_REG_Y:               DB              " Y",('='+$80)
-MSG_REG_P:               DB              " P",('='+$80)
-MSG_REG_S:               DB              " S",('='+$80)
-MSG_USAGE_B:             DB              "B start",(']'+$80)
 MSG_USAGE_BC:            DB              "B C start",(']'+$80)
-MSG_USAGE_BL:            DB              "B ",('L'+$80)
-MSG_USAGE_N:             DB              ('N'+$80)
-MSG_BP_SET:              DB              "BP ",('$'+$80)
-MSG_BP_CLR:              DB              "B C ",('$'+$80)
-MSG_BP_FULL:             DB              "BP FUL",('L'+$80)
-MSG_BP_NF:               DB              "BP N",('F'+$80)
-MSG_DBG_RAM:             DB              "DBG RA",('M'+$80)
-MSG_STEP:                DB              "STEP PC",('='+$80)
-MSG_STEP_OP:             DB              " OP",('='+$80)
-MSG_STEP_SIG:            DB              " SIG",('='+$80)
-MSG_STEP_LEN:            DB              " LEN",('='+$80)
-MSG_STEP_NEXT:           DB              " NEXT",('='+$80)
-MSG_STEP_BP:             DB              " B",('P'+$80)
 
 ; Private debug IDs: zero suppresses output; 1..66 selects a three-byte name.
 ; IDs 67..70 select RMB/BBR/SMB/BBS; the printer appends the opcode bit number.
@@ -3204,6 +3055,10 @@ ASM_OP_LEN_PACK:
                         DB              $6A,$AA,$59,$FF,$6A,$AA,$5D,$FF
                         DB              $5A,$AA,$59,$FF,$6A,$A9,$5D,$FD
                         DB              $5A,$AA,$59,$FF,$6A,$A9,$5D,$FD
+
+HIM_CORE_END:
+
+                        INCLUDE         "HIMON/himon-messages.inc"
 
                         ENDMOD
 

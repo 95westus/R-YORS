@@ -20,6 +20,7 @@ foreach ($path in @($HimonSourcePath, $LedContractPath, $HimonS19Path, $HimonMap
 }
 
 $source = (Read-HimonSource -Path $HimonSourcePath)
+$map = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $HimonMapPath))
 $contract = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $LedContractPath))
 
 function Read-Equ([string]$Name) {
@@ -179,4 +180,12 @@ if ($source -notmatch '(?s)HIM_CHECK_CTRL_C:.*?JSR\s+BIO_FTDI_READ_BYTE_NONBLOCK
 
 $endData = Read-MapSymbol '_END_DATA'
 if ($endData -gt 0xF000) { Fail-Check ('HIMON overlaps STR8-N at ${0:X4}' -f $endData) }
-Write-Host ('HIMON I/O LED check = PASS; live wait=$21/$43 rx=$07 tx=$0B; end=${0:X4}; margin=${1:X4}' -f $endData, (0xF000 - $endData))
+$coreLimit = 0xF000
+if ($map -match '(?m)^\s*[0-9A-Fa-f]{8}\s+HIM_MESSAGE_PAGE\s*$') {
+    $coreLimit = Read-MapSymbol 'HIM_MESSAGE_PAGE'
+    if ($coreLimit -ne 0xEF00 -or (Read-MapSymbol 'HIM_MESSAGE_PAGE_END') -gt 0xF000) {
+        Fail-Check 'HIMON message page must remain inside $EF00-$EFFF'
+    }
+    if ($endData -gt $coreLimit) { Fail-Check 'HIMON core overlaps the message page' }
+}
+Write-Host ('HIMON I/O LED check = PASS; live wait=$21/$43 rx=$07 tx=$0B; core end=${0:X4}; core margin=${1:X4}' -f $endData, ($coreLimit - $endData))

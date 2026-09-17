@@ -3,6 +3,4 @@
 ; This is not a callable routine. Keep the parent label/local-label scope.
 
                         LDX             #<MSG_APMAN_NF
-                        LDY             #>MSG_APMAN_NF
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_WRITE_PAGE_LINE

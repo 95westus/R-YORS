@@ -513,7 +513,9 @@ himon-str8-record-check: $(HIMON_ROM_S19) $(HIMON_STR8_RECORD_CHECK) $(STR8N_IMP
 himon-io-led-check: $(HIMON_ROM_S19) $(HIMON_IO_LED_CHECK) $(HIM_SUBDIR)/himon-led-eq.inc
 	@powershell -NoProfile -ExecutionPolicy Bypass -File $(HIMON_IO_LED_CHECK) -HimonSourcePath "$(HIMON_SRC)" -LedContractPath "$(HIM_SUBDIR)/himon-led-eq.inc" -HimonS19Path "$(HIMON_ROM_S19)" -HimonMapPath "$(S19_DIR)/himon-rom-c000.map"
 
-himon-size-check: $(HIMON_ROM_S19) tools/check_himon_size.py
+himon-size-check: $(HIMON_ROM_S19) tools/check_himon_size.py tools/check_himon_layout.py tools/finalize_himon_layout.py
+	$(PYTHON) -B tools/check_himon_layout.py
+	$(PYTHON) -B tools/finalize_himon_layout.py --s19 "$(HIMON_ROM_S19)" --map "$(HIMON_ROM_S19:.s19=.map)" --check-only
 	$(PYTHON) -B tools/check_himon_size.py
 
 himon-rom-bin: $(HIMON_ROM_BIN)
@@ -959,13 +961,15 @@ rom: $(ROM_LIB)
 testing: $(TEST_LIB)
 	@echo "Built $(TEST_LIB)."
 
-$(HIMON_S19): $(HIMON_OBJ) $(ROM_LIB)
+$(HIMON_S19): $(HIMON_OBJ) $(ROM_LIB) tools/finalize_himon_layout.py
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(HIMON_LINKFLAGS) $(HIMON_S19) $(HIMON_OBJ) -L $(BUILD_DIR)\lib\rom
+	$(PYTHON) -B tools/finalize_himon_layout.py --s19 "$@" --map "$(@:.s19=.map)"
 
-$(HIMON_ROM_S19): $(HIMON_ROM_OBJ) $(ROM_LIB)
+$(HIMON_ROM_S19): $(HIMON_ROM_OBJ) $(ROM_LIB) tools/finalize_himon_layout.py
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))
 	$(LINKER) $(HIMON_ROM_LINKFLAGS) $(HIMON_ROM_S19) $(HIMON_ROM_OBJ) -L $(BUILD_DIR)\lib\rom
+	$(PYTHON) -B tools/finalize_himon_layout.py --s19 "$@" --map "$(@:.s19=.map)"
 
 $(FNV1A_HBSTR_S19): $(FNV1A_HBSTR_OBJ) $(ROM_LIB)
 	@if not exist $(subst /,\,$(S19_DIR)) mkdir $(subst /,\,$(S19_DIR))

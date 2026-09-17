@@ -1,7 +1,7 @@
 ; ----------------------------------------------------------------------------
 ; Reset boot telemetry. BOOT COLD is emitted only after the RAM-clear path
 ; completes; BOOT WARM means user RAM was preserved.
-; Keep this include removable: one caller, one flag, local strings only.
+; One caller and one flag; text lives in the fixed HIMON message page.
 ; ----------------------------------------------------------------------------
 
                         CODE
@@ -15,17 +15,7 @@ MON_BOOTLOG_HAVE_REASON:
                         CMP             #BOOT_REASON_WARM
                         BEQ             MON_BOOTLOG_WARM
                         LDX             #<MSG_BOOTLOG_COLD
-                        LDY             #>MSG_BOOTLOG_COLD
-                        JMP             MON_BOOTLOG_LINE_XY
+                        JMP             HIM_WRITE_PAGE_LINE
 MON_BOOTLOG_WARM:
                         LDX             #<MSG_BOOTLOG_WARM
-                        LDY             #>MSG_BOOTLOG_WARM
-                        JMP             MON_BOOTLOG_LINE_XY
-
-MON_BOOTLOG_LINE_XY:
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
-
-                        DATA
-MSG_BOOTLOG_COLD:       DB              "BOOT COL",('D'+$80)
-MSG_BOOTLOG_WARM:       DB              "BOOT WAR",('M'+$80)
+                        JMP             HIM_WRITE_PAGE_LINE

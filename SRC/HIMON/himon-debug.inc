@@ -25,8 +25,7 @@ CMD_B:
                         JSR             DBG_SET_BP
                         BCC             CMD_B_FULL
                         LDX             #<MSG_BP_SET
-                        LDY             #>MSG_BP_SET
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         JSR             DBG_PRINT_CMD_ADDR
                         JMP             SYS_WRITE_CRLF
 CMD_B_DONE:
@@ -44,22 +43,17 @@ CMD_B_CLEAR:
                         JSR             DBG_CLEAR_BP
                         BCC             CMD_B_NF
                         LDX             #<MSG_BP_CLR
-                        LDY             #>MSG_BP_CLR
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         JSR             DBG_PRINT_CMD_ADDR
                         JMP             SYS_WRITE_CRLF
 
 CMD_B_FULL:
                         LDX             #<MSG_BP_FULL
-                        LDY             #>MSG_BP_FULL
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_PAGE_LINE
 
 CMD_B_NF:
                         LDX             #<MSG_BP_NF
-                        LDY             #>MSG_BP_NF
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_PAGE_LINE
 
 CMD_B_LIST:
                         JSR             CMD_ADV_PTR
@@ -69,21 +63,16 @@ CMD_B_LIST:
 
 CMD_USAGE_B:
                         LDX             #<MSG_USAGE_B
-                        LDY             #>MSG_USAGE_B
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_PAGE_LINE
 
 CMD_USAGE_BC:
                         LDX             #<MSG_USAGE_BC
                         LDY             #>MSG_USAGE_BC
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_HBLINE
 
 CMD_USAGE_BL:
                         LDX             #<MSG_USAGE_BL
-                        LDY             #>MSG_USAGE_BL
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_PAGE_LINE
 
 CMD_N_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$D1,$01,$0C,$CB,CMD_HASH_KIND_EXEC
@@ -97,23 +86,13 @@ CMD_N_HAVE_CTX:
                         BCC             CMD_USAGE_N
                         JSR             DBG_STEP_ONCE
                         BCC             CMD_N_DONE
-                        LDX             #<MSG_RESUME
-                        LDY             #>MSG_RESUME
-                        JSR             HIM_WRITE_HBSTRING
-                        LDA             NMI_CTX_PCH
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDA             NMI_CTX_PCL
-                        JSR             SYS_WRITE_HEX_BYTE
-                        JSR             SYS_WRITE_CRLF
-                        JMP             MON_CTX_RESUME_RTI
+                        JMP             MON_RESUME_CONTEXT
 CMD_N_DONE:
                         RTS
 
 CMD_USAGE_N:
                         LDX             #<MSG_USAGE_N
-                        LDY             #>MSG_USAGE_N
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_PAGE_LINE
 
 DBG_SET_BP:
                         JSR             DBG_FIND_BP_ADDR
@@ -326,9 +305,7 @@ DBG_STEP_ONCE:
                         RTS
 DBG_STEP_BP_OVERLAP:
                         LDX             #<MSG_STEP_BP
-                        LDY             #>MSG_STEP_BP
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_WRITE_PAGE_LINE
                         SEC
                         RTS
 DBG_STEP_FAIL:
@@ -458,15 +435,13 @@ DBG_STEP_JMP_ABS:
 
 DBG_PRINT_STEP_INFO:
                         LDX             #<MSG_STEP
-                        LDY             #>MSG_STEP
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             NMI_CTX_PCH
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             NMI_CTX_PCL
                         JSR             SYS_WRITE_HEX_BYTE
                         LDX             #<MSG_STEP_OP
-                        LDY             #>MSG_STEP_OP
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             DBG_TMP_OPCODE
                         JSR             SYS_WRITE_HEX_BYTE
                         LDX             DBG_TMP_OPCODE
@@ -480,8 +455,7 @@ DBG_PRINT_STEP_NO_MNEM:
                         LDA             DBG_TMP_OPCODE
                         BNE             DBG_PRINT_STEP_NO_BRK_SIG
                         LDX             #<MSG_STEP_SIG
-                        LDY             #>MSG_STEP_SIG
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         CLC
                         LDA             NMI_CTX_PCL
                         ADC             #$01
@@ -494,13 +468,11 @@ DBG_PRINT_STEP_NO_MNEM:
                         JSR             SYS_WRITE_HEX_BYTE
 DBG_PRINT_STEP_NO_BRK_SIG:
                         LDX             #<MSG_STEP_LEN
-                        LDY             #>MSG_STEP_LEN
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             DBG_TMP_LEN
                         JSR             SYS_WRITE_HEX_BYTE
                         LDX             #<MSG_STEP_NEXT
-                        LDY             #>MSG_STEP_NEXT
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             DBG_STEP_HI
                         JSR             SYS_WRITE_HEX_BYTE
                         LDA             DBG_STEP_LO
@@ -588,12 +560,6 @@ DBG_CLEAR_ALL_NEXT:
                         BCC             DBG_CLEAR_ALL_LOOP
                         RTS
 
-DBG_PRINT_CMD_ADDR:
-                        LDA             CMDP_ADDR_HI
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDA             CMDP_ADDR_LO
-                        JMP             SYS_WRITE_HEX_BYTE
-
 DBG_ADDR_PATCHABLE:
                         ; Breakpoints and step traps patch only user program
                         ; RAM. MON_WORK_BASE and above remain protected.
@@ -613,9 +579,7 @@ DBG_REQUIRE_PATCHABLE_ADDR:
                         BCS             DBG_REQUIRE_PATCHABLE_ADDR_OK
 DBG_REQUIRE_PATCHABLE_ADDR_FAIL:
                         LDX             #<MSG_DBG_RAM
-                        LDY             #>MSG_DBG_RAM
-                        JSR             HIM_WRITE_HBSTRING
-                        JSR             SYS_WRITE_CRLF
+                        JSR             HIM_WRITE_PAGE_LINE
                         CLC
                         RTS
 DBG_REQUIRE_PATCHABLE_ADDR_OK:

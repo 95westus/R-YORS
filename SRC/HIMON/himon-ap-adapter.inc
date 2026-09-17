@@ -37,29 +37,14 @@ CMD_AP_LOAD_REQUEST:
                         JSR             HIM_AP_SERVICE
                         BCS             CMD_AP_LOAD_OK
                         LDX             #<MSG_AP_ERR
-                        LDY             #>MSG_AP_ERR
-                        JSR             HIM_WRITE_HBSTRING
+                        JSR             HIM_WRITE_PAGE_TEXT
                         LDA             HIM_AP_STATUS
                         JSR             SYS_WRITE_HEX_BYTE
                         JMP             SYS_WRITE_CRLF
 CMD_AP_LOAD_OK:
                         STX             CMDP_ADDR_LO
                         STY             CMDP_ADDR_HI
-                        LDX             #<MSG_GO
-                        LDY             #>MSG_GO
-                        JSR             HIM_WRITE_HBSTRING
-                        LDA             CMDP_ADDR_HI
-                        JSR             SYS_WRITE_HEX_BYTE
-                        LDA             CMDP_ADDR_LO
-                        JSR             SYS_WRITE_HEX_BYTE
-                        JSR             SYS_WRITE_CRLF
-                        JSR             CMD_SAVE_ENTRY
-                        LDA             #CMD_EXEC_KIND_GO
-                        STA             CMD_EXEC_KIND
-                        STZ             NMI_CTX_FLAG
-                        STZ             TRAP_CAUSE
-                        STZ             TRAP_BRK_SIG
-                        JMP             (CMDP_ADDR_LO)
+                        JMP             CMD_GO_ADDR
 
 CMD_AP_MANAGER:         LDA             #APMAN_MODE_AP
                         STA             APMAN_MODE
@@ -68,8 +53,7 @@ CMD_AP_MANAGER:         LDA             #APMAN_MODE_AP
 CMD_USAGE_AP:
                         LDX             #<MSG_USAGE_AP
                         LDY             #>MSG_USAGE_AP
-                        JSR             HIM_WRITE_HBSTRING
-                        JMP             SYS_WRITE_CRLF
+                        JMP             HIM_WRITE_HBLINE
 
 ; ----------------------------------------------------------------------------
 ; APS -- AP Store V1 read-only sector-header inventory/status.

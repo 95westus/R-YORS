@@ -117,4 +117,15 @@ if ($endData -gt 0xF000) {
     Fail-Check ('HIMON end ${0:X4} overlaps STR8-N at $F000' -f $endData)
 }
 
-Write-Host ('HIMON STR8 client = PASS; SR/02 parser + ordered RS reset marker; end=${0:X4}; margin=${1:X4}' -f $endData, (0xF000 - $endData))
+$coreLimit = 0xF000
+$pageMatch = [regex]::Match($map, '(?m)^\s*([0-9A-Fa-f]{8})\s+HIM_MESSAGE_PAGE\s*$')
+if ($pageMatch.Success) {
+    $coreLimit = [Convert]::ToInt32($pageMatch.Groups[1].Value, 16)
+    $pageEnd = [regex]::Match($map, '(?m)^\s*([0-9A-Fa-f]{8})\s+HIM_MESSAGE_PAGE_END\s*$')
+    if ($coreLimit -ne 0xEF00 -or -not $pageEnd.Success -or
+        [Convert]::ToInt32($pageEnd.Groups[1].Value, 16) -gt 0xF000) {
+        Fail-Check 'HIMON message page must remain inside $EF00-$EFFF'
+    }
+    if ($endData -gt $coreLimit) { Fail-Check 'HIMON core overlaps the message page' }
+}
+Write-Host ('HIMON STR8 client = PASS; SR/02 parser + ordered RS reset marker; core end=${0:X4}; core margin=${1:X4}' -f $endData, ($coreLimit - $endData))
