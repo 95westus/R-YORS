@@ -26826,3 +26826,15 @@ RAM and both complete flash archives are exact. Final flash SHA256:
 `8a9977c675364f95a53b58b23067ba469d3595026064a2530e7c3e9db3096f4b`.
 No flashing or reset-dependent change. Resident-miss command integration is
 the remaining scoped-search slice; SPI SRAM/WORK remain deferred.
+
+
+## 2026-09-17 — HIMON `# !` / `# !+` split-report install
+
+[The retained board record](HIMON_HASH_CALL_PLUS_BOARD_2026-09-17/README.md)
+captures the final `00.0917(1534)` guarded Bank-3 C-E installation. Full
+`asm-test` passed; STR8-N accepted 385 dense records and returned `OK`; exact
+`$C000-$EFFF` readback matches payload SHA-256
+`49C0A779F58BAC0FC5D4EC601096863C0C00D56B25823A6EBFA26C94D308EEDB`.
+The top image changed only at the expected Bank-3 journal pair. On-board
+`# ! FNV1A_INIT` printed one RET line without identity, while
+`# !+ FNV1A_INIT` printed hash `$4B9AEE1E`, entry `$E3B7`, and one RET line.

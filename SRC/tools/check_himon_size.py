@@ -391,6 +391,16 @@ def assert_call_report(t, name, entry, registers):
     assert t.byte("CMD_EXEC_KIND") == 0, "diagnostic kind leaked to the outer # call"
 
 
+def assert_quiet_call_report(t, registers):
+    a, x, y, p, stack = registers
+    expected = (f"\r\nRET A={a:02X} X={x:02X} Y={y:02X} P={p:02X} S={stack:02X} "
+                f"{expected_flags(p, 1)}\r\n")
+    assert t.output.endswith(expected), (t.output, expected)
+    assert "#" not in t.output and "ENTRY=" not in t.output
+    assert t.output.count("RET A=") == 1
+    assert t.byte("CMD_EXEC_KIND") == 0, "quiet diagnostic kind leaked to the outer # call"
+
+
 def test_hash_call(image):
     # Exercise the user's actual scenario with real resident FNV lookup and BIO
     # code. Only the PIN receive operation supplies the simulated typed 'A'.
@@ -402,7 +412,7 @@ def test_hash_call(image):
         t.byte("NMI_CTX_FLAG", 0)
         t.terminal_input("A")
         returns = watch_returns(t)
-        monitor_command(t, ("# ! " if diagnostic else "") + name)
+        monitor_command(t, ("# !+ " if diagnostic else "") + name)
         assert not t.input and returns[0][0] == 0x41
         if diagnostic:
             assert len(returns) == 2, "expected inner target and outer # returns"
@@ -411,7 +421,7 @@ def test_hash_call(image):
             assert len(returns) == 1 and t.output == ""
             assert read_context(t) == context
 
-    for line in ("# ! TEST_RET", "#\t!\tTEST_RET\t"):
+    for line in ("# !+ TEST_RET", "#\t!+\tTEST_RET\t"):
         t = Machine(image)
         t.terminal_input()
         entry = test_record(t)
@@ -421,6 +431,16 @@ def test_hash_call(image):
         assert returns[0][:3] == (0x41, 0x52, 0x63) and not returns[0][3] & 1
         assert_call_report(t, "TEST_RET", entry, returns[0])
 
+    for line in ("# ! TEST_RET", "#\t!\tTEST_RET\t"):
+        t = Machine(image)
+        t.terminal_input()
+        entry = test_record(t)
+        returns = watch_returns(t)
+        monitor_command(t, line)
+        assert len(returns) == 2
+        assert returns[0][:3] == (0x41, 0x52, 0x63) and not returns[0][3] & 1
+        assert_quiet_call_report(t, returns[0])
+
     # Preserve the returned D bit in the snapshot, but format the report in
     # binary mode. The real hex formatter uses ADC for the A..F conversion.
     t = Machine(image)
@@ -429,13 +449,14 @@ def test_hash_call(image):
     t.m[entry:entry + 9] = [0xF8, 0xA9, 0xAB, 0xA2, 0xCD, 0xA0, 0xEF, 0x38, 0x60]
     del t.hooks[t.s["SYS_WRITE_HEX_BYTE"]]
     returns = watch_returns(t)
-    monitor_command(t, "# ! TEST_RET")
+    monitor_command(t, "# !+ TEST_RET")
     assert returns[0][3] & 8 and not t.cpu.p & 8
     assert_call_report(t, "TEST_RET", entry, returns[0])
 
-    for line, expected in (("# !", "# ! NAME"), ("# ! ", "# ! NAME"),
-                           ("# !TEST_RET", "# ! NAME"),
-                           ("# ! TEST_RET EXTRA", "# ! NAME"),
+    for line, expected in (("# !", "# ![+] NAME"), ("# ! ", "# ![+] NAME"),
+                           ("# !TEST_RET", "# ![+] NAME"),
+                           ("# !+TEST_RET", "# ![+] NAME"),
+                           ("# ! TEST_RET EXTRA", "# ![+] NAME"),
                            ("# ! NO_SUCH_ROUTINE", "# ! NF/EXEC"),
                            ("# ! BIO_FTDI_READ_BYTE_BLOCK_FNV", "# ! NF/EXEC"),
                            ("# ! TEST_TEXT", "# ! NF/EXEC"),
@@ -458,7 +479,7 @@ def test_hash_call(image):
         t.terminal_input(answer)
         entry = test_record(t, "TEST_CONFIRM", kind=3)
         returns = watch_returns(t)
-        monitor_command(t, "# ! TEST_CONFIRM")
+        monitor_command(t, "# !+ TEST_CONFIRM")
         prompt = f"RUN CONFIRMED @{entry:04X} K=03 ? {answer}\r\n"
         assert t.output.startswith(prompt) and not t.input, t.output
         if answer.upper() == "Y":
@@ -480,7 +501,7 @@ def test_hash_call(image):
     assert t.output == "# ! LIVE CTX\r\n" and len(returns) == 1
     assert read_context(t) == context
     assert t.byte("TRAP_CAUSE") == t.s["TRAP_CAUSE_BRK"] and t.byte("TRAP_BRK_SIG") == 0x55
-    print("PASS # ! typed A=$41, exact saved returns, syntax/lookup/kind failures, "
+    print("PASS # ! typed A=$41, full/RET-only saved returns, syntax/lookup/kind failures, "
           "Y/y/N confirmation, quiet bare calls, and live-context protection")
 
 

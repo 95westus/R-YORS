@@ -1,0 +1,20 @@
+{
+  "result": "PASS",
+  "stamp": "0917(1534)",
+  "port": "COM4",
+  "baud": 115200,
+  "range": "Bank 3 C-E",
+  "records": 385,
+  "himon_payload_sha256": "49C0A779F58BAC0FC5D4EC601096863C0C00D56B25823A6EBFA26C94D308EEDB",
+  "install_s19_sha256": "C6831EFB080A50709922AFAEAB52D903838689295A4E888083F8B92F648E2C2C",
+  "top_before_sha256": "899FFF6D97D1DBB22EFDCDE40020BFBDDD5D6F19C2326DCBD9FC68211AAA18C1",
+  "top_after_sha256": "271D08B916AC3D2C2E9361421B7B7AF0BC61DD843AB8DD0103F341DDACB22923",
+  "journal_byte_offset": "FEF",
+  "journal_shift": 0,
+  "checks": [
+    "exact C000-EFFF readback",
+    "exact F000-FFFF journal-only change",
+    "# ! RET-only",
+    "# !+ identity plus RET"
+  ]
+}

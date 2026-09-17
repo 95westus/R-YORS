@@ -1,15 +1,23 @@
 ; ----------------------------------------------------------------------------
-; # ! NAME -- explicitly call one resident executable FNV and report its return.
+; # ! NAME  -- explicitly call one resident executable FNV and report its RET line.
+; # !+ NAME -- make the same call and also report its hash/entry identity.
 ; Enter with CMDP_PTR at '!'. Ordinary # lookup and bare-name policy are unchanged.
 ; No AP fallback, parameter assignment, or additional fixed RAM is used.
 ; Refuse a live stopped context: the common reporter owns the NMI_CTX snapshot.
 ; A returning target must obey the ordinary HIMON call/stack contract.
 ; ----------------------------------------------------------------------------
-CMD_EXEC_KIND_DIAG      EQU             $02
-
 CMD_HASH_CALL:
+                        LDA             #CMD_EXEC_KIND_DIAG_QUIET
+                        STA             CMD_EXEC_KIND
                         JSR             CMD_ADV_PTR
                         JSR             CMD_PEEK
+                        CMP             #'+'
+                        BNE             CMD_HASH_CALL_DELIM
+                        LDA             #CMD_EXEC_KIND_DIAG
+                        STA             CMD_EXEC_KIND
+                        JSR             CMD_ADV_PTR
+                        JSR             CMD_PEEK
+CMD_HASH_CALL_DELIM:
                         JSR             CMD_IS_DELIM_OR_NUL
                         BCC             CMD_HASH_CALL_USAGE
                         JSR             CMD_SKIP_SPACES
@@ -48,8 +56,6 @@ CMD_HASH_CALL_TOKEN_DONE:
                         JSR             CMD_HASH_CONFIRM_EXEC
                         BCC             CMD_HASH_CALL_DONE
                         JSR             CMD_SAVE_ENTRY
-                        LDA             #CMD_EXEC_KIND_DIAG
-                        STA             CMD_EXEC_KIND
                         JSR             CMD_EXEC_ADDR
                         BRA             CMD_HASH_CALL_DONE
 
@@ -73,7 +79,7 @@ CMD_HASH_CALL_DONE:
                         SEC
                         RTS
 
-MSG_HASH_CALL_USAGE:     DB              "# ! NAM",('E'+$80)
+MSG_HASH_CALL_USAGE:     DB              "# ![+] NAM",('E'+$80)
 MSG_HASH_CALL_LIVE:      DB              "# ! LIVE CT",('X'+$80)
 MSG_HASH_CALL_MISS:      DB              "# ! NF/EXE",('C'+$80)
 HIM_HASH_CALL_END:

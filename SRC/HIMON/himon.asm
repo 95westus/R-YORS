@@ -93,6 +93,8 @@ HIM_RX_HAVE              EQU             $7E1D
 HIM_RX_BYTE              EQU             $7E1E
 CMD_EXEC_KIND_HASH       EQU             $00
 CMD_EXEC_KIND_GO         EQU             $01
+CMD_EXEC_KIND_DIAG       EQU             $02
+CMD_EXEC_KIND_DIAG_QUIET EQU             $03
 BOOT_REASON_NONE         EQU             $00
 BOOT_REASON_COLD         EQU             $01
 BOOT_REASON_WARM         EQU             $02
@@ -335,7 +337,7 @@ CMD_HELP:
                         JMP             HIM_WRITE_HBLINE
 
 ; ----------------------------------------------------------------------------
-; # [token] -- list/resolve FNV records; # ! NAME explicitly calls and reports.
+; # [token] -- list/resolve FNV records; # ![+] NAME calls with RET/full report.
 ; ----------------------------------------------------------------------------
 CMD_HASH_INFO_FNV:
                         DB              'F','N',CMD_FNV_SIG2,$12,$91,$0C,$26,CMD_HASH_KIND_EXEC ; # $260C9112 EXEC
@@ -1330,6 +1332,9 @@ MON_PRINT_STOP_DBG:
 
 MON_PRINT_RET_AND_REGS:
                         JSR             SYS_WRITE_CRLF
+                        LDA             CMD_EXEC_KIND
+                        CMP             #CMD_EXEC_KIND_DIAG_QUIET
+                        BEQ             MON_PRINT_RET_LINE
                         JSR             MON_PRINT_EXEC_ID
                         LDX             #<MSG_ENTRY
                         JSR             HIM_WRITE_PAGE_TEXT
@@ -1338,6 +1343,7 @@ MON_PRINT_RET_AND_REGS:
                         LDA             NMI_CTX_PCL
                         JSR             SYS_WRITE_HEX_BYTE
                         JSR             SYS_WRITE_CRLF
+MON_PRINT_RET_LINE:
                         LDX             #<MSG_RET
                         JSR             HIM_WRITE_PAGE_TEXT
                         JMP             MON_PRINT_REGS_BODY
