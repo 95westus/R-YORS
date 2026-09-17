@@ -4,6 +4,11 @@ Status: implemented, full host checks pass, and the Bank-3 C-E installation,
 primary `# !` smoke, AP/APMAN regression, debugger regression, ASM handoff,
 software re-entry, and physical-reset recovery pass on the board.
 
+> [!NOTE]
+> A later register-chaining and conditional-call syntax is recorded as a
+> [proposal](../PLANNING/HIMON_HASH_CHAIN_PROPOSAL.md). It is not current HIMON
+> behavior and does not supersede the qualified contract documented here.
+
 ## Explicit Call
 
 At HIMON, use the callable's FNV name, without the source-label `_FNV` suffix:
